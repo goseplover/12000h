@@ -3,782 +3,841 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>观鸟模拟器 - 一万两千鸻AI制作</title>
+<title>观鸟模拟器 - 一万两千鸻使用AI制作</title>
 <style>
 * {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-  user-select: none;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    user-select: none;
 }
 
 body {
-  background-color: #000;
-  overflow: hidden;
-  font-family: 'Microsoft YaHei', sans-serif;
-  color: #333;
+    background-color: #000;
+    overflow: hidden;
+    font-family: 'Microsoft YaHei', sans-serif;
+    color: #333;
 }
 
 #gameContainer {
-  position: relative;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
 }
 
 #gameCanvas {
-  display: block;
-  background: linear-gradient(to bottom, #87CEEB 0%, #E0F7FF 100%);
-  cursor: crosshair;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+    display: block;
+    background: linear-gradient(to bottom, #87CEEB 0%, #E0F7FF 100%);
+    cursor: crosshair;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
 }
 
 #poopCanvas {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 5;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 5;
 }
 
 #viewfinder {
-  position: absolute;
-  border: 2px dashed rgba(255, 255, 255, 0.8);
-  background-color: rgba(255, 255, 255, 0.1);
-  pointer-events: none;
-  display: none;
-  z-index: 100;
+    position: absolute;
+    border: 2px dashed rgba(255, 255, 255, 0.8);
+    background-color: rgba(255, 255, 255, 0.1);
+    pointer-events: none;
+    display: none;
+    z-index: 100;
 }
 
 #photoPreview {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  width: 120px;
-  height: 80px;
-  border: 2px solid white;
-  border-radius: 5px;
-  background-color: rgba(0, 0, 0, 0.3);
-  overflow: hidden;
-  z-index: 60;
-  cursor: pointer;
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 120px;
+    height: 80px;
+    border: 2px solid white;
+    border-radius: 5px;
+    background-color: rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    z-index: 60;
+    cursor: pointer;
 }
 
 #photoPreview img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 #photoPreview .noPhoto {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  color: white;
-  font-size: 12px;
-  text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: white;
+    font-size: 12px;
+    text-align: center;
 }
 
 #birdingToggleContainer {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 70;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 5px;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 70;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 5px;
 }
 
 #birdingModeToggle {
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  border: 2px solid #90EE90;
-  border-radius: 20px;
-  padding: 8px 16px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s;
-  min-width: 120px;
-  text-align: center;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: 2px solid #90EE90;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
+    min-width: 120px;
+    text-align: center;
 }
 
 #birdingModeToggle:hover {
-  background-color: rgba(144, 238, 144, 0.3);
+    background-color: rgba(144, 238, 144, 0.3);
 }
 
 #birdingModeToggle.active {
-  background-color: rgba(144, 238, 144, 0.5);
-  border-color: #FFFFFF;
+    background-color: rgba(144, 238, 144, 0.5);
+    border-color: #FFFFFF;
 }
 
 #birdingStatusIndicator {
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 4px 10px;
-  border-radius: 10px;
-  font-size: 12px;
-  border: 1px solid #90EE90;
-  text-align: center;
-  min-width: 120px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 4px 10px;
+    border-radius: 10px;
+    font-size: 12px;
+    border: 1px solid #90EE90;
+    text-align: center;
+    min-width: 120px;
+}
+
+#birdingRecordIcon {
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #FFD700;
+    border-radius: 8px;
+    width: 120px;
+    height: 20px;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 10px;
+    color: #FFD700;
+    font-weight: bold;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+#birdingRecordIcon:hover {
+    background: rgba(255, 215, 0, 0.15);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(255, 215, 0, 0.2);
+}
+
+#birdingRecordIcon:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+#birdingRecordIcon::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, #FFD700, #FFA500);
+}
+
+#birdingRecordIcon .iconNumber {
+    font-size: 11px;
+    font-weight: bold;
+    color: #FFD700;
+    margin-right: 4px;
+}
+
+#birdingRecordIcon .iconTime {
+    font-size: 9px;
+    color: #87CEEB;
+    margin-right: 4px;
+}
+
+#birdingRecordIcon .iconBirdCount {
+    font-size: 9px;
+    color: #90EE90;
 }
 
 #textStats {
-  position: absolute;
-  top: 95px;
-  left: 10px;
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 6px 12px;
-  border-radius: 6px;
-  z-index: 50;
-  font-size: 12px;
-  max-width: 90%;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+    position: absolute;
+    top: 95px;
+    left: 10px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    z-index: 50;
+    font-size: 12px;
+    max-width: 90%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 #textStats span {
-  margin: 0 8px;
-  color: #FFD700;
-  font-weight: bold;
+    margin: 0 8px;
+    color: #FFD700;
+    font-weight: bold;
 }
 
 #albumModal {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.85);
-  z-index: 200;
-  display: none;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.85);
+    z-index: 200;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
 }
 
 #albumTitle {
-  color: white;
-  margin-bottom: 10px;
-  font-size: 24px;
+    color: white;
+    margin-bottom: 10px;
+    font-size: 24px;
 }
 
 #albumPromotion {
-  color: #FFD700;
-  margin-bottom: 20px;
-  font-size: 16px;
-  text-align: center;
+    color: #FFD700;
+    margin-bottom: 20px;
+    font-size: 16px;
+    text-align: center;
 }
 
 #albumPhotos {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  align-content: flex-start;
-  max-width: 90%;
-  max-height: 70%;
-  overflow-x: auto;
-  overflow-y: auto;
-  padding: 20px;
-  width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-content: flex-start;
+    max-width: 90%;
+    max-height: 70%;
+    overflow-x: auto;
+    overflow-y: auto;
+    padding: 20px;
+    width: 100%;
 }
 
 .albumPhoto {
-  width: 160px;
-  height: 140px;
-  margin: 10px;
-  border: 2px solid white;
-  border-radius: 5px;
-  overflow: hidden;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  flex-shrink: 0;
+    width: 160px;
+    height: 140px;
+    margin: 10px;
+    border: 2px solid white;
+    border-radius: 5px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
 }
 
 .albumPhoto img {
-  width: 100%;
-  height: 100px;
-  object-fit: cover;
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
 }
 
 .photoInfo {
-  background: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 5px;
-  font-size: 12px;
-  text-align: center;
-  flex-grow: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 5px;
+    font-size: 12px;
+    text-align: center;
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #albumStats {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  max-width: 90%;
-  max-height: 20%;
-  overflow-y: auto;
-  padding: 10px;
-  margin-top: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 90%;
+    max-height: 20%;
+    overflow-y: auto;
+    padding: 10px;
+    margin-top: 10px;
 }
 
 .albumStatItem {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 4px 8px;
-  margin: 2px;
-  border-radius: 4px;
-  background-color: rgba(255, 255, 255, 0.1);
-  color: white;
-  font-size: 12px;
-  min-width: 120px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px;
+    margin: 2px;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 12px;
+    min-width: 120px;
 }
 
 #closeAlbum {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background-color: rgba(255, 255, 255, 0.2);
-  color: white;
-  border: none;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  font-size: 20px;
-  cursor: pointer;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+    cursor: pointer;
 }
 
 #gameTitle {
-  position: absolute;
-  top: 100px;
-  left: 0;
-  width: 100%;
-  text-align: center;
-  color: white;
-  font-size: 24px;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
-  z-index: 10;
-  display: none;
+    position: absolute;
+    top: 100px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: white;
+    font-size: 24px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+    z-index: 10;
+    display: none;
 }
 
 #creator {
-  position: absolute;
-  top: 5px;
-  left: 0;
-  width: 100%;
-  text-align: center;
-  color: white;
-  font-size: 16px;
-  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
-  z-index: 10;
+    position: absolute;
+    top: 5px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: white;
+    font-size: 16px;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+    z-index: 10;
 }
 
 #specialAlert {
-  position: absolute;
-  top: 140px;
-  left: 0;
-  width: 100%;
-  text-align: center;
-  color: #FFD700;
-  font-size: 20px;
-  font-weight: bold;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
-  z-index: 10;
-  opacity: 0;
-  transition: opacity 0.5s;
+    position: absolute;
+    top: 140px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: #FFD700;
+    font-size: 20px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.5s;
 }
 
 #captureAlert {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: #FFD700;
-  text-align: center;
-  font-size: 18px;
-  font-weight: bold;
-  z-index: 150;
-  opacity: 0;
-  transition: opacity 0.3s;
-  pointer-events: none;
-  text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9);
-  background-color: transparent;
-  padding: 0;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: #FFD700;
+    text-align: center;
+    font-size: 18px;
+    font-weight: bold;
+    z-index: 150;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9);
+    background-color: transparent;
+    padding: 0;
 }
 
 #gameNote {
-  position: absolute;
-  bottom: 5px;
-  left: 0;
-  width: 100%;
-  text-align: center;
-  color: white;
-  font-size: 12px;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
-  z-index: 10;
-  opacity: 0.7;
-  padding: 0 10px;
+    position: absolute;
+    bottom: 5px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: white;
+    font-size: 12px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+    z-index: 10;
+    opacity: 0.7;
+    padding: 0 10px;
 }
 
 #modeToggleContainer {
-  position: absolute;
-  bottom: 10px;
-  right: 10px;
-  display: flex;
-  gap: 10px;
-  z-index: 70;
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    display: flex;
+    gap: 10px;
+    z-index: 70;
 }
 
 .modeToggleButton {
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  border: 2px solid #FFD700;
-  border-radius: 20px;
-  padding: 8px 16px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: 2px solid #FFD700;
+    border-radius: 20px;
+    padding: 8px 16px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
 }
 
 .modeToggleButton:hover {
-  background-color: rgba(255, 215, 0, 0.3);
+    background-color: rgba(255, 215, 0, 0.3);
 }
 
 .modeToggleButton.active {
-  background-color: rgba(255, 215, 0, 0.5);
-  border-color: #FFFFFF;
+    background-color: rgba(255, 215, 0, 0.5);
+    border-color: #FFFFFF;
 }
 
 #timeIndicator {
-  position: absolute;
-  top: 30px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: white;
-  font-size: 14px;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
-  z-index: 10;
-  opacity: 0.8;
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    font-size: 14px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+    z-index: 10;
+    opacity: 0.8;
 }
 
 #nightObjectAlert {
-  position: absolute;
-  top: 180px;
-  left: 0;
-  width: 100%;
-  text-align: center;
-  color: #87CEEB;
-  font-size: 18px;
-  font-weight: bold;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
-  z-index: 10;
-  opacity: 0;
-  transition: opacity 0.5s;
+    position: absolute;
+    top: 180px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    color: #87CEEB;
+    font-size: 18px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+    z-index: 10;
+    opacity: 0;
+    transition: opacity 0.5s;
 }
 
 .meteor-trail {
-  position: absolute;
-  background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0) 100%);
-  border-radius: 2px;
-  z-index: 2;
-  pointer-events: none;
+    position: absolute;
+    background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0) 100%);
+    border-radius: 2px;
+    z-index: 2;
+    pointer-events: none;
 }
 
 .comet-trail {
-  position: absolute;
-  background: radial-gradient(circle, rgba(173,216,230,0.8) 0%, rgba(173,216,230,0) 70%);
-  border-radius: 50%;
-  z-index: 2;
-  pointer-events: none;
+    position: absolute;
+    background: radial-gradient(circle, rgba(173,216,230,0.8) 0%, rgba(173,216,230,0) 70%);
+    border-radius: 50%;
+    z-index: 2;
+    pointer-events: none;
 }
 
 .ufo-beam {
-  position: absolute;
-  background: linear-gradient(to bottom, rgba(144,238,144,0.7) 0%, rgba(144,238,144,0) 100%);
-  border-radius: 50%;
-  z-index: 2;
-  pointer-events: none;
+    position: absolute;
+    background: linear-gradient(to bottom, rgba(144,238,144,0.7) 0%, rgba(144,238,144,0) 100%);
+    border-radius: 50%;
+    z-index: 2;
+    pointer-events: none;
 }
 
 #allBirdsAlert {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: rgba(0, 0, 0, 0.9);
-  color: #FFD700;
-  padding: 30px 40px;
-  border-radius: 15px;
-  border: 3px solid #FFD700;
-  font-size: 24px;
-  font-weight: bold;
-  text-align: center;
-  z-index: 300;
-  max-width: 80%;
-  box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
-  animation: pulse 2s infinite;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: rgba(0, 0, 0, 0.9);
+    color: #FFD700;
+    padding: 30px 40px;
+    border-radius: 15px;
+    border: 3px solid #FFD700;
+    font-size: 24px;
+    font-weight: bold;
+    text-align: center;
+    z-index: 300;
+    max-width: 80%;
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+    animation: pulse 2s infinite;
 }
 
 @keyframes pulse {
-  0% { transform: translate(-50%, -50%) scale(1); }
-  50% { transform: translate(-50%, -50%) scale(1.05); }
-  100% { transform: translate(-50%, -50%) scale(1); }
+    0% { transform: translate(-50%, -50%) scale(1); }
+    50% { transform: translate(-50%, -50%) scale(1.05); }
+    100% { transform: translate(-50%, -50%) scale(1); }
 }
 
 #lensToggleContainer {
-  position: absolute;
-  bottom: 10px;
-  left: 10px;
-  display: flex;
-  gap: 10px;
-  z-index: 70;
-  background-color: rgba(0, 0, 0, 0.7);
-  padding: 8px;
-  border-radius: 20px;
-  border: 2px solid #FFD700;
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    display: flex;
+    gap: 10px;
+    z-index: 70;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 8px;
+    border-radius: 20px;
+    border: 2px solid #FFD700;
 }
 
 .lensToggleButton {
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  border: 1px solid #FFD700;
-  border-radius: 15px;
-  padding: 6px 12px;
-  font-size: 14px;
-  cursor: pointer;
-  transition: all 0.3s;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: 1px solid #FFD700;
+    border-radius: 15px;
+    padding: 6px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s;
 }
 
 .lensToggleButton:hover {
-  background-color: rgba(255, 215, 0, 0.3);
+    background-color: rgba(255, 215, 0, 0.3);
 }
 
 .lensToggleButton.active {
-  background-color: rgba(255, 215, 0, 0.5);
-  border-color: #FFFFFF;
+    background-color: rgba(255, 215, 0, 0.5);
+    border-color: #FFFFFF;
 }
 
 #lensIndicator {
-  position: absolute;
-  bottom: 60px;
-  left: 20px;
-  color: white;
-  font-size: 14px;
-  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
-  z-index: 10;
-  opacity: 0.8;
-  background-color: rgba(0, 0, 0, 0.5);
-  padding: 4px 8px;
-  border-radius: 10px;
+    position: absolute;
+    bottom: 60px;
+    left: 20px;
+    color: white;
+    font-size: 14px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+    z-index: 10;
+    opacity: 0.8;
+    background-color: rgba(0, 0, 0, 0.5);
+    padding: 4px 8px;
+    border-radius: 10px;
 }
 
 #goldenFilter {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(255, 215, 0, 0);
-  pointer-events: none;
-  z-index: 5;
-  transition: background-color 1s ease;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 215, 0, 0);
+    pointer-events: none;
+    z-index: 5;
+    transition: background-color 1s ease;
 }
 
 .birdingRecordIcon {
-  background: rgba(0, 0, 0, 0.8);
-  border: 2px solid #FFD700;
-  border-radius: 10px;
-  width: 60px;
-  height: 60px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s;
-  position: relative;
-  overflow: hidden;
+    background: rgba(0, 0, 0, 0.8);
+    border: 2px solid #FFD700;
+    border-radius: 10px;
+    width: 60px;
+    height: 60px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
 }
 
 .birdingRecordIcon:hover {
-  background: rgba(255, 215, 0, 0.2);
-  transform: scale(1.05);
-  box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+    background: rgba(255, 215, 0, 0.2);
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
 }
 
 .birdingRecordIcon::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 5px;
-  background: linear-gradient(90deg, #FFD700, #FFA500);
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 5px;
+    background: linear-gradient(90deg, #FFD700, #FFA500);
 }
 
 .birdingRecordIcon .iconNumber {
-  font-size: 18px;
-  font-weight: bold;
-  color: #FFD700;
-  margin-bottom: 2px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #FFD700;
+    margin-bottom: 2px;
 }
 
 .birdingRecordIcon .iconTime {
-  font-size: 11px;
-  color: #87CEEB;
+    font-size: 11px;
+    color: #87CEEB;
 }
 
 .birdingRecordIcon .iconBirdCount {
-  font-size: 10px;
-  color: #90EE90;
-  margin-top: 2px;
+    font-size: 10px;
+    color: #90EE90;
+    margin-top: 2px;
 }
 
 .birdRecordText {
-  background: rgba(0, 0, 0, 0.7);
-  border-radius: 8px;
-  padding: 15px;
-  margin-bottom: 10px;
-  border-left: 4px solid #87CEEB;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-left: 4px solid #87CEEB;
 }
 
 .birdRecordText.highlight {
-  border-left-color: #FFD700;
-  background: rgba(255, 215, 0, 0.1);
+    border-left-color: #FFD700;
+    background: rgba(255, 215, 0, 0.1);
 }
 
 .birdRecordText .birdName {
-  color: white;
-  font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 5px;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 5px;
 }
 
 .birdRecordText .birdStats {
-  font-size: 14px;
-  color: #87CEEB;
+    font-size: 14px;
+    color: #87CEEB;
 }
 
 .birdRecordText .birdStats span {
-  margin-right: 15px;
+    margin-right: 15px;
 }
 
 .birdRecordText.highlight .birdName {
-  color: #FFD700;
+    color: #FFD700;
 }
 
 .recordSummaryText {
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 8px;
-  padding: 12px;
-  margin-bottom: 15px;
-  border-top: 2px solid #90EE90;
+    background: rgba(0, 0, 0, 0.5);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 15px;
+    border-top: 2px solid #90EE90;
 }
 
 .recordSummaryText .summaryItem {
-  display: inline-block;
-  margin-right: 20px;
-  font-size: 14px;
+    display: inline-block;
+    margin-right: 20px;
+    font-size: 14px;
 }
 
 .recordSummaryText .summaryLabel {
-  color: #87CEEB;
+    color: #87CEEB;
 }
 
 .recordSummaryText .summaryValue {
-  color: white;
-  font-weight: bold;
+    color: white;
+    font-weight: bold;
 }
 
 .rareBirdText {
-  background: rgba(255, 215, 0, 0.15);
-  border: 1px solid #FFD700;
-  border-radius: 6px;
-  padding: 8px 12px;
-  margin: 5px 0;
-  color: #FFD700;
-  font-size: 14px;
+    background: rgba(255, 215, 0, 0.15);
+    border: 1px solid #FFD700;
+    border-radius: 6px;
+    padding: 8px 12px;
+    margin: 5px 0;
+    color: #FFD700;
+    font-size: 14px;
 }
 
 .rareBirdText::before {
-  content: '★ ';
+    content: '★ ';
 }
 
 #gyroToggleContainer {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 70;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 5px;
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 70;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
 }
 
 #gyroSensitivityContainer {
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 3px 8px;
-  border-radius: 8px;
-  border: 1px solid #FFA500;
-  z-index: 70;
-  width: 80px;
-  margin-bottom: 5px;
-  height: 35px;
-  display: none;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 8px;
+    border: 1px solid #FFA500;
+    z-index: 70;
+    width: 80px;
+    margin-bottom: 5px;
+    height: 35px;
+    display: none;
 }
 
 #gyroSensitivityContainer.active {
-  display: block;
+    display: block;
 }
 
 #gyroSensitivityLabel {
-  font-size: 10px;
-  margin-bottom: 2px;
-  text-align: center;
+    font-size: 10px;
+    margin-bottom: 2px;
+    text-align: center;
 }
 
 #gyroSensitivitySlider {
-  width: 100%;
-  height: 4px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: #555;
-  border-radius: 2px;
-  outline: none;
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: #555;
+    border-radius: 2px;
+    outline: none;
 }
 
 #gyroSensitivitySlider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 12px;
-  height: 12px;
-  background: #FFA500;
-  border-radius: 50%;
-  cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: #FFA500;
+    border-radius: 50%;
+    cursor: pointer;
 }
 
 #gyroSensitivityValue {
-  font-size: 10px;
-  margin-top: 1px;
-  text-align: center;
+    font-size: 10px;
+    margin-top: 1px;
+    text-align: center;
 }
 
 #gyroModeToggle {
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  border: 2px solid #FFA500;
-  border-radius: 20px;
-  padding: 6px 12px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.3s;
-  min-width: 60px;
-  max-width: 80px;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: 2px solid #FFA500;
+    border-radius: 20px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    min-width: 60px;
+    max-width: 80px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 #gyroModeToggle:hover {
-  background-color: rgba(255, 165, 0, 0.3);
+    background-color: rgba(255, 165, 0, 0.3);
 }
 
 #gyroModeToggle.active {
-  background-color: rgba(255, 165, 0, 0.5);
-  border-color: #FFFFFF;
+    background-color: rgba(255, 165, 0, 0.5);
+    border-color: #FFFFFF;
 }
 
 #gyroStatusIndicator {
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  padding: 4px 8px;
-  border-radius: 10px;
-  font-size: 10px;
-  border: 1px solid #FFA500;
-  text-align: center;
-  min-width: 60px;
-  max-width: 80px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  margin-bottom: 5px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    border: 1px solid #FFA500;
+    text-align: center;
+    min-width: 60px;
+    max-width: 80px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 5px;
 }
 
 #gyroCalibrateButton {
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  border: 2px solid #4CAF50;
-  border-radius: 20px;
-  padding: 4px 8px;
-  font-size: 10px;
-  cursor: pointer;
-  transition: all 0.3s;
-  min-width: 60px;
-  max-width: 80px;
-  text-align: center;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: 2px solid #4CAF50;
+    border-radius: 20px;
+    padding: 4px 8px;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.3s;
+    min-width: 60px;
+    max-width: 80px;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 #gyroCalibrateButton:hover {
-  background-color: rgba(76, 175, 80, 0.3);
+    background-color: rgba(76, 175, 80, 0.3);
 }
 
 #cameraButton {
-  position: absolute;
-  right: 15px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 70px;
-  height: 70px;
-  background-color: rgba(255, 255, 255, 0.9);
-  border-radius: 50%;
-  border: 4px solid #FFD700;
-  cursor: pointer;
-  z-index: 80;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 70px;
+    height: 70px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 50%;
+    border: 4px solid #FFD700;
+    cursor: pointer;
+    z-index: 80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 #cameraButton:hover {
-  background-color: rgba(255, 255, 255, 1);
-  transform: translateY(-50%) scale(1.05);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    background-color: rgba(255, 255, 255, 1);
+    transform: translateY(-50%) scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
 #cameraButton:active {
-  background-color: rgba(230, 230, 230, 1);
-  transform: translateY(-50%) scale(0.95);
+    background-color: rgba(230, 230, 230, 1);
+    transform: translateY(-50%) scale(0.95);
 }
 
 #cameraButton::after {
-  content: '';
-  width: 40px;
-  height: 40px;
-  background-color: #FFD700;
-  border-radius: 50%;
-  border: 3px solid #333;
+    content: '';
+    width: 40px;
+    height: 40px;
+    background-color: #FFD700;
+    border-radius: 50%;
+    border: 3px solid #333;
 }
 
-/* 截图相关样式 */
 #screenshotCanvas {
     position: fixed;
     top: -10000px;
@@ -786,7 +845,7 @@ body {
     width: 300px;
     height: 450px;
     z-index: 1000;
-  }
+}
 
 #screenshotButton {
     background-color: rgba(0, 0, 0, 0.7);
@@ -800,19 +859,18 @@ body {
     position: absolute;
     top: 20px;
     right: 70px;
-    z-index: 401; /* 确保在记录模态框之上 */
-    display: none; /* 默认隐藏 */
-  }
+    z-index: 401;
+    display: none;
+}
 
 #screenshotButton:hover {
     background-color: rgba(135, 206, 235, 0.3);
-  }
+}
 
 #screenshotButton:active {
     background-color: rgba(135, 206, 235, 0.5);
-  }
+}
 
-/* 截图预览模态框 */
 #screenshotPreviewModal {
     position: absolute;
     top: 0;
@@ -824,22 +882,26 @@ body {
     display: none;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-  }
+    justify-content: flex-start;
+    padding-top: 20px;
+    overflow-y: auto;
+}
 
 #screenshotPreviewImage {
     max-width: 90%;
-    max-height: 80%;
+    max-height: none;
     border: 3px solid #FFD700;
     border-radius: 10px;
     box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
-  }
+    margin-bottom: 20px;
+}
 
 #screenshotPreviewControls {
     margin-top: 20px;
     display: flex;
     gap: 15px;
-  }
+    margin-bottom: 20px;
+}
 
 .screenshotPreviewButton {
     background-color: rgba(255, 215, 0, 0.8);
@@ -852,16 +914,16 @@ body {
     cursor: pointer;
     transition: all 0.3s;
     min-width: 120px;
-  }
+}
 
 .screenshotPreviewButton:hover {
     background-color: rgba(255, 215, 0, 1);
     transform: scale(1.05);
-  }
+}
 
 .screenshotPreviewButton:active {
     transform: scale(0.95);
-  }
+}
 
 #screenshotPreviewClose {
     position: absolute;
@@ -875,624 +937,669 @@ body {
     height: 40px;
     font-size: 20px;
     cursor: pointer;
-  }
+}
 
 @media (orientation: portrait) {
-  #photoPreview {
-    top: 10px;
-    left: 10px;
-    width: 90px;
-    height: 70px;
-  }
-  
-  #photoPreview .noPhoto {
-    font-size: 10px;
-    padding: 3px;
-  }
-  
-  #birdingToggleContainer {
-    top: 10px;
-    right: 10px;
-  }
-  
-  #birdingModeToggle {
-    padding: 5px 10px;
-    font-size: 12px;
-    min-width: 100px;
-  }
-  
-  #birdingStatusIndicator {
-    font-size: 10px;
-    padding: 3px 8px;
-    min-width: 100px;
-  }
-  
-  #textStats {
-    top: 85px;
-    left: 10px;
-    padding: 5px 10px;
-    font-size: 11px;
-    max-width: 60%;
-    white-space: normal;
-    max-height: 70px;
-    overflow-y: auto;
-  }
-  
-  #textStats span {
-    margin: 0 5px;
-  }
-  
-  #lensToggleContainer {
-    bottom: 170px;
-    left: 10px;
-    padding: 3px;
-    gap: 3px;
-    border-radius: 15px;
-    border-width: 1px;
-    min-width: auto;
-    max-width: 160px;
-  }
-  
-  .lensToggleButton {
-    padding: 2px 6px;
-    font-size: 9px;
-    border-radius: 8px;
-    border-width: 0.5px;
-    min-height: 24px;
-  }
-  
-  #lensIndicator {
-    bottom: 105px;
-    left: 15px;
-    font-size: 9px;
-    padding: 2px 4px;
-  }
-  
-  #modeToggleContainer {
-    bottom: 170px;
-    right: 10px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 3px;
-    max-width: 45%;
-  }
-  
-  .modeToggleButton {
-    padding: 2px 6px;
-    font-size: 9px;
-    border-radius: 8px;
-    border-width: 1px;
-    min-height: 24px;
-    flex-shrink: 1;
-    min-width: 50px;
-    text-align: center;
-    line-height: 1.2;
-  }
-  
-  #birdingModeToggle {
-    padding: 2px 6px;
-    font-size: 9px;
-    min-width: 50px;
-    border-width: 1px;
-    border-radius: 8px;
-  }
-  
-  #birdingStatusIndicator {
-    font-size: 8px;
-    padding: 1px 4px;
-    min-width: 50px;
-    border-radius: 5px;
-    border-width: 0.5px;
-  }
-  
-  #birdingRecordIconsContainer {
-    top: 85px;
-    left: 10px;
-    max-height: 150px;
-  }
-  
-  .birdingRecordIcon {
-    width: 50px;
-    height: 50px;
-  }
-  
-  .birdingRecordIcon .iconNumber {
-    font-size: 16px;
-  }
-  
-  .birdingRecordIcon .iconTime {
-    font-size: 10px;
-  }
-  
-  .birdingRecordIcon .iconBirdCount {
-    font-size: 9px;
-  }
-  
-  #timeIndicator {
-    top: 30px;
-    font-size: 12px;
-  }
-  
-  #creator {
-    top: 5px;
-    font-size: 14px;
-  }
-  
-  #gameTitle {
-    top: 90px;
-    font-size: 20px;
-  }
-  
-  #specialAlert {
-    top: 130px;
-    font-size: 16px;
-  }
-  
-  #gameNote {
-    bottom: 20px;
-    font-size: 10px;
-    padding: 0 5px;
-  }
-  
-  #albumModal {
-    padding: 10px;
-  }
-  
-  #albumTitle {
-    font-size: 20px;
-    margin-bottom: 5px;
-  }
-  
-  #albumPromotion {
-    font-size: 14px;
-    margin-bottom: 10px;
-  }
-  
-  .albumPhoto {
-    width: 120px;
-    height: 105px;
-    margin: 5px;
-  }
-  
-  .albumPhoto img {
-    height: 75px;
-  }
-  
-  .photoInfo {
-    font-size: 10px;
-    padding: 3px;
-  }
-  
-  .albumStatItem {
-    font-size: 10px;
-    min-width: 100px;
-    padding: 3px 6px;
-  }
-  
-  #birdingRecordModal {
-    padding: 10px;
-  }
-  
-  #birdingRecordModal > div {
-    width: 95%;
-    padding: 15px;
-    margin-top: 20px;
-  }
-  
-  #birdingRecordTitle {
-    font-size: 22px;
-    margin-bottom: 15px;
-  }
-  
-  .birdRecordText {
-    padding: 10px;
-    margin-bottom: 8px;
-  }
-  
-  .birdRecordText .birdName {
-    font-size: 14px;
-  }
-  
-  .birdRecordText .birdStats {
-    font-size: 12px;
-  }
-  
-  .recordSummaryText {
-    padding: 8px;
-    margin-bottom: 10px;
-  }
-  
-  .recordSummaryText .summaryItem {
-    margin-right: 10px;
-    font-size: 12px;
-  }
-  
-  .rareBirdText {
-    padding: 6px 10px;
-    font-size: 12px;
-  }
-  
-  #allBirdsAlert {
-    padding: 20px 25px;
-    font-size: 18px;
-    max-width: 90%;
-  }
-  
-  #allBirdsAlert button {
-    padding: 8px 20px;
-    font-size: 14px;
-  }
-  
+    #photoPreview {
+        top: 10px;
+        left: 10px;
+        width: 90px;
+        height: 70px;
+    }
+    
+    #photoPreview .noPhoto {
+        font-size: 10px;
+        padding: 3px;
+    }
+    
+    #birdingToggleContainer {
+        top: 10px;
+        right: 10px;
+    }
+    
+    #birdingModeToggle {
+        padding: 5px 10px;
+        font-size: 12px;
+        min-width: 100px;
+    }
+    
+    #birdingStatusIndicator {
+        font-size: 10px;
+        padding: 3px 8px;
+        min-width: 100px;
+    }
+    
+    #birdingRecordIcon {
+        width: 100px;
+        height: 18px;
+        font-size: 9px;
+        border-width: 1px;
+        border-radius: 6px;
+        margin-top: 3px;
+    }
+    
+    #birdingRecordIcon::before {
+        height: 2px;
+    }
+    
+    #birdingRecordIcon .iconNumber {
+        font-size: 10px;
+        margin-right: 3px;
+    }
+    
+    #birdingRecordIcon .iconTime, #birdingRecordIcon .iconBirdCount {
+        font-size: 8px;
+        margin-right: 3px;
+    }
+    
+    #textStats {
+        top: 85px;
+        left: 10px;
+        padding: 5px 10px;
+        font-size: 11px;
+        max-width: 60%;
+        white-space: normal;
+        max-height: 70px;
+        overflow-y: auto;
+    }
+    
+    #textStats span {
+        margin: 0 5px;
+    }
+    
+    #lensToggleContainer {
+        bottom: 170px;
+        left: 10px;
+        padding: 3px;
+        gap: 3px;
+        border-radius: 15px;
+        border-width: 1px;
+        min-width: auto;
+        max-width: 160px;
+    }
+    
+    .lensToggleButton {
+        padding: 2px 6px;
+        font-size: 9px;
+        border-radius: 8px;
+        border-width: 0.5px;
+        min-height: 24px;
+    }
+    
+    #lensIndicator {
+        bottom: 105px;
+        left: 15px;
+        font-size: 9px;
+        padding: 2px 4px;
+    }
+    
+    #modeToggleContainer {
+        bottom: 170px;
+        right: 10px;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 3px;
+        max-width: 45%;
+    }
+    
+    .modeToggleButton {
+        padding: 2px 6px;
+        font-size: 9px;
+        border-radius: 8px;
+        border-width: 1px;
+        min-height: 24px;
+        flex-shrink: 1;
+        min-width: 50px;
+        text-align: center;
+        line-height: 1.2;
+    }
+    
+    #birdingModeToggle {
+        padding: 2px 6px;
+        font-size: 9px;
+        min-width: 50px;
+        border-width: 1px;
+        border-radius: 8px;
+    }
+    
+    #birdingStatusIndicator {
+        font-size: 8px;
+        padding: 1px 4px;
+        min-width: 50px;
+        border-radius: 5px;
+        border-width: 0.5px;
+    }
+    
+    #birdingRecordIconsContainer {
+        top: 85px;
+        left: 10px;
+        max-height: 150px;
+    }
+    
+    .birdingRecordIcon {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .birdingRecordIcon .iconNumber {
+        font-size: 16px;
+    }
+    
+    .birdingRecordIcon .iconTime {
+        font-size: 10px;
+    }
+    
+    .birdingRecordIcon .iconBirdCount {
+        font-size: 9px;
+    }
+    
+    #timeIndicator {
+        top: 30px;
+        font-size: 12px;
+    }
+    
+    #creator {
+        top: 5px;
+        font-size: 14px;
+    }
+    
+    #gameTitle {
+        top: 90px;
+        font-size: 20px;
+    }
+    
+    #specialAlert {
+        top: 130px;
+        font-size: 16px;
+    }
+    
+    #gameNote {
+        bottom: 20px;
+        font-size: 10px;
+        padding: 0 5px;
+    }
+    
+    #albumModal {
+        padding: 10px;
+    }
+    
+    #albumTitle {
+        font-size: 20px;
+        margin-bottom: 5px;
+    }
+    
+    #albumPromotion {
+        font-size: 14px;
+        margin-bottom: 10px;
+    }
+    
+    .albumPhoto {
+        width: 120px;
+        height: 105px;
+        margin: 5px;
+    }
+    
+    .albumPhoto img {
+        height: 75px;
+    }
+    
+    .photoInfo {
+        font-size: 10px;
+        padding: 3px;
+    }
+    
+    .albumStatItem {
+        font-size: 10px;
+        min-width: 100px;
+        padding: 3px 6px;
+    }
+    
+    #birdingRecordModal {
+        padding: 10px;
+    }
+    
+    #birdingRecordModal > div {
+        width: 95%;
+        padding: 15px;
+        margin-top: 20px;
+    }
+    
+    #birdingRecordTitle {
+        font-size: 22px;
+        margin-bottom: 15px;
+    }
+    
+    .birdRecordText {
+        padding: 10px;
+        margin-bottom: 8px;
+    }
+    
+    .birdRecordText .birdName {
+        font-size: 14px;
+    }
+    
+    .birdRecordText .birdStats {
+        font-size: 12px;
+    }
+    
+    .recordSummaryText {
+        padding: 8px;
+        margin-bottom: 10px;
+    }
+    
+    .recordSummaryText .summaryItem {
+        margin-right: 10px;
+        font-size: 12px;
+    }
+    
+    .rareBirdText {
+        padding: 6px 10px;
+        font-size: 12px;
+    }
+    
+    #allBirdsAlert {
+        padding: 20px 25px;
+        font-size: 18px;
+        max-width: 90%;
+    }
+    
+    #allBirdsAlert button {
+        padding: 8px 20px;
+        font-size: 14px;
+    }
+    
   #gyroToggleContainer {
-    left: 5px;
-    top: 50%;
-    transform: translateY(-50%);
+    left: auto !important;
+    right: 10px !important;
+    top: 100px !important; 
+    transform: none !important;
+    flex-direction: column !important;
+    align-items: flex-end !important;
+    z-index: 71 !important;
   }
-  
-  #gyroSensitivityContainer {
-    width: 60px;
-    padding: 2px 4px;
-    height: 28px;
-    border-width: 0.5px;
-    border-radius: 5px;
-  }
-  
-  #gyroSensitivityLabel {
-    font-size: 8px;
-    margin-bottom: 1px;
-  }
-  
-  #gyroSensitivitySlider {
-    height: 3px;
-  }
-  
-  #gyroSensitivitySlider::-webkit-slider-thumb {
-    width: 8px;
-    height: 8px;
-  }
-  
-  #gyroSensitivityValue {
-    font-size: 8px;
-    margin-top: 0;
-  }
-  
-  #gyroModeToggle {
-    padding: 2px 4px;
-    font-size: 9px;
-    min-width: 40px;
-    max-width: 60px;
-    border-width: 1px;
-    border-radius: 10px;
-  }
-  
-  #gyroStatusIndicator {
-    font-size: 8px;
-    padding: 1px 3px;
-    min-width: 40px;
-    max-width: 60px;
-    border-width: 0.5px;
-    border-radius: 5px;
-  }
-  
-  #gyroCalibrateButton {
-    padding: 1px 3px;
-    font-size: 8px;
-    min-width: 40px;
-    max-width: 60px;
-    border-width: 1px;
-    border-radius: 10px;
-  }
-  
-  #cameraButton {
-    right: auto;
-    top: auto;
-    bottom: 70px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80px;
-    height: 80px;
-    background-color: rgba(255, 255, 255, 0.9);
-    border-radius: 50%;
-    border: 4px solid #FFD700;
-    cursor: pointer;
-    z-index: 80;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  }
-  
-  #cameraButton:hover {
-    background-color: rgba(255, 255, 255, 1);
-    transform: translateX(-50%) scale(1.05);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-  }
-  
-  #cameraButton:active {
-    background-color: rgba(230, 230, 230, 1);
-    transform: translateX(-50%) scale(0.95);
-  }
-  
-  #cameraButton::after {
-    content: '';
-    width: 45px;
-    height: 45px;
-    background-color: #FFD700;
-    border-radius: 50%;
-    border: 3px solid #333;
-  }
-  
-  /* 竖屏适配 */
-  #screenshotButton {
-      top: 10px;
-      right: 70px;
-      padding: 5px 10px;
-      font-size: 12px;
-      border-width: 1px;
-      border-radius: 15px;
+    
+    #gyroSensitivityContainer {
+        width: 100px !important;
+        height: 35px !important;
+        margin-bottom: 5px !important;
     }
-  
-  .screenshotPreviewButton {
-      padding: 8px 20px;
-      font-size: 14px;
-      min-width: 100px;
+    
+    #gyroSensitivityLabel {
+        font-size: 8px;
+        margin-bottom: 1px;
     }
-  }
+    
+    #gyroSensitivitySlider {
+        height: 3px;
+    }
+    
+    #gyroSensitivitySlider::-webkit-slider-thumb {
+        width: 8px;
+        height: 8px;
+    }
+    
+    #gyroSensitivityValue {
+        font-size: 8px;
+        margin-top: 0;
+    }
+    
+    #gyroModeToggle {
+        padding: 2px 4px;
+        font-size: 9px;
+        min-width: 100px !important;
+        max-width: 100px !important;
+        border-width: 1px;
+        border-radius: 10px;
+    }
+    
+    #gyroStatusIndicator {
+        font-size: 8px;
+        padding: 1px 3px;
+        min-width: 100px !important;
+        max-width: 100px !important;
+        border-width: 0.5px;
+        border-radius: 5px;
+    }
+    
+    #gyroCalibrateButton {
+        padding: 1px 3px;
+        font-size: 8px;
+        min-width: 100px !important;
+        max-width: 100px !important;
+        border-width: 1px;
+        border-radius: 10px;
+    }
+    
+    #cameraButton {
+        right: auto;
+        top: auto;
+        bottom: 70px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 80px;
+        height: 80px;
+        background-color: rgba(255, 255, 255, 0.9);
+        border-radius: 50%;
+        border: 4px solid #FFD700;
+        cursor: pointer;
+        z-index: 80;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+    
+    #cameraButton:hover {
+        background-color: rgba(255, 255, 255, 1);
+        transform: translateX(-50%) scale(1.05);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+    }
+    
+    #cameraButton:active {
+        background-color: rgba(230, 230, 230, 1);
+        transform: translateX(-50%) scale(0.95);
+    }
+    
+    #cameraButton::after {
+        content: '';
+        width: 45px;
+        height: 45px;
+        background-color: #FFD700;
+        border-radius: 50%;
+        border: 3px solid #333;
+    }
+    
+    #screenshotButton {
+        top: 10px;
+        right: 70px;
+        padding: 5px 10px;
+        font-size: 12px;
+        border-width: 1px;
+        border-radius: 15px;
+    }
+    
+    .screenshotPreviewButton {
+        padding: 8px 20px;
+        font-size: 14px;
+        min-width: 100px;
+    }
+}
 
 @media (orientation: portrait) and (max-width: 400px) {
-  #photoPreview {
-    width: 70px;
-    height: 50px;
-  }
-  
-  #textStats {
-    font-size: 10px;
-    padding: 4px 8px;
-    top: 65px;
-  }
-  
-  #birdingModeToggle, .lensToggleButton, .modeToggleButton {
-    padding: 4px 8px;
-    font-size: 11px;
-    min-width: 80px;
-  }
-  
-  #birdingStatusIndicator {
-    font-size: 9px;
-    padding: 2px 6px;
-    min-width: 80px;
-  }
-  
-  #lensToggleContainer {
-    bottom: 60px;
-    gap: 2px;
-    padding: 2px;
-    border-radius: 12px;
-  }
-  
-  .lensToggleButton {
-    padding: 1px 4px;
-    font-size: 8px;
-    border-radius: 6px;
-    min-height: 20px;
-  }
-  
-  #lensIndicator {
-    bottom: 95px;
-    font-size: 8px;
-    padding: 1px 3px;
-  }
-  
-  #modeToggleContainer {
-    bottom: 60px;
-    gap: 2px;
-  }
-  
-  .modeToggleButton {
-    padding: 1px 4px;
-    font-size: 8px;
-    border-radius: 6px;
-    min-width: 40px;
-    min-height: 20px;
-  }
-  
-  #birdingModeToggle {
-    padding: 1px 4px;
-    font-size: 8px;
-    min-width: 40px;
-    border-radius: 6px;
-  }
-  
-  #birdingStatusIndicator {
-    font-size: 7px;
-    padding: 1px 2px;
-    min-width: 40px;
-    border-radius: 4px;
-  }
-  
-  .birdingRecordIcon {
-    width: 40px;
-    height: 40px;
-  }
-  
-  .birdingRecordIcon .iconNumber {
-    font-size: 14px;
-  }
-  
-  .birdingRecordIcon .iconTime, .birdingRecordIcon .iconBirdCount {
-    font-size: 9px;
-  }
-  
-  #gyroToggleContainer {
-    left: 3px;
-  }
-  
-  #gyroSensitivityContainer {
-    width: 50px;
-    padding: 1px 2px;
-    height: 24px;
-  }
-  
-  #gyroSensitivityLabel {
-    font-size: 7px;
-  }
-  
-  #gyroModeToggle {
-    padding: 1px 3px;
-    font-size: 8px;
-    min-width: 35px;
-    max-width: 50px;
-  }
-  
-  #gyroStatusIndicator {
-    font-size: 7px;
-    padding: 0 2px;
-    min-width: 35px;
-    max-width: 50px;
-  }
-  
-  #gyroCalibrateButton {
-    padding: 0 2px;
-    font-size: 7px;
-    min-width: 35px;
-    max-width: 50px;
-  }
-  
-  #cameraButton {
-    right: auto;
-    top: auto;
-    bottom: 60px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 70px;
-    height: 70px;
-  }
-  
-  #cameraButton::after {
-    width: 40px;
-    height: 40px;
-  }
-  
-  #screenshotButton {
-      right: 70px;
-      padding: 4px 8px;
-      font-size: 10px;
+    #photoPreview {
+        width: 70px;
+        height: 50px;
     }
-  }
+    
+    #textStats {
+        font-size: 10px;
+        padding: 4px 8px;
+        top: 65px;
+    }
+    
+    #birdingModeToggle, .lensToggleButton, .modeToggleButton {
+        padding: 4px 8px;
+        font-size: 11px;
+        min-width: 80px;
+    }
+    
+    #birdingStatusIndicator {
+        font-size: 9px;
+        padding: 2px 6px;
+        min-width: 80px;
+    }
+    
+    #birdingRecordIcon {
+        width: 80px;
+        height: 16px;
+        font-size: 8px;
+        border-radius: 4px;
+        margin-top: 2px;
+    }
+    
+    #birdingRecordIcon .iconNumber {
+        font-size: 9px;
+        margin-right: 2px;
+    }
+    
+    #birdingRecordIcon .iconTime, #birdingRecordIcon .iconBirdCount {
+        font-size: 7px;
+        margin-right: 2px;
+    }
+    
+    #lensToggleContainer {
+        bottom: 60px;
+        gap: 2px;
+        padding: 2px;
+        border-radius: 12px;
+    }
+    
+    .lensToggleButton {
+        padding: 1px 4px;
+        font-size: 8px;
+        border-radius: 6px;
+        min-height: 20px;
+    }
+    
+    #lensIndicator {
+        bottom: 95px;
+        font-size: 8px;
+        padding: 1px 3px;
+    }
+    
+    #modeToggleContainer {
+        bottom: 60px;
+        gap: 2px;
+    }
+    
+    .modeToggleButton {
+        padding: 1px 4px;
+        font-size: 8px;
+        border-radius: 6px;
+        min-width: 40px;
+        min-height: 20px;
+    }
+    
+    #birdingModeToggle {
+        padding: 1px 4px;
+        font-size: 8px;
+        min-width: 40px;
+        border-radius: 6px;
+    }
+    
+    #birdingStatusIndicator {
+        font-size: 7px;
+        padding: 1px 2px;
+        min-width: 40px;
+        border-radius: 4px;
+    }
+    
+    .birdingRecordIcon {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .birdingRecordIcon .iconNumber {
+        font-size: 14px;
+    }
+    
+    .birdingRecordIcon .iconTime, .birdingRecordIcon .iconBirdCount {
+        font-size: 9px;
+    }
+    
+    /* 小屏幕竖屏下陀螺仪容器适配 */
+    #gyroToggleContainer {
+        top: 70px !important;
+        right: 5px !important;
+    }
+    
+    #gyroSensitivityContainer {
+        width: 80px !important;
+        height: 30px !important;
+    }
+    
+    #gyroModeToggle, #gyroCalibrateButton {
+        min-width: 80px !important;
+        max-width: 80px !important;
+        font-size: 10px !important;
+        padding: 3px 6px !important;
+    }
+    
+    #gyroStatusIndicator {
+        min-width: 80px !important;
+        max-width: 80px !important;
+        font-size: 10px !important;
+        padding: 2px 4px !important;
+    }
+    
+    #cameraButton {
+        right: auto;
+        top: auto;
+        bottom: 60px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 70px;
+        height: 70px;
+    }
+    
+    #cameraButton::after {
+        width: 40px;
+        height: 40px;
+    }
+    
+    #screenshotButton {
+        right: 70px;
+        padding: 4px 8px;
+        font-size: 10px;
+    }
+}
 
 @media (orientation: landscape) and (max-height: 500px) {
-  #photoPreview {
-    top: 5px;
-    left: 5px;
-    width: 80px;
-    height: 60px;
-  }
-  
-  #birdingToggleContainer {
-    top: 5px;
-    right: 5px;
-  }
-  
-  #birdingModeToggle {
-    padding: 4px 8px;
-    font-size: 12px;
-    min-width: 100px;
-  }
-  
-  #birdingStatusIndicator {
-    font-size: 10px;
-    padding: 2px 6px;
-    min-width: 100px;
-  }
-  
-  #textStats {
-    top: 70px;
-    left: 5px;
-    font-size: 10px;
-    padding: 4px 8px;
-  }
-  
-  #lensToggleContainer {
-    bottom: 40px;
-    left: 5px;
-  }
-  
-  #modeToggleContainer {
-    bottom: 40px;
-    right: 5px;
-  }
-  
-  #lensIndicator {
-    bottom: 65px;
-  }
-  
-  #birdingRecordIconsContainer {
-    top: 50px;
-    max-height: 150px;
-  }
-  
-  .birdingRecordIcon {
-    width: 40px;
-    height: 40px;
-  }
-  
-  .birdingRecordIcon .iconNumber {
-    font-size: 14px;
-  }
-  
-  .birdingRecordIcon .iconTime {
-    font-size: 9px;
-  }
-  
-  .birdingRecordIcon .iconBirdCount {
-    font-size: 8px;
-  }
-  
-  #gyroToggleContainer {
-    left: 5px;
-    top: 50%;
-  }
-  
-  #gyroSensitivityContainer {
-    width: 70px;
-    padding: 3px 6px;
-    height: 32px;
-  }
-  
-  #gyroModeToggle {
-    padding: 4px 8px;
-    font-size: 11px;
-    min-width: 55px;
-    max-width: 70px;
-  }
-  
-  #gyroStatusIndicator {
-    font-size: 9px;
-    padding: 2px 6px;
-    min-width: 55px;
-    max-width: 70px;
-  }
-  
-  #gyroCalibrateButton {
-    padding: 3px 6px;
-    font-size: 9px;
-    min-width: 55px;
-    max-width: 70px;
-  }
-  
-  #cameraButton {
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 60px;
-    height: 60px;
-  }
-  
-  #cameraButton::after {
-    width: 35px;
-    height: 35px;
-  }
+    #photoPreview {
+        top: 5px;
+        left: 5px;
+        width: 80px;
+        height: 60px;
+    }
+    
+    #birdingToggleContainer {
+        top: 5px;
+        right: 5px;
+    }
+    
+    #birdingModeToggle {
+        padding: 4px 8px;
+        font-size: 12px;
+        min-width: 100px;
+    }
+    
+    #birdingStatusIndicator {
+        font-size: 10px;
+        padding: 2px 6px;
+        min-width: 100px;
+    }
+    
+    #birdingRecordIcon {
+        width: 100px;
+        height: 18px;
+        font-size: 9px;
+        border-width: 1px;
+        border-radius: 6px;
+        margin-top: 3px;
+    }
+    
+    #birdingRecordIcon::before {
+        height: 2px;
+    }
+    
+    #textStats {
+        top: 70px;
+        left: 5px;
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+    
+    #lensToggleContainer {
+        bottom: 40px;
+        left: 5px;
+    }
+    
+    #modeToggleContainer {
+        bottom: 40px;
+        right: 5px;
+    }
+    
+    #lensIndicator {
+        bottom: 65px;
+    }
+    
+    #birdingRecordIconsContainer {
+        top: 50px;
+        max-height: 150px;
+    }
+    
+    .birdingRecordIcon {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .birdingRecordIcon .iconNumber {
+        font-size: 14px;
+    }
+    
+    .birdingRecordIcon .iconTime {
+        font-size: 9px;
+    }
+    
+    .birdingRecordIcon .iconBirdCount {
+        font-size: 8px;
+    }
+    
+    #gyroToggleContainer {
+        left: 5px;
+        top: 50%;
+    }
+    
+    #gyroSensitivityContainer {
+        width: 70px;
+        padding: 3px 6px;
+        height: 32px;
+    }
+    
+    #gyroModeToggle {
+        padding: 4px 8px;
+        font-size: 11px;
+        min-width: 55px;
+        max-width: 70px;
+    }
+    
+    #gyroStatusIndicator {
+        font-size: 9px;
+        padding: 2px 6px;
+        min-width: 55px;
+        max-width: 70px;
+    }
+    
+    #gyroCalibrateButton {
+        padding: 3px 6px;
+        font-size: 9px;
+        min-width: 55px;
+        max-width: 70px;
+    }
+    
+    #cameraButton {
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 60px;
+        height: 60px;
+    }
+    
+    #cameraButton::after {
+        width: 35px;
+        height: 35px;
+    }
 }
 </style>
 </head>
@@ -1533,8 +1640,10 @@ body {
   <div id="birdingToggleContainer">
     <button id="birdingModeToggle">观鸟模式</button>
     <div id="birdingStatusIndicator">未开始</div>
+    <!-- 添加观鸟记录图标按钮 -->
+    <div id="birdingRecordIcon" style="display: none;"></div>
   </div>
-  
+  <div id="birdingRecordIconsContainer" style="position: absolute; top: 100px; right: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 70; max-height: 200px; overflow-y: auto; display: none;"></div>
   <div id="textStats">
     已出现鸟类: <span id="appearedCount">0</span> | 已拍摄鸟类: <span id="capturedCount">0</span>
   </div>
@@ -2440,32 +2549,40 @@ let screenshotCanvas, screenshotCtx;
 let currentScreenshotDataURL = null;
 
 function initGyro() {
-  const gyroModeButton = document.getElementById('gyroModeToggle');
-  const gyroStatusIndicator = document.getElementById('gyroStatusIndicator');
-  const sensitivitySlider = document.getElementById('gyroSensitivitySlider');
-  const sensitivityValue = document.getElementById('gyroSensitivityValue');
-  const sensitivityContainer = document.getElementById('gyroSensitivityContainer');
-  const calibrateButton = document.getElementById('gyroCalibrateButton');
-  
-  gyroModeButton.addEventListener('click', toggleGyroMode);
-  calibrateButton.addEventListener('click', handleGyroCalibrate);
-  
-  sensitivitySlider.addEventListener('input', function() {
-    gyroSensitivity = parseInt(this.value);
-    sensitivityValue.textContent = gyroSensitivity;
-  });
-  
-  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-    gyroStatusIndicator.textContent = "需权限";
-  } else if ('ondeviceorientation' in window) {
-    gyroStatusIndicator.textContent = "可用";
-  } else {
-    gyroStatusIndicator.textContent = "不可用";
-    gyroModeButton.disabled = true;
+    const gyroModeButton = document.getElementById('gyroModeToggle');
+    const gyroStatusIndicator = document.getElementById('gyroStatusIndicator');
+    const sensitivitySlider = document.getElementById('gyroSensitivitySlider');
+    const sensitivityValue = document.getElementById('gyroSensitivityValue');
+    const sensitivityContainer = document.getElementById('gyroSensitivityContainer');
+    const calibrateButton = document.getElementById('gyroCalibrateButton');
+    const cameraButton = document.getElementById('cameraButton'); // 获取快门按钮
+    
+    // 设置默认状态：只显示陀螺仪按钮，其他元素隐藏
+    gyroStatusIndicator.style.display = 'none';
+    sensitivityContainer.style.display = 'none';
+    calibrateButton.style.display = 'none';
+    cameraButton.style.display = 'none'; // 隐藏快门按钮
+    
+    // 设置陀螺仪按钮为半透明
     gyroModeButton.style.opacity = '0.5';
-    calibrateButton.disabled = true;
-    calibrateButton.style.opacity = '0.5';
-  }
+    
+    gyroModeButton.addEventListener('click', toggleGyroMode);
+    calibrateButton.addEventListener('click', handleGyroCalibrate);
+    sensitivitySlider.addEventListener('input', function() {
+        gyroSensitivity = parseInt(this.value);
+        sensitivityValue.textContent = gyroSensitivity;
+    });
+    
+    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+        // iOS设备需要权限
+    } else if ('ondeviceorientation' in window) {
+        // 设备支持陀螺仪
+    } else {
+        // 设备不支持陀螺仪
+        gyroModeButton.disabled = true;
+        gyroModeButton.style.opacity = '0.3';
+        gyroModeButton.title = "设备不支持陀螺仪";
+    }
 }
 
 function handleGyroCalibrate() {
@@ -2499,63 +2616,74 @@ function toggleGyroMode() {
 }
 
 function startGyroMode() {
-  gyroModeActive = true;
-  isGyroCalibrated = false;
-  
-  const gyroModeButton = document.getElementById('gyroModeToggle');
-  const gyroStatusIndicator = document.getElementById('gyroStatusIndicator');
-  const sensitivityContainer = document.getElementById('gyroSensitivityContainer');
-      // 在陀螺仪模式下，应该确保金色滤镜是透明的
+    gyroModeActive = true;
+    isGyroCalibrated = false;
+    const gyroModeButton = document.getElementById('gyroModeToggle');
+    const gyroStatusIndicator = document.getElementById('gyroStatusIndicator');
+    const sensitivityContainer = document.getElementById('gyroSensitivityContainer');
+    const calibrateButton = document.getElementById('gyroCalibrateButton');
+    const cameraButton = document.getElementById('cameraButton'); // 获取快门按钮
     const goldenFilter = document.getElementById('goldenFilter');
+    
     goldenFilter.style.backgroundColor = 'rgba(255, 215, 0, 0)';
-  gyroModeButton.classList.add('active');
-  gyroModeButton.textContent = "关闭陀螺仪";
-  gyroStatusIndicator.textContent = "校准中...";
-  sensitivityContainer.classList.add('active');
-  
-  gyroX = GAME_WIDTH / 2;
-  gyroY = GAME_HEIGHT / 2;
-  mouseX = gyroX;
-  mouseY = gyroY;
-  
-  showSpecialAlert("陀螺仪模式已启动！请保持设备水平以进行校准。");
-  
-  setTimeout(() => {
-    if (gyroModeActive && !isGyroCalibrated) {
-      calibrateGyro();
-    }
-  }, 2000);
-  
-  window.addEventListener('deviceorientation', handleDeviceOrientation);
+    gyroModeButton.classList.add('active');
+    gyroModeButton.textContent = "关闭陀螺仪";
+    gyroModeButton.style.opacity = '1'; // 恢复正常不透明度
+    
+    // 显示其他陀螺仪相关元素
+    gyroStatusIndicator.style.display = 'block';
+    sensitivityContainer.style.display = 'block';
+    calibrateButton.style.display = 'block';
+    cameraButton.style.display = 'flex'; // 显示快门按钮
+    
+    gyroStatusIndicator.textContent = "校准中...";
+    gyroX = GAME_WIDTH / 2;
+    gyroY = GAME_HEIGHT / 2;
+    mouseX = gyroX;
+    mouseY = gyroY;
+    
+    showSpecialAlert("陀螺仪模式已启动！请保持设备水平以进行校准。");
+    
+    setTimeout(() => {
+        if (gyroModeActive && !isGyroCalibrated) {
+            calibrateGyro();
+        }
+    }, 2000);
+    
+    window.addEventListener('deviceorientation', handleDeviceOrientation);
 }
 
 function stopGyroMode() {
-  gyroModeActive = false;
-  
-  const gyroModeButton = document.getElementById('gyroModeToggle');
-  const gyroStatusIndicator = document.getElementById('gyroStatusIndicator');
-  const sensitivityContainer = document.getElementById('gyroSensitivityContainer');
-  
-  gyroModeButton.classList.remove('active');
-  gyroModeButton.textContent = "陀螺仪";
-  gyroStatusIndicator.textContent = "关闭";
-  sensitivityContainer.classList.remove('active');
-  
-  window.removeEventListener('deviceorientation', handleDeviceOrientation);
-  
-  showSpecialAlert("陀螺仪模式已关闭");
+    gyroModeActive = false;
+    const gyroModeButton = document.getElementById('gyroModeToggle');
+    const gyroStatusIndicator = document.getElementById('gyroStatusIndicator');
+    const sensitivityContainer = document.getElementById('gyroSensitivityContainer');
+    const calibrateButton = document.getElementById('gyroCalibrateButton');
+    const cameraButton = document.getElementById('cameraButton'); // 获取快门按钮
+    
+    gyroModeButton.classList.remove('active');
+    gyroModeButton.textContent = "陀螺仪";
+    gyroModeButton.style.opacity = '0.5'; // 恢复半透明
+    
+    // 隐藏其他陀螺仪相关元素
+    gyroStatusIndicator.style.display = 'none';
+    sensitivityContainer.style.display = 'none';
+    calibrateButton.style.display = 'none';
+    cameraButton.style.display = 'none'; // 隐藏快门按钮
+    
+    gyroStatusIndicator.textContent = "关闭";
+    
+    window.removeEventListener('deviceorientation', handleDeviceOrientation);
+    showSpecialAlert("陀螺仪模式已关闭");
 }
 
 function calibrateGyro() {
-  if (!gyroModeActive) return;
-  
-  requestCalibration = true;
-  isGyroCalibrated = true;
-  
-  const gyroStatusIndicator = document.getElementById('gyroStatusIndicator');
-  gyroStatusIndicator.textContent = "已校准";
-  
-  showSpecialAlert("陀螺仪校准完成！");
+    if (!gyroModeActive) return;
+    requestCalibration = true;
+    isGyroCalibrated = true;
+    const gyroStatusIndicator = document.getElementById('gyroStatusIndicator');
+    gyroStatusIndicator.textContent = "已校准";
+    showSpecialAlert("陀螺仪校准完成！");
 }
 
 function handleDeviceOrientation(event) {
@@ -2715,75 +2843,112 @@ function loadCreatorInfo() {
 
 
 function init() {
-  canvas = document.getElementById('gameCanvas');
-  ctx = canvas.getContext('2d');
-  poopCanvas = document.getElementById('poopCanvas');
-  poopCtx = poopCanvas.getContext('2d');
-  
-    // 加载创作者信息
+    canvas = document.getElementById('gameCanvas');
+    ctx = canvas.getContext('2d');
+    poopCanvas = document.getElementById('poopCanvas');
+    poopCtx = poopCanvas.getContext('2d');
+    
     loadCreatorInfo();
-
-  // 初始化截图canvas
-  screenshotCanvas = document.getElementById('screenshotCanvas');
-  screenshotCtx = screenshotCanvas.getContext('2d');
-  
-  resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
-
-  initStars();
-  initTrees();
-  initReeds();
-  initFixedLeaves();
-  initTextStats();
-  initFruits();
-  initWallAndHole();
-  initModeToggleButtons();
-  initLensToggleButtons();
-  initGyro();
-  
-  const birdingModeButton = document.getElementById('birdingModeToggle');
-  birdingModeButton.addEventListener('click', toggleBirdingMode);
-  
-  lastRareBirdTime = gameTime;
-  
-  canvas.addEventListener('mousemove', handleMouseMove);
-  canvas.addEventListener('mousedown', handleMouseClick);
-  document.addEventListener('keydown', handleKeyDown);
-  
-  lastFrameTime = performance.now();
-  
-  const goldenFilter = document.getElementById('goldenFilter');
-if (!gyroModeActive) {
+    
+    // 确保截图画布正确初始化
+    screenshotCanvas = document.getElementById('screenshotCanvas');
+    screenshotCtx = screenshotCanvas.getContext('2d');
+    
+    // 设置截图画布为隐藏但可用状态
+    screenshotCanvas.style.position = 'absolute';
+    screenshotCanvas.style.left = '-9999px';
+    screenshotCanvas.style.top = '-9999px';
+    screenshotCanvas.style.width = '300px';
+    screenshotCanvas.style.height = '450px';
+        
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    initStars();
+    initTrees();
+    initReeds();
+    initFixedLeaves();
+    initTextStats();
+    initFruits();
+    initWallAndHole();
+    initModeToggleButtons();
+    initLensToggleButtons();
+    initGyro();
+    
+    const birdingModeButton = document.getElementById('birdingModeToggle');
+    birdingModeButton.addEventListener('click', toggleBirdingMode);
+    
+    lastRareBirdTime = gameTime;
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mousedown', handleMouseClick);
+    document.addEventListener('keydown', handleKeyDown);
+    lastFrameTime = performance.now();
+    
+    const goldenFilter = document.getElementById('goldenFilter');
+    if (!gyroModeActive) {
         goldenFilter.style.backgroundColor = 'rgba(255, 215, 0, 0.1)';
     }
-  
-  updateTimeIndicator();
-  updateLensIndicator();
-  initBirdingRecords();
-  updateBirdingModeButton();
-  
-  requestAnimationFrame(gameLoop);
+    
+    updateTimeIndicator();
+    updateLensIndicator();
+    initBirdingRecords();
+    updateBirdingModeButton();
+// 初始化观鸟记录图标显示
+    updateBirdingRecordIcons();
+
+    requestAnimationFrame(gameLoop);
+
+// 确保截图按钮在页面加载时就绑定事件
+    const screenshotButton = document.getElementById('screenshotButton');
+    if (screenshotButton) {
+        // 移除可能存在的旧监听器，重新绑定
+        const newScreenshotButton = screenshotButton.cloneNode(true);
+        screenshotButton.parentNode.replaceChild(newScreenshotButton, screenshotButton);
+        
+        // 重新获取按钮引用
+        const updatedScreenshotButton = document.getElementById('screenshotButton');
+        updatedScreenshotButton.onclick = function(e) {
+            e.stopPropagation();
+            captureBirdingRecord();
+        };
+    }
+}
+
+function handleVisibilityChange() {
+    if (document.hidden) {
+        // 页面不可见时，可以适当降低游戏循环频率或暂停非必要更新
+        console.log('页面失去焦点');
+    } else {
+        // 页面重新可见时，重置 lastFrameTime 避免时间跳跃
+        lastFrameTime = performance.now();
+        console.log('页面重新获得焦点');
+    }
 }
 
 function gameLoop(timestamp) {
-  if (gamePaused) {
+    if (gamePaused) {
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+    
+    // 限制最大 deltaTime，避免失去焦点后时间差过大
+    let deltaTime = timestamp - lastFrameTime;
+    lastFrameTime = timestamp;
+    
+    // 限制最大 deltaTime 为 100ms（相当于 10fps）
+    if (deltaTime > 50) {
+        deltaTime = 50;
+    }
+    
+    updateDayNight(deltaTime);
+    updateBirds(deltaTime);
+    updateNightObjects(deltaTime);
+    generateBird();
+    
+    if (gyroModeActive) {
+        updateViewfinderFromGyro();
+    }
+    
     requestAnimationFrame(gameLoop);
-    return;
-  }
-  
-  const deltaTime = timestamp - lastFrameTime;
-  lastFrameTime = timestamp;
-  
-  updateDayNight(deltaTime);
-  updateBirds(deltaTime);
-  updateNightObjects(deltaTime);
-  generateBird();
-  
-  if (gyroModeActive) {
-    updateViewfinderFromGyro();
-  }
-  
-  requestAnimationFrame(gameLoop);
 }
 
 function initBirdingRecords() {
@@ -2871,234 +3036,259 @@ function countBirdsInView() {
   return birdCounts;
 }
 
-function createBirdingRecord() {
-  if (!birdingModeActive && birdingObservedSpecies.size === 0) {
-    return null;
-  }
-  
-  const capturedSpeciesCount = Object.keys(capturedBirds).filter(
-    birdName => capturedBirds[birdName] > 0 && 
-                !BIRD_TYPES[Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName)]?.isSpecial
-  ).length;
-  
-  let rarestBird = null;
-  let minProbability = Infinity;
-  
-  for (const birdName of birdingObservedSpecies) {
-    const birdKey = Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName);
-    if (birdKey && BIRD_TYPES[birdKey].probability > 0 && BIRD_TYPES[birdKey].probability < minProbability) {
-      minProbability = BIRD_TYPES[birdKey].probability;
-      rarestBird = birdName;
+// 更新观鸟记录图标显示
+function updateBirdingRecordIcons() {
+    const iconElement = document.getElementById('birdingRecordIcon');
+    if (!iconElement) return;
+    
+    // 如果有观鸟记录，显示图标
+    if (birdingRecords.length > 0) {
+        const latestRecord = birdingRecords[birdingRecords.length - 1];
+        
+        const totalSeconds = Math.floor(latestRecord.birdingModeDuration / 1000);
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        
+        // 设置图标内容
+        iconElement.innerHTML = `
+            <span class="iconNumber">#${latestRecord.id}</span>
+            <span class="iconTime">${minutes}:${seconds.toString().padStart(2, '0')}</span>
+            <span class="iconBirdCount">${latestRecord.totalObservedSpecies}种</span>
+        `;
+        
+        // 添加点击事件
+        iconElement.onclick = function() {
+            openBirdingRecord(birdingRecords.length - 1);
+        };
+        
+        // 显示图标
+        iconElement.style.display = 'flex';
+    } else {
+        // 没有记录时隐藏图标
+        iconElement.style.display = 'none';
     }
-  }
-  
-  const record = {
-    id: birdingRecords.length + 1,
-    time: gameTime,
-    observedSpecies: Array.from(birdingObservedSpecies),
-    totalObservedSpecies: birdingObservedSpecies.size,
-    capturedSpeciesCount: capturedSpeciesCount,
-    rarestBird: rarestBird,
-    birdingModeDuration: birdingModeActive ? (gameTime - birdingModeStartTime) : (birdingModeEndTime ? (birdingModeEndTime - birdingModeStartTime) : 0),
-    startedAtDaytime: isDaytimeAtStart,
-    endedAtDaytime: isDaytime
-  };
-  
-  birdingRecords.push(record);
-  if (birdingRecords.length > 20) {
-    birdingRecords.shift();
-  }
-  
-  return record;
+}
+
+function createBirdingRecord() {
+    if (!birdingModeActive && birdingObservedSpecies.size === 0) {
+        return null;
+    }
+    
+    const capturedSpeciesCount = Object.keys(capturedBirds).filter(
+        birdName => capturedBirds[birdName] > 0 && 
+        !BIRD_TYPES[Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName)]?.isSpecial
+    ).length;
+    
+    let rarestBird = null;
+    let minProbability = Infinity;
+    
+    for (const birdName of birdingObservedSpecies) {
+        const birdKey = Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName);
+        if (birdKey && BIRD_TYPES[birdKey].probability > 0 && BIRD_TYPES[birdKey].probability < minProbability) {
+            minProbability = BIRD_TYPES[birdKey].probability;
+            rarestBird = birdName;
+        }
+    }
+    
+    const record = {
+        id: birdingRecords.length + 1,
+        time: gameTime,
+        observedSpecies: Array.from(birdingObservedSpecies),
+        totalObservedSpecies: birdingObservedSpecies.size,
+        capturedSpeciesCount: capturedSpeciesCount,
+        rarestBird: rarestBird,
+        birdingModeDuration: birdingModeActive ? (gameTime - birdingModeStartTime) : (birdingModeEndTime ? (birdingModeEndTime - birdingModeStartTime) : 0),
+        startedAtDaytime: isDaytimeAtStart,
+        endedAtDaytime: isDaytime
+    };
+    
+    birdingRecords.push(record);
+    if (birdingRecords.length > 20) {
+        birdingRecords.shift();
+    }
+    
+    // 更新记录图标显示
+    updateBirdingRecordIcons();
+    
+    return record;
 }
 
 function openBirdingRecord(recordIndex) {
-  if (recordIndex < 0 || recordIndex >= birdingRecords.length) return;
-  
-  pauseGame();
-  
-  const record = birdingRecords[recordIndex];
-  currentBirdingRecord = record;
-  
-  const modal = document.getElementById('birdingRecordModal');
-  const content = document.getElementById('birdingRecordContent');
-  const screenshotButton = document.getElementById('screenshotButton');
-  
-  modal.style.display = 'block';
-  screenshotButton.style.display = 'block'; // 显示截图按钮
-  
-  const totalSeconds = Math.floor(record.birdingModeDuration / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  
-  let recordText = `第 ${record.id} 次观鸟记录\n`;
-  recordText += "=".repeat(50) + "\n\n";
-  recordText += `观鸟时长: ${minutes}分${seconds}秒\n`;
-  recordText += `时间跨度: ${record.startedAtDaytime ? "白天" : "黑夜"} → ${record.endedAtDaytime ? "白天" : "黑夜"}\n`;
-  recordText += `观察鸟种: ${record.totalObservedSpecies} 种\n`;
-  recordText += `拍摄鸟种: ${record.capturedSpeciesCount} 种\n`;
-  
-  if (record.rarestBird) {
-    recordText += `最稀有鸟种: ${record.rarestBird}\n`;
-  }
-  
-  recordText += "=".repeat(50) + "\n\n";
-  recordText += "观察到的鸟种:\n";
-  recordText += "-".repeat(50) + "\n\n";
-  
-  record.observedSpecies.sort().forEach((birdName, index) => {
-    const birdKey = Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName);
-    const isRare = birdKey && BIRD_TYPES[birdKey].probability < 0.02;
+    if (recordIndex < 0 || recordIndex >= birdingRecords.length) return;
     
-    if (birdName === record.rarestBird) {
-      recordText += `${index + 1}. ${birdName} ★\n`;
-    } else if (isRare) {
-      recordText += `${index + 1}. ${birdName} (稀有)\n`;
-    } else {
-      recordText += `${index + 1}. ${birdName}\n`;
-    }
-  });
-  
-  content.textContent = recordText;
-  
-  const style = document.createElement('style');
-  style.textContent = `
-    #birdingRecordContent {
-      font-size: 16px;
-      line-height: 1.6;
-      font-family: 'Microsoft YaHei', monospace;
-      white-space: pre-wrap;
-    }
-  `;
-  document.head.appendChild(style);
-  
-  content.innerHTML = '';
-  
-  const lines = recordText.split('\n');
-  lines.forEach((line, lineIndex) => {
-    const lineElement = document.createElement('div');
-    lineElement.style.marginBottom = '4px';
+    pauseGame();
     
-    if (record.rarestBird && line.includes(record.rarestBird)) {
-      const parts = line.split(record.rarestBird);
-      if (parts.length === 2) {
-        const goldSpan = document.createElement('span');
-        goldSpan.style.color = '#FFD700';
-        goldSpan.style.fontWeight = 'bold';
-        goldSpan.style.textShadow = '0 0 5px rgba(255, 215, 0, 0.5)';
-        goldSpan.textContent = record.rarestBird;
+    const modal = document.getElementById('birdingRecordModal');
+    const content = document.getElementById('birdingRecordContent');
+    const screenshotButton = document.getElementById('screenshotButton');
+    
+    // 确保模态框和按钮可见
+    modal.style.display = 'block';
+    modal.style.zIndex = '400'; // 确保层级足够高
+    
+    // 强制显示截图按钮并确保可点击
+    screenshotButton.style.display = 'block';
+    screenshotButton.style.pointerEvents = 'auto';
+    screenshotButton.style.opacity = '1';
+    screenshotButton.style.zIndex = '401';
+    
+    // 确保按钮在DOM层级中位于前面
+    screenshotButton.parentNode.appendChild(screenshotButton);
+    
+    const record = birdingRecords[recordIndex];
+    currentBirdingRecord = record;
+    
+    // 生成记录文本（这部分保持不变）
+    const totalSeconds = Math.floor(record.birdingModeDuration / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    
+    let recordText = `第 ${record.id} 次观鸟记录\n`;
+    recordText += "=".repeat(50) + "\n\n";
+    recordText += `观鸟时长: ${minutes}分${seconds}秒\n`;
+    recordText += `时间跨度: ${record.startedAtDaytime ? "白天" : "黑夜"} → ${record.endedAtDaytime ? "白天" : "黑夜"}\n`;
+    recordText += `观察鸟种: ${record.totalObservedSpecies} 种\n`;
+    recordText += `拍摄鸟种: ${record.capturedSpeciesCount} 种\n`;
+    
+    if (record.rarestBird) {
+        recordText += `最稀有鸟种: ${record.rarestBird}\n`;
+    }
+    
+    recordText += "=".repeat(50) + "\n\n";
+    recordText += "观察到的鸟种:\n";
+    recordText += "-".repeat(50) + "\n\n";
+    
+    record.observedSpecies.sort().forEach((birdName, index) => {
+        const birdKey = Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName);
+        const isRare = birdKey && BIRD_TYPES[birdKey].probability < 0.02;
         
-        lineElement.appendChild(document.createTextNode(parts[0]));
-        lineElement.appendChild(goldSpan);
-        lineElement.appendChild(document.createTextNode(parts[1]));
-      } else {
-        lineElement.textContent = line;
-      }
-    } else {
-      lineElement.textContent = line;
-    }
+        if (birdName === record.rarestBird) {
+            recordText += `${index + 1}. ${birdName} ★\n`;
+        } else if (isRare) {
+            recordText += `${index + 1}. ${birdName} (稀有)\n`;
+        } else {
+            recordText += `${index + 1}. ${birdName}\n`;
+        }
+    });
     
-    content.appendChild(lineElement);
-  });
+    content.textContent = recordText;
+    
+    // 添加事件监听器，确保按钮可以工作
+    screenshotButton.onclick = function(e) {
+        e.stopPropagation();
+        captureBirdingRecord();
+    };
+    
+    // 添加一个检查，确保按钮在点击后仍然可用
+    setTimeout(() => {
+        if (screenshotButton.style.display !== 'block') {
+            screenshotButton.style.display = 'block';
+        }
+    }, 100);
 }
 
 function closeBirdingRecord() {
-  resumeGame();
-  const modal = document.getElementById('birdingRecordModal');
-  const screenshotButton = document.getElementById('screenshotButton');
-  
-  modal.style.display = 'none';
-  screenshotButton.style.display = 'none'; // 隐藏截图按钮
-  currentBirdingRecord = null;
-  closeScreenshotPreview();
+    const modal = document.getElementById('birdingRecordModal');
+    const screenshotButton = document.getElementById('screenshotButton');
+    
+    modal.style.display = 'none';
+    screenshotButton.style.display = 'none';
+    currentBirdingRecord = null;
+    
+    // 关闭截图预览
+    closeScreenshotPreview();
+    
+    // 恢复游戏
+    resumeGame();
 }
 
 function toggleBirdingMode() {
-  if (gamePaused) return;
-  
-  if (!birdingModeActive) {
-    birdingModeActive = true;
-    birdingModeStartTime = gameTime;
-    isDaytimeAtStart = isDaytime;
+    if (gamePaused) return;
     
-    const dayModeButton = document.getElementById('dayModeToggle');
-    const normalModeButton = document.getElementById('normalModeToggle');
-    const nightModeButton = document.getElementById('nightModeToggle');
-    
-    dayModeButton.disabled = true;
-    normalModeButton.disabled = true;
-    nightModeButton.disabled = true;
-    dayModeButton.style.opacity = '0.5';
-    normalModeButton.style.opacity = '0.5';
-    nightModeButton.style.opacity = '0.5';
-    
-    birdingObservedSpecies = new Set();
-    birdingModeRecordedBirds = new Set();
-    
-    const initialBirds = getBirdsInView();
-    initialBirds.forEach(bird => {
-      if (bird.noStats) return;
-      const birdId = `${bird.name}_${bird.x}_${bird.y}_${bird.groupId || 'single'}`;
-      if (!birdingModeRecordedBirds.has(birdId)) {
-        birdingModeRecordedBirds.add(birdId);
-        birdingObservedSpecies.add(bird.name);
-      }
-    });
-    
-    birdingModeStartSnapshot = {
-      startTime: gameTime,
-      startedAtDaytime: isDaytime,
-      birdCounts: countBirdsInView(),
-      captured: {...capturedBirds},
-      birds: birds.map(bird => ({
-        name: bird.name,
-        type: bird.type,
-        x: bird.x,
-        y: bird.y,
-        groupId: bird.groupId
-      }))
-    };
-    
-    birdingModeBirdTracker = {};
-    lastBirdingRecordTime = gameTime;
-    
-    showSpecialAlert("观鸟模式已启动！记录已开始。");
-    updateBirdingModeButton();
-  } else {
-    birdingModeActive = false;
-    birdingModeEndTime = gameTime;
-    
-    const dayModeButton = document.getElementById('dayModeToggle');
-    const normalModeButton = document.getElementById('normalModeToggle');
-    const nightModeButton = document.getElementById('nightModeToggle');
-    
-    dayModeButton.disabled = false;
-    normalModeButton.disabled = false;
-    nightModeButton.disabled = false;
-    dayModeButton.style.opacity = '1';
-    normalModeButton.style.opacity = '1';
-    nightModeButton.style.opacity = '1';
-    
-    const record = createBirdingRecord();
-    updateBirdingModeButton();
-    
-    if (record) {
-      const elapsedMinutes = Math.floor(record.birdingModeDuration / 60000);
-      const elapsedSeconds = Math.floor((record.birdingModeDuration % 60000) / 1000);
-      showSpecialAlert(`观鸟模式结束！持续${elapsedMinutes}分${elapsedSeconds}秒，观察${record.totalObservedSpecies}种，拍摄${record.capturedSpeciesCount}种`);
-      
-      if (record.totalObservedSpecies > 0) {
-        pauseGame();
-        openBirdingRecord(record.id - 1);
-      }
+    if (!birdingModeActive) {
+        birdingModeActive = true;
+        birdingModeStartTime = gameTime;
+        isDaytimeAtStart = isDaytime;
+        
+        const dayModeButton = document.getElementById('dayModeToggle');
+        const normalModeButton = document.getElementById('normalModeToggle');
+        const nightModeButton = document.getElementById('nightModeToggle');
+        
+        dayModeButton.disabled = true;
+        normalModeButton.disabled = true;
+        nightModeButton.disabled = true;
+        dayModeButton.style.opacity = '0.5';
+        normalModeButton.style.opacity = '0.5';
+        nightModeButton.style.opacity = '0.5';
+        
+        birdingObservedSpecies = new Set();
+        birdingModeRecordedBirds = new Set();
+        
+        const initialBirds = getBirdsInView();
+        initialBirds.forEach(bird => {
+            if (bird.noStats) return;
+            const birdId = `${bird.name}_${bird.x}_${bird.y}_${bird.groupId || 'single'}`;
+            if (!birdingModeRecordedBirds.has(birdId)) {
+                birdingModeRecordedBirds.add(birdId);
+                birdingObservedSpecies.add(bird.name);
+            }
+        });
+        
+        birdingModeStartSnapshot = {
+            startTime: gameTime,
+            startedAtDaytime: isDaytime,
+            birdCounts: countBirdsInView(),
+            captured: {...capturedBirds},
+            birds: birds.map(bird => ({ 
+                name: bird.name, 
+                type: bird.type, 
+                x: bird.x, 
+                y: bird.y, 
+                groupId: bird.groupId 
+            }))
+        };
+        
+        birdingModeBirdTracker = {};
+        lastBirdingRecordTime = gameTime;
+        
+        showSpecialAlert("观鸟模式已启动！记录已开始。");
+        updateBirdingModeButton();
+        
     } else {
-      showSpecialAlert("观鸟模式结束，未生成记录数据。");
+        birdingModeActive = false;
+        birdingModeEndTime = gameTime;
+        
+        const dayModeButton = document.getElementById('dayModeToggle');
+        const normalModeButton = document.getElementById('normalModeToggle');
+        const nightModeButton = document.getElementById('nightModeToggle');
+        
+        dayModeButton.disabled = false;
+        normalModeButton.disabled = false;
+        nightModeButton.disabled = false;
+        dayModeButton.style.opacity = '1';
+        normalModeButton.style.opacity = '1';
+        nightModeButton.style.opacity = '1';
+        
+        const record = createBirdingRecord();
+        updateBirdingModeButton();
+        
+        if (record) {
+            const elapsedMinutes = Math.floor(record.birdingModeDuration / 60000);
+            const elapsedSeconds = Math.floor((record.birdingModeDuration % 60000) / 1000);
+            showSpecialAlert(`观鸟模式结束！持续${elapsedMinutes}分${elapsedSeconds}秒，观察${record.totalObservedSpecies}种，拍摄${record.capturedSpeciesCount}种`);
+            
+            if (record.totalObservedSpecies > 0) {
+                pauseGame();
+                openBirdingRecord(record.id - 1);
+            }
+        } else {
+            showSpecialAlert("观鸟模式结束，未生成记录数据。");
+        }
+        
+        birdingModeStartSnapshot = {};
+        birdingObservedSpecies = new Set();
+        birdingModeRecordedBirds = new Set();
     }
-    
-    birdingModeStartSnapshot = {};
-    birdingObservedSpecies = new Set();
-    birdingModeRecordedBirds = new Set();
-  }
 }
 
 function updateBirdingModeButton() {
@@ -3390,88 +3580,90 @@ function updateTimeIndicator() {
 
 // 观鸟记录截图函数
 function captureBirdingRecord() {
-  if (!currentBirdingRecord) {
-    showSpecialAlert("请先打开观鸟记录！");
-    return;
-  }
-  
-  pauseGame();
-  
-  // 截图尺寸：竖版3:2比例
-  const SCREENSHOT_WIDTH = 300;
-  const SCREENSHOT_HEIGHT = 450; // 3:2比例
-  
-  // 设置截图canvas尺寸
-  screenshotCanvas.width = SCREENSHOT_WIDTH;
-  screenshotCanvas.height = SCREENSHOT_HEIGHT;
-  
-  // 绘制背景
-  screenshotCtx.fillStyle = '#1a1a2e';
-  screenshotCtx.fillRect(0, 0, SCREENSHOT_WIDTH, SCREENSHOT_HEIGHT);
-  
-  // 绘制渐变背景
-  const gradient = screenshotCtx.createLinearGradient(0, 0, 0, SCREENSHOT_HEIGHT);
-  gradient.addColorStop(0, '#16213e');
-  gradient.addColorStop(1, '#0f3460');
-  screenshotCtx.fillStyle = gradient;
-  screenshotCtx.fillRect(0, 0, SCREENSHOT_WIDTH, SCREENSHOT_HEIGHT);
-  
-  // 绘制标题区域
-  screenshotCtx.fillStyle = '#FFD700';
-  screenshotCtx.font = 'bold 24px "Microsoft YaHei"';
-  screenshotCtx.textAlign = 'center';
-  screenshotCtx.fillText('观鸟记录', SCREENSHOT_WIDTH / 2, 40);
-  
-  // 绘制装饰线
-  screenshotCtx.strokeStyle = '#87CEEB';
-  screenshotCtx.lineWidth = 2;
-  screenshotCtx.beginPath();
-  screenshotCtx.moveTo(50, 55);
-  screenshotCtx.lineTo(SCREENSHOT_WIDTH - 50, 55);
-  screenshotCtx.stroke();
-  
-  // 记录信息
-  const record = currentBirdingRecord;
-  const totalSeconds = Math.floor(record.birdingModeDuration / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  
-  // 基本信息
-  screenshotCtx.fillStyle = '#FFFFFF';
-  screenshotCtx.font = '16px "Microsoft YaHei"';
-  screenshotCtx.textAlign = 'left';
-  
-  let yPosition = 85;
-  const lineHeight = 22;
-  const columnWidth = SCREENSHOT_WIDTH - 40;
-  const halfWidth = columnWidth / 2;
-  
-  // 计算是否需要分双列
-  const totalLines = record.observedSpecies.length + 8; // 基本信息+鸟种列表
-  const maxLinesPerColumn = Math.floor((SCREENSHOT_HEIGHT - yPosition - 20) / lineHeight);
-  const useTwoColumns = totalLines > maxLinesPerColumn;
-  
-  if (useTwoColumns) {
-    // 双列布局
-    drawRecordInfoTwoColumns(record, yPosition, lineHeight, halfWidth);
-  } else {
-    // 单列布局
-    drawRecordInfoSingleColumn(record, yPosition, lineHeight, columnWidth);
-  }
-  
- // 在截图底部添加制作信息
-    screenshotCtx.fillStyle = '#FFD700';
-    screenshotCtx.font = 'bold 14px "Microsoft YaHei"';
-    screenshotCtx.textAlign = 'center';
-    const bottomText = '观鸟模拟器——一万两千鸻AI制作';
-    screenshotCtx.fillText(bottomText, SCREENSHOT_WIDTH / 2, SCREENSHOT_HEIGHT - 15);
-    
-    currentScreenshotDataURL = screenshotCanvas.toDataURL('image/png');
-    showScreenshotPreview();
+    console.log("开始截图记录...");
+    if (!currentBirdingRecord) {
+        console.warn("没有当前观鸟记录");
+        showSpecialAlert("请先打开观鸟记录！");
+        return;
+    }
 
-  // 转换为数据URL并显示预览
-  currentScreenshotDataURL = screenshotCanvas.toDataURL('image/png');
-  showScreenshotPreview();
+    const screenshotButton = document.getElementById('screenshotButton');
+    screenshotButton.disabled = true;
+    screenshotButton.style.opacity = '0.5';
+    screenshotButton.textContent = "生成中...";
+
+    try {
+        if (!gamePaused) {
+            pauseGame();
+        }
+
+        const SCREENSHOT_WIDTH = 300;
+        const lineHeight = 22;
+        const record = currentBirdingRecord;
+        const speciesCount = record.observedSpecies.length;
+        const fixedHeight = 120;
+        const speciesListHeight = speciesCount * lineHeight;
+        const totalHeight = fixedHeight + speciesListHeight;
+        const SCREENSHOT_HEIGHT = Math.max(450, Math.min(800, totalHeight));
+
+        screenshotCanvas.width = SCREENSHOT_WIDTH;
+        screenshotCanvas.height = SCREENSHOT_HEIGHT;
+        screenshotCtx.clearRect(0, 0, SCREENSHOT_WIDTH, SCREENSHOT_HEIGHT);
+
+        // 绘制背景
+        const gradient = screenshotCtx.createLinearGradient(0, 0, 0, SCREENSHOT_HEIGHT);
+        gradient.addColorStop(0, '#16213e');
+        gradient.addColorStop(1, '#0f3460');
+        screenshotCtx.fillStyle = gradient;
+        screenshotCtx.fillRect(0, 0, SCREENSHOT_WIDTH, SCREENSHOT_HEIGHT);
+
+        // 绘制标题
+        screenshotCtx.fillStyle = '#FFD700';
+        screenshotCtx.font = 'bold 24px "Microsoft YaHei", Arial, sans-serif';
+        screenshotCtx.textAlign = 'center';
+        screenshotCtx.fillText('观鸟记录', SCREENSHOT_WIDTH / 2, 40);
+
+        // 绘制装饰线
+        screenshotCtx.strokeStyle = '#87CEEB';
+        screenshotCtx.lineWidth = 2;
+        screenshotCtx.beginPath();
+        screenshotCtx.moveTo(50, 55);
+        screenshotCtx.lineTo(SCREENSHOT_WIDTH - 50, 55);
+        screenshotCtx.stroke();
+
+        // 绘制记录内容
+        const startY = 85;
+        drawRecordInfoSingleColumn(record, startY, lineHeight, SCREENSHOT_WIDTH - 40);
+
+        // 绘制底部文字
+        screenshotCtx.fillStyle = '#FFD700';
+        screenshotCtx.font = 'bold 14px "Microsoft YaHei", Arial, sans-serif';
+        screenshotCtx.textAlign = 'center';
+        const bottomText = '观鸟模拟器——一万两千鸻制作';
+        screenshotCtx.fillText(bottomText, SCREENSHOT_WIDTH / 2, SCREENSHOT_HEIGHT - 15);
+
+        // 获取截图数据URL
+        currentScreenshotDataURL = screenshotCanvas.toDataURL('image/png');
+        console.log("截图生成完成，数据URL长度:", currentScreenshotDataURL.length);
+
+        // 显示预览
+        setTimeout(() => {
+            showScreenshotPreview();
+            
+            // 恢复按钮状态
+            screenshotButton.disabled = false;
+            screenshotButton.style.opacity = '1';
+            screenshotButton.textContent = "📸 截图记录";
+        }, 100);
+
+    } catch (error) {
+        console.error("截图绘制过程中出错:", error);
+        showSpecialAlert("截图绘制失败");
+        screenshotButton.disabled = false;
+        screenshotButton.style.opacity = '1';
+        screenshotButton.textContent = "📸 截图记录";
+        resumeGame();
+    }
 }
 
 // 绘制单列布局
@@ -3479,7 +3671,11 @@ function drawRecordInfoSingleColumn(record, startY, lineHeight, columnWidth) {
   let y = startY;
   const x = 20;
   
-  // 基本信息
+  screenshotCtx.fillStyle = '#FFFFFF';
+  screenshotCtx.font = '16px "Microsoft YaHei", Arial, sans-serif';
+  screenshotCtx.textAlign = 'left';
+  
+  // 绘制基本信息
   screenshotCtx.fillText(`记录编号: #${record.id}`, x, y);
   y += lineHeight;
   
@@ -3505,25 +3701,27 @@ function drawRecordInfoSingleColumn(record, startY, lineHeight, columnWidth) {
   
   y += lineHeight; // 空一行
   
-  // 鸟种列表标题
+  // 绘制鸟种列表标题
   screenshotCtx.fillStyle = '#87CEEB';
   screenshotCtx.fillText('观察到的鸟种:', x, y);
   y += lineHeight;
   
+  // 分隔线
   screenshotCtx.strokeStyle = '#87CEEB';
   screenshotCtx.lineWidth = 1;
   screenshotCtx.beginPath();
   screenshotCtx.moveTo(x, y - 5);
   screenshotCtx.lineTo(x + 120, y - 5);
   screenshotCtx.stroke();
+  y += 5;
   
-  y += 5; // 调整间距
-  
-  // 鸟种列表
+  // 绘制鸟种列表
   screenshotCtx.fillStyle = '#FFFFFF';
   screenshotCtx.font = '14px "Microsoft YaHei"';
   
-  record.observedSpecies.sort().forEach((birdName, index) => {
+  const sortedSpecies = [...record.observedSpecies].sort();
+  for (let i = 0; i < sortedSpecies.length; i++) {
+    const birdName = sortedSpecies[i];
     const birdKey = Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName);
     const isRare = birdKey && BIRD_TYPES[birdKey].probability < 0.02;
     const isRarest = birdName === record.rarestBird;
@@ -3531,199 +3729,102 @@ function drawRecordInfoSingleColumn(record, startY, lineHeight, columnWidth) {
     if (isRarest) {
       screenshotCtx.fillStyle = '#FFD700';
       screenshotCtx.font = 'bold 14px "Microsoft YaHei"';
-      screenshotCtx.fillText(`${index + 1}. ${birdName} ★`, x, y);
+      screenshotCtx.fillText(`${i + 1}. ${birdName} ★`, x, y);
       screenshotCtx.font = '14px "Microsoft YaHei"';
     } else if (isRare) {
       screenshotCtx.fillStyle = '#FFA500';
-      screenshotCtx.fillText(`${index + 1}. ${birdName} (稀有)`, x, y);
+      screenshotCtx.fillText(`${i + 1}. ${birdName} (稀有)`, x, y);
     } else {
       screenshotCtx.fillStyle = '#FFFFFF';
-      screenshotCtx.fillText(`${index + 1}. ${birdName}`, x, y);
+      screenshotCtx.fillText(`${i + 1}. ${birdName}`, x, y);
     }
-    
     y += lineHeight;
-  });
-}
-
-// 绘制双列布局
-function drawRecordInfoTwoColumns(record, startY, lineHeight, columnWidth) {
-  let yLeft = startY;
-  let yRight = startY;
-  const xLeft = 20;
-  const xRight = SCREENSHOT_WIDTH / 2 + 10;
-  
-  // 基本信息（左列）
-  screenshotCtx.fillStyle = '#FFFFFF';
-  screenshotCtx.font = '16px "Microsoft YaHei"';
-  screenshotCtx.textAlign = 'left';
-  
-  screenshotCtx.fillText(`记录编号: #${record.id}`, xLeft, yLeft);
-  yLeft += lineHeight;
-  
-  const durationText = `观鸟时长: ${Math.floor(record.birdingModeDuration / 60000)}分${Math.floor((record.birdingModeDuration % 60000) / 1000)}秒`;
-  screenshotCtx.fillText(durationText, xLeft, yLeft);
-  yLeft += lineHeight;
-  
-  screenshotCtx.fillText(`时间: ${record.startedAtDaytime ? "白天" : "黑夜"} → ${record.endedAtDaytime ? "白天" : "黑夜"}`, xLeft, yLeft);
-  yLeft += lineHeight;
-  
-  screenshotCtx.fillText(`观察鸟种: ${record.totalObservedSpecies} 种`, xLeft, yLeft);
-  yLeft += lineHeight;
-  
-  screenshotCtx.fillText(`拍摄鸟种: ${record.capturedSpeciesCount} 种`, xLeft, yLeft);
-  yLeft += lineHeight;
-  
-  if (record.rarestBird) {
-    screenshotCtx.fillStyle = '#FFD700';
-    screenshotCtx.fillText(`最稀有: ${record.rarestBird}`, xLeft, yLeft);
-    screenshotCtx.fillStyle = '#FFFFFF';
-    yLeft += lineHeight;
   }
   
-  yLeft += lineHeight; // 空一行
-  
-  // 鸟种列表标题（左列）
-  screenshotCtx.fillStyle = '#87CEEB';
-  screenshotCtx.fillText('观察到的鸟种:', xLeft, yLeft);
-  yLeft += lineHeight;
-  
-  screenshotCtx.strokeStyle = '#87CEEB';
-  screenshotCtx.lineWidth = 1;
-  screenshotCtx.beginPath();
-  screenshotCtx.moveTo(xLeft, yLeft - 5);
-  screenshotCtx.lineTo(xLeft + 120, yLeft - 5);
-  screenshotCtx.stroke();
-  
-  yLeft += 5; // 调整间距
-  
-  // 鸟种列表（分两列显示）
-  screenshotCtx.fillStyle = '#FFFFFF';
-  screenshotCtx.font = '14px "Microsoft YaHei"';
-  
-  const speciesList = [...record.observedSpecies].sort();
-  const midIndex = Math.ceil(speciesList.length / 2);
-  
-  // 左列鸟种
-  for (let i = 0; i < midIndex; i++) {
-    const birdName = speciesList[i];
-    const birdKey = Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName);
-    const isRare = birdKey && BIRD_TYPES[birdKey].probability < 0.02;
-    const isRarest = birdName === record.rarestBird;
-    
-    if (isRarest) {
-      screenshotCtx.fillStyle = '#FFD700';
-      screenshotCtx.font = 'bold 14px "Microsoft YaHei"';
-      screenshotCtx.fillText(`${i + 1}. ${birdName} ★`, xLeft, yLeft);
-      screenshotCtx.font = '14px "Microsoft YaHei"';
-    } else if (isRare) {
-      screenshotCtx.fillStyle = '#FFA500';
-      screenshotCtx.fillText(`${i + 1}. ${birdName} (稀有)`, xLeft, yLeft);
-    } else {
-      screenshotCtx.fillStyle = '#FFFFFF';
-      screenshotCtx.fillText(`${i + 1}. ${birdName}`, xLeft, yLeft);
-    }
-    
-    yLeft += lineHeight;
-  }
-  
-  // 右列鸟种
-  screenshotCtx.fillStyle = '#87CEEB';
-  screenshotCtx.fillText('(续)', xRight, yRight);
-  yRight += lineHeight + 5;
-  
-  screenshotCtx.fillStyle = '#FFFFFF';
-  
-  for (let i = midIndex; i < speciesList.length; i++) {
-    const birdName = speciesList[i];
-    const birdKey = Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName);
-    const isRare = birdKey && BIRD_TYPES[birdKey].probability < 0.02;
-    const isRarest = birdName === record.rarestBird;
-    
-    if (isRarest) {
-      screenshotCtx.fillStyle = '#FFD700';
-      screenshotCtx.font = 'bold 14px "Microsoft YaHei"';
-      screenshotCtx.fillText(`${i + 1}. ${birdName} ★`, xRight, yRight);
-      screenshotCtx.font = '14px "Microsoft YaHei"';
-    } else if (isRare) {
-      screenshotCtx.fillStyle = '#FFA500';
-      screenshotCtx.fillText(`${i + 1}. ${birdName} (稀有)`, xRight, yRight);
-    } else {
-      screenshotCtx.fillStyle = '#FFFFFF';
-      screenshotCtx.fillText(`${i + 1}. ${birdName}`, xRight, yRight);
-    }
-    
-    yRight += lineHeight;
-  }
-  
-  // 绘制分隔线
-  screenshotCtx.strokeStyle = 'rgba(135, 206, 235, 0.3)';
-  screenshotCtx.lineWidth = 1;
-  screenshotCtx.beginPath();
-  screenshotCtx.moveTo(SCREENSHOT_WIDTH / 2, startY);
-  screenshotCtx.lineTo(SCREENSHOT_WIDTH / 2, SCREENSHOT_HEIGHT - 20);
-  screenshotCtx.stroke();
+  return y; // 返回最终位置
 }
 
 // 显示截图预览
 function showScreenshotPreview() {
-  const previewModal = document.getElementById('screenshotPreviewModal');
-  const previewImage = document.getElementById('screenshotPreviewImage');
-  
-  previewImage.src = currentScreenshotDataURL;
-  previewModal.style.display = 'flex';
+    console.log("显示截图预览...");
+    
+    if (!currentScreenshotDataURL) {
+        console.error("没有可用的截图数据");
+        showSpecialAlert("没有可用的截图数据");
+        return;
+    }
+
+    const previewModal = document.getElementById('screenshotPreviewModal');
+    const previewImage = document.getElementById('screenshotPreviewImage');
+    
+    if (!previewModal || !previewImage) {
+        console.error("预览元素未找到");
+        showSpecialAlert("预览元素未找到");
+        return;
+    }
+
+    // 设置图片源
+    previewImage.src = currentScreenshotDataURL;
+    
+    // 显示模态框
+    previewModal.style.display = 'flex';
+    previewModal.style.zIndex = '500';
+    
+    console.log("预览模态框已显示");
+    
+    // 添加加载完成和加载错误的处理
+    previewImage.onload = function() {
+        console.log("预览图片加载成功");
+    };
+    
+    previewImage.onerror = function() {
+        console.error("预览图片加载失败");
+        showSpecialAlert("预览图片加载失败");
+        previewModal.style.display = 'none';
+    };
 }
 
-// 关闭截图预览
 function closeScreenshotPreview() {
-  const previewModal = document.getElementById('screenshotPreviewModal');
-  previewModal.style.display = 'none';
-  resumeGame();
+    const previewModal = document.getElementById('screenshotPreviewModal');
+    previewModal.style.display = 'none';
+    
+    // 恢复游戏
+    resumeGame();
 }
 
-// 保存截图
 function saveScreenshot() {
-    if (!currentScreenshotDataURL) return;
+    console.log("尝试保存截图...");
     
-    // 方法1：创建隐藏的iframe下载（避免迅雷拦截）
-    const iframe = document.createElement('iframe');
-    iframe.style.display = 'none';
-    document.body.appendChild(iframe);
-    
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const fileName = `观鸟记录_${timestamp}.png`;
-    
-    // 将数据URL转换为Blob
-    const byteString = atob(currentScreenshotDataURL.split(',')[1]);
-    const mimeString = currentScreenshotDataURL.split(',')[0].split(':')[1].split(';')[0];
-    const ab = new ArrayBuffer(byteString.length);
-    const ia = new Uint8Array(ab);
-    
-    for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i);
+    if (!currentScreenshotDataURL) {
+        console.error("没有可用的截图数据");
+        showSpecialAlert("没有可用的截图数据");
+        return;
     }
     
-    const blob = new Blob([ab], { type: mimeString });
-    const blobUrl = URL.createObjectURL(blob);
-    
-    // 创建临时链接
-    const tempLink = document.createElement('a');
-    tempLink.href = blobUrl;
-    tempLink.download = fileName;
-    tempLink.style.display = 'none';
-    
-    // 添加到文档并触发点击
-    document.body.appendChild(tempLink);
-    tempLink.click();
-    
-    // 清理
-    setTimeout(() => {
-        document.body.removeChild(tempLink);
-        document.body.removeChild(iframe);
-        URL.revokeObjectURL(blobUrl);
-    }, 100);
-    
-    showSpecialAlert("截图已保存！");
-    closeScreenshotPreview();
+    try {
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const fileName = `观鸟记录_${timestamp}.png`;
+        
+        const downloadLink = document.createElement('a');
+        downloadLink.href = currentScreenshotDataURL;
+        downloadLink.download = fileName;
+        downloadLink.style.display = 'none';
+        
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        
+        setTimeout(() => {
+            document.body.removeChild(downloadLink);
+        }, 100);
+        
+        console.log("截图保存成功");
+        showSpecialAlert("截图已保存！");
+        closeScreenshotPreview();
+        
+    } catch (error) {
+        console.error("保存截图时出错:", error);
+        showSpecialAlert("保存失败: " + error.message);
+    }
 }
 
 function handleKeyDown(e) {
