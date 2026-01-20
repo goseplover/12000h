@@ -888,8 +888,9 @@ body {
 }
 
 #screenshotPreviewImage {
+    max-height: 90vh;
     max-width: 90%;
-    max-height: none;
+    object-fit: contain;
     border: 3px solid #FFD700;
     border-radius: 10px;
     box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
@@ -3581,81 +3582,94 @@ function updateTimeIndicator() {
 // 观鸟记录截图函数
 function captureBirdingRecord() {
     console.log("开始截图记录...");
+    
     if (!currentBirdingRecord) {
         console.warn("没有当前观鸟记录");
         showSpecialAlert("请先打开观鸟记录！");
         return;
     }
-
+    
     const screenshotButton = document.getElementById('screenshotButton');
     screenshotButton.disabled = true;
     screenshotButton.style.opacity = '0.5';
     screenshotButton.textContent = "生成中...";
-
+    
     try {
         if (!gamePaused) {
             pauseGame();
         }
-
+        
         const SCREENSHOT_WIDTH = 300;
         const lineHeight = 22;
         const record = currentBirdingRecord;
         const speciesCount = record.observedSpecies.length;
-        const fixedHeight = 120;
+        
+        // 精确计算所需高度
+        const titleHeight = 50;
+        const recordInfoHeight = 5 * lineHeight;
+        const headerMargin = 35;
+        const footerHeight = 30;
         const speciesListHeight = speciesCount * lineHeight;
-        const totalHeight = fixedHeight + speciesListHeight;
-        const SCREENSHOT_HEIGHT = Math.max(450, Math.min(800, totalHeight));
-
+        
+        // 动态计算总高度（支持多列布局）
+        const baseHeight = titleHeight + recordInfoHeight + headerMargin + footerHeight + 20;
+        const dynamicHeight = baseHeight + Math.min(speciesListHeight, 800); // 限制列表部分高度
+        
+        // 设置合理的最大最小高度
+        const MAX_SCREENSHOT_HEIGHT = 2000;
+        const MIN_SCREENSHOT_HEIGHT = 450;
+        
+        const SCREENSHOT_HEIGHT = Math.max(MIN_SCREENSHOT_HEIGHT, 
+                                          Math.min(MAX_SCREENSHOT_HEIGHT, dynamicHeight));
+        
         screenshotCanvas.width = SCREENSHOT_WIDTH;
         screenshotCanvas.height = SCREENSHOT_HEIGHT;
+        
         screenshotCtx.clearRect(0, 0, SCREENSHOT_WIDTH, SCREENSHOT_HEIGHT);
-
+        
         // 绘制背景
         const gradient = screenshotCtx.createLinearGradient(0, 0, 0, SCREENSHOT_HEIGHT);
         gradient.addColorStop(0, '#16213e');
         gradient.addColorStop(1, '#0f3460');
         screenshotCtx.fillStyle = gradient;
         screenshotCtx.fillRect(0, 0, SCREENSHOT_WIDTH, SCREENSHOT_HEIGHT);
-
+        
         // 绘制标题
         screenshotCtx.fillStyle = '#FFD700';
         screenshotCtx.font = 'bold 24px "Microsoft YaHei", Arial, sans-serif';
         screenshotCtx.textAlign = 'center';
         screenshotCtx.fillText('观鸟记录', SCREENSHOT_WIDTH / 2, 40);
-
-        // 绘制装饰线
+        
         screenshotCtx.strokeStyle = '#87CEEB';
         screenshotCtx.lineWidth = 2;
         screenshotCtx.beginPath();
         screenshotCtx.moveTo(50, 55);
         screenshotCtx.lineTo(SCREENSHOT_WIDTH - 50, 55);
         screenshotCtx.stroke();
-
-        // 绘制记录内容
+        
+        // 绘制内容
         const startY = 85;
-        drawRecordInfoSingleColumn(record, startY, lineHeight, SCREENSHOT_WIDTH - 40);
-
-        // 绘制底部文字
+        const availableHeight = SCREENSHOT_HEIGHT - startY - footerHeight - 10;
+        drawRecordInfoSingleColumn(record, startY, lineHeight, SCREENSHOT_WIDTH - 40, availableHeight);
+        
+        // 绘制页脚
         screenshotCtx.fillStyle = '#FFD700';
         screenshotCtx.font = 'bold 14px "Microsoft YaHei", Arial, sans-serif';
         screenshotCtx.textAlign = 'center';
         const bottomText = '观鸟模拟器——一万两千鸻制作';
         screenshotCtx.fillText(bottomText, SCREENSHOT_WIDTH / 2, SCREENSHOT_HEIGHT - 15);
-
-        // 获取截图数据URL
+        
         currentScreenshotDataURL = screenshotCanvas.toDataURL('image/png');
+        
         console.log("截图生成完成，数据URL长度:", currentScreenshotDataURL.length);
-
-        // 显示预览
+        
         setTimeout(() => {
             showScreenshotPreview();
-            
-            // 恢复按钮状态
             screenshotButton.disabled = false;
             screenshotButton.style.opacity = '1';
             screenshotButton.textContent = "📸 截图记录";
         }, 100);
-
+        
     } catch (error) {
         console.error("截图绘制过程中出错:", error);
         showSpecialAlert("截图绘制失败");
@@ -3666,82 +3680,97 @@ function captureBirdingRecord() {
     }
 }
 
-// 绘制单列布局
-function drawRecordInfoSingleColumn(record, startY, lineHeight, columnWidth) {
-  let y = startY;
-  const x = 20;
-  
-  screenshotCtx.fillStyle = '#FFFFFF';
-  screenshotCtx.font = '16px "Microsoft YaHei", Arial, sans-serif';
-  screenshotCtx.textAlign = 'left';
-  
-  // 绘制基本信息
-  screenshotCtx.fillText(`记录编号: #${record.id}`, x, y);
-  y += lineHeight;
-  
-  const durationText = `观鸟时长: ${Math.floor(record.birdingModeDuration / 60000)}分${Math.floor((record.birdingModeDuration % 60000) / 1000)}秒`;
-  screenshotCtx.fillText(durationText, x, y);
-  y += lineHeight;
-  
-  screenshotCtx.fillText(`时间: ${record.startedAtDaytime ? "白天" : "黑夜"} → ${record.endedAtDaytime ? "白天" : "黑夜"}`, x, y);
-  y += lineHeight;
-  
-  screenshotCtx.fillText(`观察鸟种: ${record.totalObservedSpecies} 种`, x, y);
-  y += lineHeight;
-  
-  screenshotCtx.fillText(`拍摄鸟种: ${record.capturedSpeciesCount} 种`, x, y);
-  y += lineHeight;
-  
-  if (record.rarestBird) {
-    screenshotCtx.fillStyle = '#FFD700';
-    screenshotCtx.fillText(`最稀有: ${record.rarestBird}`, x, y);
-    screenshotCtx.fillStyle = '#FFFFFF';
-    y += lineHeight;
-  }
-  
-  y += lineHeight; // 空一行
-  
-  // 绘制鸟种列表标题
-  screenshotCtx.fillStyle = '#87CEEB';
-  screenshotCtx.fillText('观察到的鸟种:', x, y);
-  y += lineHeight;
-  
-  // 分隔线
-  screenshotCtx.strokeStyle = '#87CEEB';
-  screenshotCtx.lineWidth = 1;
-  screenshotCtx.beginPath();
-  screenshotCtx.moveTo(x, y - 5);
-  screenshotCtx.lineTo(x + 120, y - 5);
-  screenshotCtx.stroke();
-  y += 5;
-  
-  // 绘制鸟种列表
-  screenshotCtx.fillStyle = '#FFFFFF';
-  screenshotCtx.font = '14px "Microsoft YaHei"';
-  
-  const sortedSpecies = [...record.observedSpecies].sort();
-  for (let i = 0; i < sortedSpecies.length; i++) {
-    const birdName = sortedSpecies[i];
-    const birdKey = Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName);
-    const isRare = birdKey && BIRD_TYPES[birdKey].probability < 0.02;
-    const isRarest = birdName === record.rarestBird;
+function drawRecordInfoSingleColumn(record, startY, lineHeight, columnWidth, maxHeight) {
+    let y = startY;
+    const x = 20;
+    const speciesListStartY = y; // 记录物种列表开始的位置
     
-    if (isRarest) {
-      screenshotCtx.fillStyle = '#FFD700';
-      screenshotCtx.font = 'bold 14px "Microsoft YaHei"';
-      screenshotCtx.fillText(`${i + 1}. ${birdName} ★`, x, y);
-      screenshotCtx.font = '14px "Microsoft YaHei"';
-    } else if (isRare) {
-      screenshotCtx.fillStyle = '#FFA500';
-      screenshotCtx.fillText(`${i + 1}. ${birdName} (稀有)`, x, y);
-    } else {
-      screenshotCtx.fillStyle = '#FFFFFF';
-      screenshotCtx.fillText(`${i + 1}. ${birdName}`, x, y);
-    }
+    screenshotCtx.fillStyle = '#FFFFFF';
+    screenshotCtx.font = '16px "Microsoft YaHei", Arial, sans-serif';
+    screenshotCtx.textAlign = 'left';
+    
+    // 1. 绘制记录信息（固定部分）
+    screenshotCtx.fillText(`记录编号: #${record.id}`, x, y);
     y += lineHeight;
-  }
-  
-  return y; // 返回最终位置
+    
+    const durationText = `观鸟时长: ${Math.floor(record.birdingModeDuration / 60000)}分${Math.floor((record.birdingModeDuration % 60000) / 1000)}秒`;
+    screenshotCtx.fillText(durationText, x, y);
+    y += lineHeight;
+    
+    screenshotCtx.fillText(`时间: ${record.startedAtDaytime ? "白天" : "黑夜"} → ${record.endedAtDaytime ? "白天" : "黑夜"}`, x, y);
+    y += lineHeight;
+    
+    screenshotCtx.fillText(`观察鸟种: ${record.totalObservedSpecies} 种`, x, y);
+    y += lineHeight;
+    
+    screenshotCtx.fillText(`拍摄鸟种: ${record.capturedSpeciesCount} 种`, x, y);
+    y += lineHeight;
+    
+    if (record.rarestBird) {
+        screenshotCtx.fillStyle = '#FFD700';
+        screenshotCtx.fillText(`最稀有: ${record.rarestBird}`, x, y);
+        screenshotCtx.fillStyle = '#FFFFFF';
+        y += lineHeight;
+    }
+    
+    y += lineHeight;
+    
+    // 2. 绘制物种列表（支持分列）
+    screenshotCtx.fillStyle = '#87CEEB';
+    screenshotCtx.fillText('观察到的鸟种:', x, y);
+    y += lineHeight;
+    
+    screenshotCtx.strokeStyle = '#87CEEB';
+    screenshotCtx.lineWidth = 1;
+    screenshotCtx.beginPath();
+    screenshotCtx.moveTo(x, y - 5);
+    screenshotCtx.lineTo(x + 120, y - 5);
+    screenshotCtx.stroke();
+    
+    y += 5;
+    
+    const sortedSpecies = [...record.observedSpecies].sort();
+    const itemsPerColumn = Math.floor((maxHeight - y) / lineHeight);
+    const columnCount = Math.ceil(sortedSpecies.length / itemsPerColumn);
+    
+    // 计算每列宽度
+    const actualColumnWidth = (screenshotCanvas.width - 40) / Math.max(1, columnCount);
+    
+    for (let col = 0; col < columnCount; col++) {
+        const columnX = x + col * actualColumnWidth;
+        let columnY = y;
+        
+        for (let i = col * itemsPerColumn; i < Math.min((col + 1) * itemsPerColumn, sortedSpecies.length); i++) {
+            const birdName = sortedSpecies[i];
+            const birdKey = Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName);
+            const isRare = birdKey && BIRD_TYPES[birdKey].probability < 0.02;
+            const isRarest = birdName === record.rarestBird;
+            
+            if (isRarest) {
+                screenshotCtx.fillStyle = '#FFD700';
+                screenshotCtx.font = 'bold 14px "Microsoft YaHei"';
+                screenshotCtx.fillText(`${i + 1}. ${birdName} ★`, columnX, columnY);
+                screenshotCtx.font = '14px "Microsoft YaHei"';
+            } else if (isRare) {
+                screenshotCtx.fillStyle = '#FFA500';
+                screenshotCtx.fillText(`${i + 1}. ${birdName} (稀有)`, columnX, columnY);
+            } else {
+                screenshotCtx.fillStyle = '#FFFFFF';
+                screenshotCtx.fillText(`${i + 1}. ${birdName}`, columnX, columnY);
+            }
+            columnY += lineHeight;
+        }
+    }
+    
+    // 3. 如果物种太多，添加提示
+    if (sortedSpecies.length > itemsPerColumn * columnCount) {
+        screenshotCtx.fillStyle = '#FFA500';
+        screenshotCtx.font = '12px "Microsoft YaHei"';
+        screenshotCtx.fillText(`... 还有 ${sortedSpecies.length - (itemsPerColumn * columnCount)} 种未显示`, 
+                              x, screenshotCanvas.height - 20);
+    }
+    
+    return y;
 }
 
 // 显示截图预览
