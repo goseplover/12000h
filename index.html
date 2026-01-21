@@ -1830,7 +1830,7 @@ const BIRD_TYPES = {
     bodyColor: "#FFFFFF",
     headColor: "#000000",
     wingColor: "#000000",
-    tailColor: "#000000",
+    tailColor: "#3399ff",
     groupSize: [2, 5],
     probability: 0.067,
     size: 1.8,
@@ -1868,7 +1868,7 @@ const BIRD_TYPES = {
     wingColor: "#000000",
     tailColor: "#000000",
     groupSize: [5, 10],
-    probability: 0.07,
+    probability: 0.06,
     size: 1.2,
     behavior: "flyThrough",
     whiteEyeRing: true,
@@ -1980,7 +1980,7 @@ const BIRD_TYPES = {
     wingColor: "#000000",
     tailColor: "#000000",
     groupSize: 1,
-    probability: 0.066,
+    probability: 0.056,
     size: 1.7,
     behavior: "landOnTree",
     stayTime: 10,
@@ -2188,6 +2188,32 @@ const BIRD_TYPES = {
     variant: true,
     iconColor: "#FF0000",
     whiteEyeRing: true
+  },
+  KINGFISHER: {
+    name: "翠鸟",
+    color: "#000000",
+    eyeColor: "#000000",
+    bodyColor: "#FF9933", // 身体橙色
+    headColor: "#33CCCC", // 头部青色
+    wingColor: "#3399FF", // 翅膀蓝色
+    tailColor: "#33CCCC", // 尾部青色
+    beakColor: "#000000", // 嘴黑色
+    eyeRingColor: "#FFA500", // 眼圈橙色
+    groupSize: 1,
+    probability: 0.023,
+    size: 1.2, // 1.2倍麻雀大小
+    behavior: "flyToReedAndPerch",
+    stayTime: [45000, 60000], // 停留45-60秒
+    headAngle: Math.PI/4, // 头斜向下45度
+    turnInterval: [15000, 25000], // 每15-25秒换向
+    diveSpeed: 3.0,
+    beakLengthMultiplier: 3, // 嘴长为3倍
+    isVulnerableToRaptors: true,
+    canAppearAtNight: false, // 只在白天出现
+    isKingfisher: true, // 特殊标记
+    fishSize: 15, // 鱼的大小
+    fishColor: "#3399FF", // 鱼的颜色
+    originalSize: 1.2
   },
   GOLDCREST: {
     name: "戴菊",
@@ -3881,6 +3907,8 @@ function handleKeyDown(e) {
     generateUFO(false);
   } else if (e.key === 'q' || e.key === 'Q') {
     generateMagpie(false);
+  } else if (e.key === 'k' || e.key === 'K') {
+    generateKingfisher(true);
   } else if (e.key === 'r' || e.key === 'R') {
     createBirdingRecord();
   } else if (e.key === 'v' || e.key === 'V') {
@@ -5167,6 +5195,18 @@ function generateBird() {
         return;
     }
     
+  // 翠鸟检查（新增）
+  // 只在白天出现，概率为0.023
+  if (gameMode !== 'night') {
+    const kingfisherChance = Math.random();
+    // 使用配置中的概率
+    const kingfisherProb = BIRD_TYPES.KINGFISHER.probability || 0.023;
+    if (kingfisherChance < kingfisherProb) {
+      generateKingfisher(true);
+      return;
+    }
+  }
+
     const rand = Math.random();
     let cumulativeProbability = 0;
     let selectedBirdType = null;
@@ -5425,6 +5465,19 @@ function createCommonBird(birdType, startX, startY, fromLeft, behavior, stayTime
         bird.speed = 1.5;
     }
     
+    if (birdType.isKingfisher) {
+        bird.state = 'flyingToReed';
+        bird.targetX = reedZone.x + Math.random() * reedZone.width;
+        bird.targetY = reedZone.y + reedZone.height * 0.7;
+        // 重新调整初始Y坐标，避免直接生成在目标位置
+        bird.y = reedZone.y + reedZone.height * 0.5 + Math.random() * (GAME_HEIGHT * 0.1);
+        bird.headAngle = 0;
+        bird.turnInterval = birdType.turnInterval[0] + Math.random() * (birdType.turnInterval[1] - birdType.turnInterval[0]);
+        bird.stayTime = birdType.stayTime[0] + Math.random() * (birdType.stayTime[1] - birdType.stayTime[0]);
+        bird.nextTurnTime = gameTime + bird.turnInterval;
+        bird.facingDirection = bird.direction;
+    }
+    
     return bird;
 }
 
@@ -5468,10 +5521,80 @@ function generateMagpie(countStats = false) {
     }
 }
 
-/**
- * 直接生成蜡嘴雀（按键3）
- * @param {boolean} countStats 是否计入统计数据
- */
+// 步骤1：修改翠鸟生成函数，调整角度和逻辑
+function generateKingfisher(countStats = false) {
+  const kingfisherType = BIRD_TYPES.KINGFISHER;
+  
+  if (countStats) {
+    appearedBirds[kingfisherType.name] = (appearedBirds[kingfisherType.name] || 0) + 1;
+    updateTextStats();
+  }
+  
+  // 从画面外飞入，直接飞向芦苇丛
+  const fromLeft = Math.random() > 0.5;
+  const startX = fromLeft ? -50 : GAME_WIDTH + 50;
+  
+  // 飞向芦苇丛区域
+  const targetReedX = reedZone.x + Math.random() * reedZone.width;
+  const targetReedY = reedZone.y + reedZone.height * 0.7; // 停在芦苇上
+  
+  // 设置较低的飞行高度 - 从芦苇区域上方一点飞入
+  const startY = reedZone.y + reedZone.height * 0.5 + Math.random() * (GAME_HEIGHT * 0.1);
+  
+  const bird = {
+    type: kingfisherType,
+    name: kingfisherType.name,
+    x: startX,
+    y: startY, // 较低的初始高度
+    size: kingfisherType.size,
+    speed: 2.0,
+    direction: fromLeft ? 1 : -1, // 1=向右，-1=向左
+    state: 'flyingToReed',
+    stateTime: 0,
+    targetX: targetReedX,
+    targetY: targetReedY,
+    
+    // 飞入时水平，headAngle = 0
+    headAngle: 0, // 水平
+    
+    // 初始朝向（看向的方向）
+    facingDirection: fromLeft ? 1 : -1, // 1=向右，-1=向左
+    
+    // 换向相关
+    nextTurnTime: 0,
+    turnInterval: kingfisherType.turnInterval[0] + 
+                  Math.random() * (kingfisherType.turnInterval[1] - kingfisherType.turnInterval[0]),
+    
+    stayTime: kingfisherType.stayTime[0] + 
+              Math.random() * (kingfisherType.stayTime[1] - kingfisherType.stayTime[0]),
+    
+    diveTargetX: 0,
+    diveTargetY: 0,
+    hasDived: false,
+    hasCaughtFish: false,
+    caughtFish: null,
+    fishOffsetX: 0,
+    fishOffsetY: 0,
+    fishAngle: 0,
+    beakLengthMultiplier: kingfisherType.beakLengthMultiplier,
+    isVulnerableToRaptors: true,
+    noStats: !countStats,
+    isKingfisher: true,
+    
+    // 身体是否翻转的标志（用于绘制）
+    bodyFlipped: false
+  };
+  
+  // 设置转向时间
+  bird.nextTurnTime = gameTime + bird.turnInterval;
+  
+  birds.push(bird);
+  
+  if (countStats) {
+    showSpecialAlert(`发现${kingfisherType.name}！`);
+  }
+}
+
 function generateHawfinchManual(countStats = false) {
     const hawfinchType = BIRD_TYPES.HAWFINCH;
     
@@ -7436,7 +7559,12 @@ function drawBird(bird) {
         ctx.translate(bird.x * 2, 0);
         ctx.scale(-1, 1);
     }
-
+  // 检查是否为翠鸟
+  if (bird.isKingfisher) {
+    drawKingfisher(bird);
+        ctx.restore();
+    return;
+  }
     if (bird.name === "小鸮") {
         drawLittleOwl(bird);
         ctx.restore();
@@ -9310,6 +9438,12 @@ function updateBirds(deltaTime) {
     // 更新普通鸟类的行为
     for (let i = birds.length - 1; i >= 0; i--) {
         const bird = birds[i];
+    
+    // 翠鸟特殊行为逻辑
+    if (bird.isKingfisher) {
+      updateKingfisher(bird, deltaTime);
+      continue;
+    }
         // 长耳鸮的特殊消失逻辑
     if (bird.name === "长耳鸮" && bird.state === 'perching') {
       bird.stateTime += deltaTime;
@@ -9369,7 +9503,7 @@ function updateBirds(deltaTime) {
             continue;
         }
                      
-           
+    
     
     if (bird.isHidingFromRaptor) {
         continue;
@@ -10441,6 +10575,470 @@ case 'flyingWithDove':
             }
         });
     }
+}
+
+// 修改翠鸟生成函数，从较低高度水平飞入
+function generateKingfisher(countStats = false) {
+  const kingfisherType = BIRD_TYPES.KINGFISHER;
+  
+  if (countStats) {
+    appearedBirds[kingfisherType.name] = (appearedBirds[kingfisherType.name] || 0) + 1;
+    updateTextStats();
+  }
+  
+  // 从画面外飞入，直接飞向芦苇丛
+  const fromLeft = Math.random() > 0.5;
+  const startX = fromLeft ? -50 : GAME_WIDTH + 50;
+  
+  // 飞向芦苇丛区域
+  const targetReedX = reedZone.x + Math.random() * reedZone.width;
+  const targetReedY = reedZone.y + reedZone.height * 0.5; // 停在芦苇上
+  
+  // 设置较低的飞行高度 - 从芦苇区域上方一点飞入
+  const startY = reedZone.y + reedZone.height * 0.5 + Math.random() * (GAME_HEIGHT * 0.1);
+  
+  const bird = {
+    type: kingfisherType,
+    name: kingfisherType.name,
+    x: startX,
+    y: startY, // 较低的初始高度
+    size: kingfisherType.size,
+    speed: 2.0,
+    direction: fromLeft ? 1 : -1, // 1=向右，-1=向左
+    state: 'flyingToReed',
+    stateTime: 0,
+    targetX: targetReedX,
+    targetY: targetReedY,
+    
+    // 飞入时水平，headAngle = 0
+    headAngle: 0, // 水平
+    
+    // 初始朝向（看向的方向）
+    facingDirection: fromLeft ? 1 : -1, // 1=向右，-1=向左
+    
+    // 换向相关
+    nextTurnTime: 0,
+    turnInterval: kingfisherType.turnInterval[0] + 
+                  Math.random() * (kingfisherType.turnInterval[1] - kingfisherType.turnInterval[0]),
+    
+    stayTime: kingfisherType.stayTime[0] + 
+              Math.random() * (kingfisherType.stayTime[1] - kingfisherType.stayTime[0]),
+    
+    diveTargetX: 0,
+    diveTargetY: 0,
+    hasDived: false,
+    hasCaughtFish: false,
+    caughtFish: null,
+    fishOffsetX: 0,
+    fishOffsetY: 0,
+    fishAngle: 0,
+    beakLengthMultiplier: kingfisherType.beakLengthMultiplier,
+    isVulnerableToRaptors: true,
+    noStats: !countStats,
+    isKingfisher: true,
+    
+    // 身体是否翻转的标志（用于绘制）
+    bodyFlipped: false
+  };
+  
+  // 设置转向时间
+  bird.nextTurnTime = gameTime + bird.turnInterval;
+  
+  birds.push(bird);
+  
+  if (countStats) {
+    showSpecialAlert(`发现${kingfisherType.name}！`);
+  }
+}
+
+// 修改飞行逻辑，确保水平飞入
+function updateKingfisher(bird, deltaTime) {
+  bird.stateTime += deltaTime;
+  
+  // 检查是否有猛禽靠近（惊吓条件）
+  let raptorNearby = false;
+  for (let otherBird of birds) {
+    // 检查是否是猛禽类型
+    if ((otherBird.name === "游隼" || otherBird.name === "红隼" || otherBird.name === "黑翅鸢") && 
+        otherBird.state !== 'fleeing') {
+      const dx = otherBird.x - bird.x;
+      const dy = otherBird.y - bird.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      
+      // 如果猛禽在1000像素范围内
+      if (distance < 1000) {
+        raptorNearby = true;
+        break;
+      }
+    }
+  }
+  
+  // 如果猛禽靠近且翠鸟不在逃跑状态，立即开始逃跑
+  if (raptorNearby && bird.state !== 'fleeingFromRaptor' && bird.state !== 'flyingAway') {
+    bird.state = 'fleeingFromRaptor';
+    bird.stateTime = 0;
+    bird.speed = 3.5; // 惊吓逃跑速度更快
+    bird.direction = Math.random() > 0.5 ? 1 : -1; // 随机方向逃跑
+    bird.facingDirection = bird.direction;
+    bird.headAngle = 0; // 水平飞行
+    bird.bodyFlipped = (bird.facingDirection === -1);
+    return; // 立即返回，不执行后续状态逻辑
+  }
+  
+  switch (bird.state) {
+    case 'flyingToReed':
+      // 飞向芦苇丛 - 保持水平飞行，不改变y坐标
+      const dx = bird.targetX - bird.x;
+      const horizontalDistance = Math.abs(dx);
+      
+      if (horizontalDistance < 5) {
+        // 到达目标x坐标，检查是否需要下降
+        if (Math.abs(bird.y - bird.targetY) < 5) {
+          // 已经到达目标位置，切换到停留状态
+          bird.state = 'perchingOnReed';
+          bird.stateTime = 0;
+          bird.speed = 0;
+          bird.x = bird.targetX;
+          bird.y = bird.targetY;
+          
+          // 到达芦苇后，头和嘴斜向下45度
+          bird.headAngle = Math.PI/4;
+        } else {
+          // 需要垂直下降
+          const dy = bird.targetY - bird.y;
+          const verticalDistance = Math.abs(dy);
+          
+          if (verticalDistance < 2) {
+            bird.y = bird.targetY;
+          } else {
+            // 垂直下降
+            bird.y += (dy / verticalDistance) * bird.speed * 0.5;
+          }
+        }
+      } else {
+        // 水平飞向目标x坐标
+        bird.x += (dx / horizontalDistance) * bird.speed;
+        // 保持水平飞行，不改变y坐标
+        bird.headAngle = 0; // 飞行时保持水平
+      }
+      break;
+      
+    case 'perchingOnReed':
+      // 在芦苇上停留
+      if (bird.stateTime > bird.stayTime) {
+        // 停留时间结束，开始俯冲捉鱼
+        bird.state = 'divingForFish';
+        bird.stateTime = 0;
+        
+        // 设置俯冲目标（水面位置）
+        // 根据当前朝向决定俯冲方向
+        bird.diveTargetX = bird.x + (bird.facingDirection > 0 ? 100 : -100);
+        bird.diveTargetY = reedZone.y + reedZone.height - 10;
+        bird.speed = bird.type.diveSpeed || 3.0;
+      } else {
+        // 每隔一段时间换方向
+        if (gameTime > bird.nextTurnTime) {
+          // 水平换向：改变facingDirection（从向右变成向左，或反之）
+          bird.facingDirection *= -1;
+          bird.direction = bird.facingDirection; // 同步更新 direction 以触发全局翻转
+          bird.bodyFlipped = (bird.facingDirection === -1);
+          
+          // 不需要改变headAngle，因为绘制时会根据facingDirection翻转
+          bird.nextTurnTime = gameTime + bird.turnInterval;
+        }
+      }
+      break;
+      
+    case 'divingForFish':
+      // 俯冲捉鱼
+      const diveDx = bird.diveTargetX - bird.x;
+      const diveDy = bird.diveTargetY - bird.y;
+      const diveDistance = Math.sqrt(diveDx * diveDx + diveDy * diveDy);
+      
+      // 更新朝向：根据俯冲方向设置
+      bird.direction = diveDx > 0 ? 1 : -1;
+      
+      if (diveDistance < 10 || bird.stateTime > 2000) {
+        // 到达水面，捉到鱼
+        bird.state = 'caughtFish';
+        bird.stateTime = 0;
+        bird.hasCaughtFish = true;
+        
+        // 创建鱼对象
+        bird.caughtFish = {
+          x: 0,
+          y: 0,
+          size: bird.type.fishSize,
+          color: bird.type.fishColor,
+          angle: Math.PI/2 // 鱼横向垂直于嘴
+        };
+        
+        // 向上飞起
+        bird.speed = 2.0;
+        bird.direction = -1; // 向上？这里direction应该是左右方向。
+        // 如果是垂直向上，direction保持原样或者随机？
+        // 原代码写的是 direction = -1，这会让它向左飞。
+        // 应该是保持当前朝向，或者随机选一个。
+        // 这里暂时保持原样，或者修复它。
+        // 假设向上飞时保持之前的朝向
+        // bird.direction = bird.direction; 
+        
+        bird.headAngle = 0; // 向上飞时水平
+        bird.bodyFlipped = false; // 取消翻转
+      } else {
+        // 继续俯冲
+        // 计算相对于行进方向的角度
+        // 使用 abs(diveDx) 确保角度始终指向“前方”
+        const diveAngle = Math.atan2(diveDy, Math.abs(diveDx));
+        
+        // 移动逻辑保持使用真实的 diveDx, diveDy
+        // 或者使用 angle * direction ? 
+        // 最简单的是：
+        const moveAngle = Math.atan2(diveDy, diveDx);
+        bird.x += Math.cos(moveAngle) * bird.speed;
+        bird.y += Math.sin(moveAngle) * bird.speed;
+        
+        // 头部朝向俯冲方向（相对于身体）
+        bird.headAngle = diveAngle;
+      }
+      break;
+      
+    case 'caughtFish':
+      // 捉到鱼后向上飞
+      if (bird.stateTime < 1000) {
+        // 向上飞半个芦苇高
+        bird.y -= bird.speed;
+        
+        // 计算鱼的正确位置（在嘴尖）
+        const beakLength = 8 * bird.beakLengthMultiplier; // 嘴的实际长度
+        const fishDistance = beakLength + bird.caughtFish.size/2; // 鱼应该在嘴尖外一点
+        
+        // 计算鱼相对于翠鸟身体中心的位置
+        // 注意：鱼的横向垂直于嘴，所以需要旋转90度
+        const angleForFish = bird.headAngle + Math.PI/2;
+        
+        // 鱼的偏移量（从翠鸟身体中心到鱼的中心）
+        bird.fishOffsetX = Math.cos(bird.headAngle) * fishDistance;
+        bird.fishOffsetY = Math.sin(bird.headAngle) * fishDistance;
+        
+        // 鱼自身的角度（横向垂直于嘴）
+        bird.fishAngle = angleForFish;
+      } else {
+        // 向上飞后飞走
+        bird.state = 'flyingAway';
+        bird.speed = 2.5;
+        bird.direction = Math.random() > 0.5 ? 1 : -1;
+        bird.facingDirection = bird.direction; // 面向飞行方向
+        bird.headAngle = 0; // 水平飞行
+        bird.bodyFlipped = (bird.facingDirection === -1);
+      }
+      break;
+      
+    case 'flyingAway':
+      // 正常飞离画面
+      bird.x += bird.direction * bird.speed;
+      bird.headAngle = 0; // 水平飞行
+      
+      if (bird.x < -100 || bird.x > GAME_WIDTH + 100) {
+        // 飞出画面，移除
+        birds.splice(birds.indexOf(bird), 1);
+      }
+      break;
+      
+case 'fleeingFromRaptor':
+  // 受惊吓飞走，但保持原有的鱼位置
+  bird.x += bird.direction * bird.speed;
+  bird.headAngle = 0; // 水平飞行
+  bird.bodyFlipped = (bird.direction === -1);
+  
+  // 更新鱼的位置（保持原有逻辑）
+  if (bird.caughtFish) {
+    // 计算嘴尖的全局位置
+    const beakLength = 10 * bird.beakLengthMultiplier;
+    const localBeakTipX = bird.direction === 1 ? beakLength : -beakLength;
+    const globalBeakTipX = bird.x + localBeakTipX;
+    const globalBeakTipY = bird.y;
+    
+    // 鱼的位置应该在嘴里面一点
+    const fishDistance = -bird.caughtFish.size/3; // 负值表示向里（向翠鸟头部方向）
+    const fishX = globalBeakTipX + Math.cos(bird.headAngle) * fishDistance;
+    const fishY = globalBeakTipY + Math.sin(bird.headAngle) * fishDistance;
+    
+    bird.fishOffsetX = fishX - bird.x;
+    bird.fishOffsetY = fishY - bird.y;
+    bird.fishAngle = bird.headAngle + Math.PI/2;
+  }
+  
+  if (bird.x < -100 || bird.x > GAME_WIDTH + 100) {
+    // 飞出画面，移除
+    birds.splice(birds.indexOf(bird), 1);
+  }
+  break;
+  }
+  
+  // 更新身体翻转状态
+  // 当面向左边时，身体需要翻转
+  if (bird.state !== 'fleeingFromRaptor' && bird.state !== 'flyingAway') {
+    bird.bodyFlipped = (bird.facingDirection === -1);
+  }
+}
+
+// 修改翠鸟绘制函数，实现整体左右翻转
+function drawKingfisher(bird) {
+  const baseSize = 20;
+  const birdSize = baseSize * bird.size;
+  
+  ctx.save();
+  
+  // 翠鸟的特殊处理：内部翻转逻辑移除，依赖全局翻转
+  // if (bird.bodyFlipped) { ... } REMOVED
+  
+  // 绘制身体
+  ctx.fillStyle = bird.type.bodyColor; // 橙色身体
+  ctx.beginPath();
+  ctx.arc(bird.x, bird.y, birdSize/2, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // 保存画布状态，准备绘制头部
+  ctx.save();
+  
+  // 平移画布到头部位置
+  const headX = bird.x + birdSize/2 - (birdSize * 0.5)/2;
+  const headY = bird.y - birdSize/2 + (birdSize * 0.5)/2;
+  ctx.translate(headX, headY);
+  
+  // 根据头部角度旋转画布（头和嘴一起旋转）
+  ctx.rotate(bird.headAngle);
+  
+  // 绘制头部（在旋转后的坐标系中绘制）
+  ctx.fillStyle = bird.type.headColor; // 青色头部
+  ctx.beginPath();
+  ctx.arc(0, 0, (birdSize * 0.5)/2, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // 绘制长嘴
+  const beakLength = 8 * bird.beakLengthMultiplier;
+  const beakHeight = 3;
+  
+  ctx.fillStyle = bird.type.beakColor; // 黑色嘴
+  ctx.beginPath();
+  ctx.moveTo(0, 0);
+  ctx.lineTo(beakLength, 0);
+  ctx.lineTo(0, beakHeight);
+  ctx.closePath();
+  ctx.fill();
+  
+  // 绘制眼睛和橙色眼圈
+  const eyeX = (birdSize * 0.5)/4;
+  const eyeY = 0;
+  
+  // 橙色眼圈
+  ctx.fillStyle = bird.type.eyeRingColor;
+  ctx.beginPath();
+  ctx.arc(eyeX, eyeY, 4, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // 黑色眼睛
+  ctx.fillStyle = bird.type.eyeColor;
+  ctx.beginPath();
+  ctx.arc(eyeX, eyeY, 2, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // 恢复画布状态
+  ctx.restore();
+  
+  // 绘制翅膀
+  ctx.fillStyle = bird.type.wingColor; // 蓝色翅膀
+  ctx.fillRect(
+    bird.x - birdSize/4 - (birdSize * 0.5)/2,
+    bird.y - birdSize/2,
+    birdSize/2,
+    birdSize/3
+  );
+  
+  // 绘制尾部
+  ctx.fillStyle = bird.type.tailColor; // 青色尾部
+  const tailStartX = bird.x - birdSize/2;
+  const tailStartY = bird.y - birdSize/8;
+  const tailHeight = birdSize/4;
+  
+  ctx.beginPath();
+  ctx.moveTo(tailStartX, tailStartY);
+  ctx.lineTo(tailStartX - 8, tailStartY - tailHeight/2);
+  ctx.lineTo(tailStartX - 8, tailStartY + tailHeight/2);
+  ctx.lineTo(tailStartX, tailStartY);
+  ctx.closePath();
+  ctx.fill();
+  
+  // 如果捉到鱼，绘制鱼
+  if (bird.hasCaughtFish && bird.caughtFish) {
+    ctx.save();
+    
+    // 计算鱼的正确位置
+    // 首先计算嘴尖的位置（头部位置 + 嘴长）
+    const headX = bird.x + birdSize/2 - (birdSize * 0.5)/2;
+    const headY = bird.y - birdSize/2 + (birdSize * 0.5)/2;
+    
+    // 嘴尖在旋转坐标系中的位置
+    const beakTipX = Math.cos(bird.headAngle) * beakLength;
+    const beakTipY = Math.sin(bird.headAngle) * beakLength;
+    
+    // 鱼的位置应该在嘴里面一点，不是嘴尖
+    const fishDistance = -bird.caughtFish.size/4; // 负值表示向里（向翠鸟头部方向）
+    
+    // 直接使用全局坐标（假设面朝右），全局翻转会自动处理面朝左的情况
+    // 嘴尖在旋转坐标系中的位置（相对于头部中心）
+    // 注意：我们需要先旋转再平移，或者直接计算旋转后的坐标
+    // 这里我们直接在头部中心的基础上，加上旋转后的向量
+    
+    // 头部中心坐标
+    const headCenterX = bird.x + birdSize/2 - (birdSize * 0.5)/2;
+    const headCenterY = bird.y - birdSize/2 + (birdSize * 0.5)/2;
+    
+    // 鱼在嘴上的位置（相对于头部中心）
+    // 嘴长是 beakLength
+    // 鱼在嘴上的距离是 beakLength + fishDistance (从头中心算起吗？)
+    // 之前的 beakTipX 是嘴尖。
+    // 让我们重新计算：
+    // 嘴是从 (0,0) 画到 (beakLength, 0) （在头部局部坐标系中）
+    // 鱼应该在 (beakLength + fishDistance, 0) （在头部局部坐标系中）
+    
+    const fishLocalX = beakLength + fishDistance;
+    const fishLocalY = 0;
+    
+    // 将局部坐标转换为全局坐标（考虑 headAngle）
+    const fishGlobalX = headCenterX + Math.cos(bird.headAngle) * fishLocalX - Math.sin(bird.headAngle) * fishLocalY;
+    const fishGlobalY = headCenterY + Math.sin(bird.headAngle) * fishLocalX + Math.cos(bird.headAngle) * fishLocalY;
+    
+    let fishAngle = bird.headAngle + Math.PI/2;
+    
+    ctx.translate(fishGlobalX, fishGlobalY);
+    ctx.rotate(fishAngle);
+    
+    // 绘制鱼身
+    ctx.fillStyle = bird.caughtFish.color;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, bird.caughtFish.size/2, bird.caughtFish.size/4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 绘制鱼尾
+    ctx.beginPath();
+    ctx.moveTo(-bird.caughtFish.size/3, 0);
+    ctx.lineTo(-bird.caughtFish.size/2, -bird.caughtFish.size/4);
+    ctx.lineTo(-bird.caughtFish.size/2, bird.caughtFish.size/4);
+    ctx.closePath();
+    ctx.fill();
+    
+    // 绘制鱼眼
+    ctx.fillStyle = "#000000";
+    ctx.beginPath();
+    ctx.arc(bird.caughtFish.size/4, 0, 1, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.restore();
+  }
+  
+  ctx.restore();
 }
 
 function updateBat(bird, deltaTime) {
