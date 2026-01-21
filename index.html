@@ -188,6 +188,90 @@ body {
     color: #90EE90;
 }
 
+#birdingRecordNav {
+  position: fixed;
+  top: 50%;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 20px;
+  z-index: 410;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+#birdingRecordNav.show {
+  opacity: 1;
+}
+
+.birdingRecordNavButton {
+  pointer-events: auto;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  border: 2px solid #FFD700;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  font-size: 24px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.birdingRecordNavButton:hover {
+  background-color: rgba(255, 215, 0, 0.3);
+  transform: scale(1.1);
+}
+
+.birdingRecordNavButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.birdingRecordNavButton:disabled:hover {
+  background-color: rgba(0, 0, 0, 0.7);
+  transform: none;
+}
+
+#birdingRecordCounter {
+  position: fixed;
+  bottom: 20px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: white;
+  font-size: 16px;
+  z-index: 410;
+  background-color: rgba(0, 0, 0, 0.5);
+  padding: 10px;
+  border-radius: 10px;
+  margin: 0 auto;
+  width: fit-content;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+#birdingRecordCounter.show {
+  opacity: 1;
+}
+
+.swipe-hint {
+  position: fixed;
+  bottom: 80px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: #FFD700;
+  font-size: 14px;
+  z-index: 410;
+  opacity: 0.7;
+  animation: pulse 2s infinite;
+}
+
 #textStats {
     position: absolute;
     top: 95px;
@@ -1677,12 +1761,23 @@ body {
     <button id="closeAlbum" onclick="closeAlbum()">×</button>
   </div>
   
-  <div id="birdingRecordModal" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.95); z-index: 400; display: none; padding: 20px; color: white; font-family: 'Microsoft YaHei', monospace; overflow-y: auto; white-space: pre-wrap;">
-    <button id="closeBirdingRecord" onclick="closeBirdingRecord()" style="position: absolute; top: 20px; right: 20px; background: rgba(255, 255, 255, 0.2); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; cursor: pointer;">×</button>
-    <!-- 在观鸟记录模态框中添加截图按钮 -->
-    <button id="screenshotButton" onclick="captureBirdingRecord()">📸 截图记录</button>
-    <div id="birdingRecordContent" style="margin-top: 60px; font-size: 16px; line-height: 1.6;"></div>
+<div id="birdingRecordModal" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.95); z-index: 400; display: none; padding: 20px; color: white; font-family: 'Microsoft YaHei', monospace; overflow-y: auto; white-space: pre-wrap;">
+  <button id="closeBirdingRecord" onclick="closeBirdingRecord()" style="position: absolute; top: 20px; right: 20px; background: rgba(255, 255, 255, 0.2); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; cursor: pointer;">×</button>
+  <button id="screenshotButton" onclick="captureBirdingRecord()">📸 截图记录</button>
+  <!-- 添加导航按钮 -->
+  <div id="birdingRecordNav">
+    <button id="prevRecordButton" class="birdingRecordNavButton" onclick="switchBirdingRecord(-1)">←</button>
+    <button id="nextRecordButton" class="birdingRecordNavButton" onclick="switchBirdingRecord(1)">→</button>
   </div>
+  
+  <!-- 添加记录计数器 -->
+  <div id="birdingRecordCounter"></div>
+  
+  <!-- 添加滑动提示 -->
+  <div id="swipeHint" class="swipe-hint" style="display: none;">使用滚轮或滑动切换记录</div>
+  
+  <div id="birdingRecordContent" style="margin-top: 60px; font-size: 16px; line-height: 1.6;"></div>
+</div>
 </div>
 
 <script>
@@ -1702,6 +1797,12 @@ let gyroGamma = 0;
 let gyroCenterBeta = 0;
 let gyroCenterGamma = 0;
 let requestCalibration = true;
+let currentRecordIndex = 0;
+let isNavigatingRecords = false;
+let touchStartY = 0;
+let touchStartX = 0;
+let lastWheelTime = 0;
+const WHEEL_COOLDOWN = 500; // 滚轮冷却时间（毫秒）
 
 window.addEventListener('orientationchange', () => {
   requestCalibration = true;
@@ -2570,6 +2671,7 @@ let birdingModeBirdTracker = {};
 let birdingObservedSpecies = new Set();
 let birdingModeRecordedBirds = new Set();
 let birdingModeUpdateInterval = null;
+let birdingModeCapturedSpecies = null; // 用于记录本次观鸟期间拍摄的鸟种
 
 // 截图相关变量
 let screenshotCanvas, screenshotCtx;
@@ -3097,225 +3199,366 @@ function updateBirdingRecordIcons() {
 }
 
 function createBirdingRecord() {
-    if (!birdingModeActive && birdingObservedSpecies.size === 0) {
-        return null;
+  if (!birdingModeActive && birdingObservedSpecies.size === 0) {
+    return null;
+  }
+  
+  // 计算本次观鸟期间拍摄的鸟种数
+  const capturedInSession = birdingModeCapturedSpecies ? birdingModeCapturedSpecies.size : 0;
+   
+  // 查找最稀有鸟种
+  let rarestBird = null;
+  let minProbability = Infinity;
+  for (const birdName of birdingObservedSpecies) {
+    const birdKey = Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName);
+    if (birdKey && BIRD_TYPES[birdKey].probability > 0 && BIRD_TYPES[birdKey].probability < minProbability) {
+      minProbability = BIRD_TYPES[birdKey].probability;
+      rarestBird = birdName;
     }
-    
-    const capturedSpeciesCount = Object.keys(capturedBirds).filter(
-        birdName => capturedBirds[birdName] > 0 && 
-        !BIRD_TYPES[Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName)]?.isSpecial
-    ).length;
-    
-    let rarestBird = null;
-    let minProbability = Infinity;
-    
-    for (const birdName of birdingObservedSpecies) {
-        const birdKey = Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName);
-        if (birdKey && BIRD_TYPES[birdKey].probability > 0 && BIRD_TYPES[birdKey].probability < minProbability) {
-            minProbability = BIRD_TYPES[birdKey].probability;
-            rarestBird = birdName;
-        }
-    }
-    
-    const record = {
-        id: birdingRecords.length + 1,
-        time: gameTime,
-        observedSpecies: Array.from(birdingObservedSpecies),
-        totalObservedSpecies: birdingObservedSpecies.size,
-        capturedSpeciesCount: capturedSpeciesCount,
-        rarestBird: rarestBird,
-        birdingModeDuration: birdingModeActive ? (gameTime - birdingModeStartTime) : (birdingModeEndTime ? (birdingModeEndTime - birdingModeStartTime) : 0),
-        startedAtDaytime: isDaytimeAtStart,
-        endedAtDaytime: isDaytime
-    };
-    
-    birdingRecords.push(record);
-    if (birdingRecords.length > 20) {
-        birdingRecords.shift();
-    }
-    
-    // 更新记录图标显示
-    updateBirdingRecordIcons();
-    
-    return record;
+  }
+  
+  // 创建观鸟记录
+  const record = {
+    id: birdingRecords.length + 1,
+    time: gameTime,
+    observedSpecies: Array.from(birdingObservedSpecies),
+    totalObservedSpecies: birdingObservedSpecies.size,
+    capturedInSession: capturedInSession, // 本次观鸟期间拍摄的鸟种数
+    rarestBird: rarestBird,
+    birdingModeDuration: birdingModeActive ? (gameTime - birdingModeStartTime) : 
+                         (birdingModeEndTime ? (birdingModeEndTime - birdingModeStartTime) : 0),
+    startedAtDaytime: isDaytimeAtStart,
+    endedAtDaytime: isDaytime
+  };
+  
+  // 保存记录（最多20条）
+  birdingRecords.push(record);
+  if (birdingRecords.length > 20) {
+    birdingRecords.shift();
+  }
+  
+  // 更新图标
+  updateBirdingRecordIcons();
+  
+  return record;
 }
 
 function openBirdingRecord(recordIndex) {
-    if (recordIndex < 0 || recordIndex >= birdingRecords.length) return;
+  if (recordIndex < 0 || recordIndex >= birdingRecords.length) return;
+  
+  pauseGame();
+  
+  const modal = document.getElementById('birdingRecordModal');
+  const content = document.getElementById('birdingRecordContent');
+  const screenshotButton = document.getElementById('screenshotButton');
+  const nav = document.getElementById('birdingRecordNav');
+  const counter = document.getElementById('birdingRecordCounter');
+  const swipeHint = document.getElementById('swipeHint');
+  
+  // 设置当前记录索引
+  currentRecordIndex = recordIndex;
+  
+  modal.style.display = 'block';
+  modal.style.zIndex = '400';
+  
+  // 显示导航按钮和计数器
+  nav.classList.add('show');
+  counter.classList.add('show');
+  swipeHint.style.display = 'block';
+  
+  screenshotButton.style.display = 'block';
+  screenshotButton.style.pointerEvents = 'auto';
+  screenshotButton.style.opacity = '1';
+  screenshotButton.style.zIndex = '401';
+  screenshotButton.parentNode.appendChild(screenshotButton);
+  
+  // 更新导航按钮状态
+  updateRecordNavButtons();
+  
+  // 更新记录内容
+  updateRecordContent(recordIndex);
+  
+  // 添加事件监听器
+  modal.addEventListener('wheel', handleRecordWheel, { passive: false });
+  modal.addEventListener('touchstart', handleRecordTouchStart, { passive: true });
+  modal.addEventListener('touchmove', handleRecordTouchMove, { passive: false });
+  modal.addEventListener('touchend', handleRecordTouchEnd, { passive: true });
+  
+  screenshotButton.onclick = function(e) {
+    e.stopPropagation();
+    captureBirdingRecord();
+  };
+  
+  // 3秒后隐藏滑动提示
+  setTimeout(() => {
+    swipeHint.style.display = 'none';
+  }, 3000);
+}
+  
+  function updateRecordContent(recordIndex) {
+  const record = birdingRecords[recordIndex];
+  const content = document.getElementById('birdingRecordContent');
+  const counter = document.getElementById('birdingRecordCounter');
+  
+  currentBirdingRecord = record;
+  currentRecordIndex = recordIndex;
+  
+  const totalSeconds = Math.floor(record.birdingModeDuration / 1000);
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  
+  let recordText = `第 ${record.id} 次观鸟记录\n`;
+  recordText += "=".repeat(50) + "\n\n";
+  recordText += `观鸟时长: ${minutes}分${seconds}秒\n`;
+  recordText += `时间跨度: ${record.startedAtDaytime ? "白天" : "黑夜"} → ${record.endedAtDaytime ? "白天" : "黑夜"}\n`;
+  recordText += `观察鸟种: ${record.totalObservedSpecies} 种\n`;
+  recordText += `拍摄鸟种: ${record.capturedInSession} 种\n`;
+  
+  if (record.rarestBird) {
+    recordText += `最稀有鸟种: ${record.rarestBird}\n`;
+  }
+  
+  recordText += "=".repeat(50) + "\n\n";
+  recordText += "观察到的鸟种:\n";
+  recordText += "-".repeat(50) + "\n\n";
+  
+  record.observedSpecies.sort().forEach((birdName, index) => {
+    const birdKey = Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName);
+    const isRare = birdKey && BIRD_TYPES[birdKey].probability < 0.02;
     
-    pauseGame();
-    
-    const modal = document.getElementById('birdingRecordModal');
-    const content = document.getElementById('birdingRecordContent');
-    const screenshotButton = document.getElementById('screenshotButton');
-    
-    // 确保模态框和按钮可见
-    modal.style.display = 'block';
-    modal.style.zIndex = '400'; // 确保层级足够高
-    
-    // 强制显示截图按钮并确保可点击
-    screenshotButton.style.display = 'block';
-    screenshotButton.style.pointerEvents = 'auto';
-    screenshotButton.style.opacity = '1';
-    screenshotButton.style.zIndex = '401';
-    
-    // 确保按钮在DOM层级中位于前面
-    screenshotButton.parentNode.appendChild(screenshotButton);
-    
-    const record = birdingRecords[recordIndex];
-    currentBirdingRecord = record;
-    
-    // 生成记录文本（这部分保持不变）
-    const totalSeconds = Math.floor(record.birdingModeDuration / 1000);
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = totalSeconds % 60;
-    
-    let recordText = `第 ${record.id} 次观鸟记录\n`;
-    recordText += "=".repeat(50) + "\n\n";
-    recordText += `观鸟时长: ${minutes}分${seconds}秒\n`;
-    recordText += `时间跨度: ${record.startedAtDaytime ? "白天" : "黑夜"} → ${record.endedAtDaytime ? "白天" : "黑夜"}\n`;
-    recordText += `观察鸟种: ${record.totalObservedSpecies} 种\n`;
-    recordText += `拍摄鸟种: ${record.capturedSpeciesCount} 种\n`;
-    
-    if (record.rarestBird) {
-        recordText += `最稀有鸟种: ${record.rarestBird}\n`;
+    if (birdName === record.rarestBird) {
+      recordText += `${index + 1}. ${birdName} ★\n`;
+    } else if (isRare) {
+      recordText += `${index + 1}. ${birdName} (稀有)\n`;
+    } else {
+      recordText += `${index + 1}. ${birdName}\n`;
     }
-    
-    recordText += "=".repeat(50) + "\n\n";
-    recordText += "观察到的鸟种:\n";
-    recordText += "-".repeat(50) + "\n\n";
-    
-    record.observedSpecies.sort().forEach((birdName, index) => {
-        const birdKey = Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName);
-        const isRare = birdKey && BIRD_TYPES[birdKey].probability < 0.02;
-        
-        if (birdName === record.rarestBird) {
-            recordText += `${index + 1}. ${birdName} ★\n`;
-        } else if (isRare) {
-            recordText += `${index + 1}. ${birdName} (稀有)\n`;
-        } else {
-            recordText += `${index + 1}. ${birdName}\n`;
-        }
-    });
-    
-    content.textContent = recordText;
-    
-    // 添加事件监听器，确保按钮可以工作
-    screenshotButton.onclick = function(e) {
-        e.stopPropagation();
-        captureBirdingRecord();
-    };
-    
-    // 添加一个检查，确保按钮在点击后仍然可用
-    setTimeout(() => {
-        if (screenshotButton.style.display !== 'block') {
-            screenshotButton.style.display = 'block';
-        }
-    }, 100);
+  });
+  
+  content.textContent = recordText;
+  
+  // 更新计数器
+  counter.textContent = `记录 ${recordIndex + 1} / ${birdingRecords.length}`;
+  
+  // 更新导航按钮状态
+  updateRecordNavButtons();
 }
 
+function updateRecordNavButtons() {
+  const prevButton = document.getElementById('prevRecordButton');
+  const nextButton = document.getElementById('nextRecordButton');
+  
+  prevButton.disabled = currentRecordIndex <= 0;
+  nextButton.disabled = currentRecordIndex >= birdingRecords.length - 1;
+}
+
+// 切换记录
+function switchBirdingRecord(direction) {
+  if (isNavigatingRecords) return;
+  
+  const newIndex = currentRecordIndex + direction;
+  
+  if (newIndex >= 0 && newIndex < birdingRecords.length) {
+    isNavigatingRecords = true;
+    
+    // 添加切换动画效果
+    const content = document.getElementById('birdingRecordContent');
+    content.style.opacity = '0.5';
+    content.style.transition = 'opacity 0.2s';
+    
+    setTimeout(() => {
+      updateRecordContent(newIndex);
+      content.style.opacity = '1';
+      
+      setTimeout(() => {
+        isNavigatingRecords = false;
+      }, 100);
+    }, 100);
+  }
+}
+
+// 处理滚轮事件
+function handleRecordWheel(event) {
+  if (isNavigatingRecords) return;
+  
+  const now = Date.now();
+  if (now - lastWheelTime < WHEEL_COOLDOWN) return;
+  
+  event.preventDefault();
+  
+  // 判断滚轮方向
+  if (event.deltaY > 0) {
+    // 向下滚动，切换到下一条记录
+    switchBirdingRecord(1);
+  } else if (event.deltaY < 0) {
+    // 向上滚动，切换到上一条记录
+    switchBirdingRecord(-1);
+  }
+  
+  lastWheelTime = now;
+}
+
+// 处理触摸开始事件
+function handleRecordTouchStart(event) {
+  if (event.touches.length === 1) {
+    touchStartY = event.touches[0].clientY;
+    touchStartX = event.touches[0].clientX;
+  }
+}
+
+// 处理触摸移动事件
+function handleRecordTouchMove(event) {
+  if (isNavigatingRecords || event.touches.length !== 1) return;
+  
+  event.preventDefault();
+  
+  const touchY = event.touches[0].clientY;
+  const touchX = event.touches[0].clientX;
+  
+  // 计算垂直滑动距离
+  const deltaY = touchY - touchStartY;
+  const deltaX = touchX - touchStartX;
+  
+  // 如果是垂直滑动且距离足够大，则切换记录
+  if (Math.abs(deltaY) > 50 && Math.abs(deltaY) > Math.abs(deltaX)) {
+    if (deltaY > 0) {
+      // 向下滑动，切换到上一条记录
+      switchBirdingRecord(-1);
+    } else {
+      // 向上滑动，切换到下一条记录
+      switchBirdingRecord(1);
+    }
+    
+    // 重置触摸起点
+    touchStartY = touchY;
+    touchStartX = touchX;
+  }
+}
+
+// 处理触摸结束事件
+function handleRecordTouchEnd() {
+  touchStartY = 0;
+  touchStartX = 0;
+}
+
+// 修改 closeBirdingRecord 函数
 function closeBirdingRecord() {
-    const modal = document.getElementById('birdingRecordModal');
-    const screenshotButton = document.getElementById('screenshotButton');
-    
-    modal.style.display = 'none';
-    screenshotButton.style.display = 'none';
-    currentBirdingRecord = null;
-    
-    // 关闭截图预览
-    closeScreenshotPreview();
-    
-    // 恢复游戏
-    resumeGame();
+  const modal = document.getElementById('birdingRecordModal');
+  const screenshotButton = document.getElementById('screenshotButton');
+  const nav = document.getElementById('birdingRecordNav');
+  const counter = document.getElementById('birdingRecordCounter');
+  
+  // 移除事件监听器
+  modal.removeEventListener('wheel', handleRecordWheel);
+  modal.removeEventListener('touchstart', handleRecordTouchStart);
+  modal.removeEventListener('touchmove', handleRecordTouchMove);
+  modal.removeEventListener('touchend', handleRecordTouchEnd);
+  
+  modal.style.display = 'none';
+  nav.classList.remove('show');
+  counter.classList.remove('show');
+  
+  screenshotButton.style.display = 'none';
+  currentBirdingRecord = null;
+  
+  resumeGame();
 }
 
 function toggleBirdingMode() {
-    if (gamePaused) return;
+  if (gamePaused) return;
+  
+  if (!birdingModeActive) {
+    // 开始观鸟模式
+    birdingModeActive = true;
+    birdingModeStartTime = gameTime;
+    isDaytimeAtStart = isDaytime;
     
-    if (!birdingModeActive) {
-        birdingModeActive = true;
-        birdingModeStartTime = gameTime;
-        isDaytimeAtStart = isDaytime;
-        
-        const dayModeButton = document.getElementById('dayModeToggle');
-        const normalModeButton = document.getElementById('normalModeToggle');
-        const nightModeButton = document.getElementById('nightModeToggle');
-        
-        dayModeButton.disabled = true;
-        normalModeButton.disabled = true;
-        nightModeButton.disabled = true;
-        dayModeButton.style.opacity = '0.5';
-        normalModeButton.style.opacity = '0.5';
-        nightModeButton.style.opacity = '0.5';
-        
-        birdingObservedSpecies = new Set();
-        birdingModeRecordedBirds = new Set();
-        
-        const initialBirds = getBirdsInView();
-        initialBirds.forEach(bird => {
-            if (bird.noStats) return;
-            const birdId = `${bird.name}_${bird.x}_${bird.y}_${bird.groupId || 'single'}`;
-            if (!birdingModeRecordedBirds.has(birdId)) {
-                birdingModeRecordedBirds.add(birdId);
-                birdingObservedSpecies.add(bird.name);
-            }
-        });
-        
-        birdingModeStartSnapshot = {
-            startTime: gameTime,
-            startedAtDaytime: isDaytime,
-            birdCounts: countBirdsInView(),
-            captured: {...capturedBirds},
-            birds: birds.map(bird => ({ 
-                name: bird.name, 
-                type: bird.type, 
-                x: bird.x, 
-                y: bird.y, 
-                groupId: bird.groupId 
-            }))
-        };
-        
-        birdingModeBirdTracker = {};
-        lastBirdingRecordTime = gameTime;
-        
-        showSpecialAlert("观鸟模式已启动！记录已开始。");
-        updateBirdingModeButton();
-        
+    // 禁用其他模式按钮
+    const dayModeButton = document.getElementById('dayModeToggle');
+    const normalModeButton = document.getElementById('normalModeToggle');
+    const nightModeButton = document.getElementById('nightModeToggle');
+    dayModeButton.disabled = true;
+    normalModeButton.disabled = true;
+    nightModeButton.disabled = true;
+    dayModeButton.style.opacity = '0.5';
+    normalModeButton.style.opacity = '0.5';
+    nightModeButton.style.opacity = '0.5';
+    
+    // 初始化本次观鸟的统计
+    birdingObservedSpecies = new Set();
+    birdingModeRecordedBirds = new Set();
+    birdingModeCapturedSpecies = new Set(); // 初始化本次观鸟拍摄鸟种集合
+    
+    // 记录初始状态
+    const initialBirds = getBirdsInView();
+    initialBirds.forEach(bird => {
+      if (bird.noStats) return;
+      const birdId = `${bird.name}_${bird.x}_${bird.y}_${bird.groupId || 'single'}`;
+      if (!birdingModeRecordedBirds.has(birdId)) {
+        birdingModeRecordedBirds.add(birdId);
+        birdingObservedSpecies.add(bird.name);
+      }
+    });
+    
+    // 记录观鸟模式开始时的快照
+    birdingModeStartSnapshot = {
+      startTime: gameTime,
+      startedAtDaytime: isDaytime,
+      birdCounts: countBirdsInView(),
+      captured: {...capturedBirds}, // 复制当前的拍摄状态
+      birds: birds.map(bird => ({ 
+        name: bird.name, 
+        type: bird.type, 
+        x: bird.x, 
+        y: bird.y, 
+        groupId: bird.groupId 
+      }))
+    };
+    
+    birdingModeBirdTracker = {};
+    lastBirdingRecordTime = gameTime;
+    
+    showSpecialAlert("观鸟模式已启动！记录已开始。");
+    updateBirdingModeButton();
+  } else {
+    // 结束观鸟模式
+    birdingModeActive = false;
+    birdingModeEndTime = gameTime;
+    
+    // 重新启用其他模式按钮
+    const dayModeButton = document.getElementById('dayModeToggle');
+    const normalModeButton = document.getElementById('normalModeToggle');
+    const nightModeButton = document.getElementById('nightModeToggle');
+    dayModeButton.disabled = false;
+    normalModeButton.disabled = false;
+    nightModeButton.disabled = false;
+    dayModeButton.style.opacity = '1';
+    normalModeButton.style.opacity = '1';
+    nightModeButton.style.opacity = '1';
+    
+    // 创建观鸟记录
+    const record = createBirdingRecord();
+    updateBirdingModeButton();
+    
+    if (record) {
+      const elapsedMinutes = Math.floor(record.birdingModeDuration / 60000);
+      const elapsedSeconds = Math.floor((record.birdingModeDuration % 60000) / 1000);
+      showSpecialAlert(`观鸟模式结束！持续${elapsedMinutes}分${elapsedSeconds}秒，观察${record.totalObservedSpecies}种，拍摄${record.capturedInSession}种`);
+      
+      if (record.totalObservedSpecies > 0) {
+        pauseGame();
+        openBirdingRecord(record.id - 1);
+      }
     } else {
-        birdingModeActive = false;
-        birdingModeEndTime = gameTime;
-        
-        const dayModeButton = document.getElementById('dayModeToggle');
-        const normalModeButton = document.getElementById('normalModeToggle');
-        const nightModeButton = document.getElementById('nightModeToggle');
-        
-        dayModeButton.disabled = false;
-        normalModeButton.disabled = false;
-        nightModeButton.disabled = false;
-        dayModeButton.style.opacity = '1';
-        normalModeButton.style.opacity = '1';
-        nightModeButton.style.opacity = '1';
-        
-        const record = createBirdingRecord();
-        updateBirdingModeButton();
-        
-        if (record) {
-            const elapsedMinutes = Math.floor(record.birdingModeDuration / 60000);
-            const elapsedSeconds = Math.floor((record.birdingModeDuration % 60000) / 1000);
-            showSpecialAlert(`观鸟模式结束！持续${elapsedMinutes}分${elapsedSeconds}秒，观察${record.totalObservedSpecies}种，拍摄${record.capturedSpeciesCount}种`);
-            
-            if (record.totalObservedSpecies > 0) {
-                pauseGame();
-                openBirdingRecord(record.id - 1);
-            }
-        } else {
-            showSpecialAlert("观鸟模式结束，未生成记录数据。");
-        }
-        
-        birdingModeStartSnapshot = {};
-        birdingObservedSpecies = new Set();
-        birdingModeRecordedBirds = new Set();
+      showSpecialAlert("观鸟模式结束，未生成记录数据。");
     }
+    
+    // 清空观鸟模式相关数据
+    birdingModeStartSnapshot = {};
+    birdingObservedSpecies = new Set();
+    birdingModeRecordedBirds = new Set();
+    birdingModeCapturedSpecies = null; // 清空本次观鸟拍摄记录
+  }
 }
 
 function updateBirdingModeButton() {
@@ -3620,10 +3863,14 @@ function captureBirdingRecord() {
     screenshotButton.style.opacity = '0.5';
     screenshotButton.textContent = "生成中...";
     
-    try {
-        if (!gamePaused) {
-            pauseGame();
-        }
+// 临时禁用滑动功能
+  const originalNavigating = isNavigatingRecords;
+  isNavigatingRecords = true;
+  
+  try {
+    if (!gamePaused) {
+      pauseGame();
+    }
         
         const SCREENSHOT_WIDTH = 300;
         const lineHeight = 22;
@@ -3686,117 +3933,128 @@ function captureBirdingRecord() {
         screenshotCtx.fillText(bottomText, SCREENSHOT_WIDTH / 2, SCREENSHOT_HEIGHT - 15);
         
         currentScreenshotDataURL = screenshotCanvas.toDataURL('image/png');
-        
-        console.log("截图生成完成，数据URL长度:", currentScreenshotDataURL.length);
-        
-        setTimeout(() => {
-            showScreenshotPreview();
-            screenshotButton.disabled = false;
-            screenshotButton.style.opacity = '1';
-            screenshotButton.textContent = "📸 截图记录";
-        }, 100);
-        
-    } catch (error) {
-        console.error("截图绘制过程中出错:", error);
-        showSpecialAlert("截图绘制失败");
-        screenshotButton.disabled = false;
-        screenshotButton.style.opacity = '1';
-        screenshotButton.textContent = "📸 截图记录";
-        resumeGame();
-    }
+    console.log("截图生成完成，数据URL长度:", currentScreenshotDataURL.length);
+    
+    setTimeout(() => {
+      showScreenshotPreview();
+      screenshotButton.disabled = false;
+      screenshotButton.style.opacity = '1';
+      screenshotButton.textContent = "📸 截图记录";
+      isNavigatingRecords = originalNavigating; // 恢复滑动功能
+    }, 100);
+    
+  } catch (error) {
+    console.error("截图绘制过程中出错:", error);
+    showSpecialAlert("截图绘制失败");
+    screenshotButton.disabled = false;
+    screenshotButton.style.opacity = '1';
+    screenshotButton.textContent = "📸 截图记录";
+    isNavigatingRecords = originalNavigating; // 恢复滑动功能
+    resumeGame();
+  }
 }
 
 function drawRecordInfoSingleColumn(record, startY, lineHeight, columnWidth, maxHeight) {
-    let y = startY;
-    const x = 20;
-    const speciesListStartY = y; // 记录物种列表开始的位置
-    
+  let y = startY;
+  const x = 20;
+  const speciesListStartY = y;
+  
+  screenshotCtx.fillStyle = '#FFFFFF';
+  screenshotCtx.font = '16px "Microsoft YaHei", Arial, sans-serif';
+  screenshotCtx.textAlign = 'left';
+  
+  screenshotCtx.fillText(`记录编号: #${record.id}`, x, y);
+  y += lineHeight;
+  
+  const durationText = `观鸟时长: ${Math.floor(record.birdingModeDuration / 60000)}分${Math.floor((record.birdingModeDuration % 60000) / 1000)}秒`;
+  screenshotCtx.fillText(durationText, x, y);
+  y += lineHeight;
+  
+  screenshotCtx.fillText(`时间: ${record.startedAtDaytime ? "白天" : "黑夜"} → ${record.endedAtDaytime ? "白天" : "黑夜"}`, x, y);
+  y += lineHeight;
+  
+  screenshotCtx.fillText(`观察鸟种: ${record.totalObservedSpecies} 种`, x, y);
+  y += lineHeight;
+
+  screenshotCtx.fillText(`拍摄鸟种: ${record.capturedInSession || 0} 种`, x, y);
+  y += lineHeight;
+  
+  if (record.rarestBird) {
+    screenshotCtx.fillStyle = '#FFD700';
+    screenshotCtx.fillText(`最稀有: ${record.rarestBird}`, x, y);
     screenshotCtx.fillStyle = '#FFFFFF';
-    screenshotCtx.font = '16px "Microsoft YaHei", Arial, sans-serif';
-    screenshotCtx.textAlign = 'left';
-    
-    // 1. 绘制记录信息（固定部分）
-    screenshotCtx.fillText(`记录编号: #${record.id}`, x, y);
     y += lineHeight;
+  }
+  
+  y += lineHeight;
+  
+  screenshotCtx.fillStyle = '#87CEEB';
+  screenshotCtx.fillText('观察到的鸟种:', x, y);
+  y += lineHeight;
+  
+  screenshotCtx.strokeStyle = '#87CEEB';
+  screenshotCtx.lineWidth = 1;
+  screenshotCtx.beginPath();
+  screenshotCtx.moveTo(x, y - 5);
+  screenshotCtx.lineTo(x + 120, y - 5);
+  screenshotCtx.stroke();
+  
+  y += 5;
+  
+  const sortedSpecies = [...record.observedSpecies].sort();
+  
+  // 每列显示15个鸟种
+  const itemsPerColumn = 15;
+  const columnCount = Math.ceil(sortedSpecies.length / itemsPerColumn);
+  
+  // 计算列宽（假设有3列空间，实际根据列数调整）
+  const maxColumns = 3; // 最大3列
+  const actualColumnCount = Math.min(columnCount, maxColumns);
+  const actualColumnWidth = (screenshotCanvas.width - 40) / actualColumnCount;
+  
+  // 按列优先排列（先竖排，填满一列后再换下一列）
+  for (let col = 0; col < actualColumnCount; col++) {
+    const columnX = x + col * actualColumnWidth;
+    let columnY = y;
     
-    const durationText = `观鸟时长: ${Math.floor(record.birdingModeDuration / 60000)}分${Math.floor((record.birdingModeDuration % 60000) / 1000)}秒`;
-    screenshotCtx.fillText(durationText, x, y);
-    y += lineHeight;
-    
-    screenshotCtx.fillText(`时间: ${record.startedAtDaytime ? "白天" : "黑夜"} → ${record.endedAtDaytime ? "白天" : "黑夜"}`, x, y);
-    y += lineHeight;
-    
-    screenshotCtx.fillText(`观察鸟种: ${record.totalObservedSpecies} 种`, x, y);
-    y += lineHeight;
-    
-    screenshotCtx.fillText(`拍摄鸟种: ${record.capturedSpeciesCount} 种`, x, y);
-    y += lineHeight;
-    
-    if (record.rarestBird) {
+    for (let row = 0; row < itemsPerColumn; row++) {
+      const index = col * itemsPerColumn + row; // 列优先索引
+      
+      if (index >= sortedSpecies.length) {
+        break;
+      }
+      
+      const birdName = sortedSpecies[index];
+      const birdKey = Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName);
+      const isRare = birdKey && BIRD_TYPES[birdKey].probability < 0.02;
+      const isRarest = birdName === record.rarestBird;
+      
+      if (isRarest) {
         screenshotCtx.fillStyle = '#FFD700';
-        screenshotCtx.fillText(`最稀有: ${record.rarestBird}`, x, y);
-        screenshotCtx.fillStyle = '#FFFFFF';
-        y += lineHeight;
-    }
-    
-    y += lineHeight;
-    
-    // 2. 绘制物种列表（支持分列）
-    screenshotCtx.fillStyle = '#87CEEB';
-    screenshotCtx.fillText('观察到的鸟种:', x, y);
-    y += lineHeight;
-    
-    screenshotCtx.strokeStyle = '#87CEEB';
-    screenshotCtx.lineWidth = 1;
-    screenshotCtx.beginPath();
-    screenshotCtx.moveTo(x, y - 5);
-    screenshotCtx.lineTo(x + 120, y - 5);
-    screenshotCtx.stroke();
-    
-    y += 5;
-    
-    const sortedSpecies = [...record.observedSpecies].sort();
-    const itemsPerColumn = Math.floor((maxHeight - y) / lineHeight);
-    const columnCount = Math.ceil(sortedSpecies.length / itemsPerColumn);
-    
-    // 计算每列宽度
-    const actualColumnWidth = (screenshotCanvas.width - 40) / Math.max(1, columnCount);
-    
-    for (let col = 0; col < columnCount; col++) {
-        const columnX = x + col * actualColumnWidth;
-        let columnY = y;
-        
-        for (let i = col * itemsPerColumn; i < Math.min((col + 1) * itemsPerColumn, sortedSpecies.length); i++) {
-            const birdName = sortedSpecies[i];
-            const birdKey = Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName);
-            const isRare = birdKey && BIRD_TYPES[birdKey].probability < 0.02;
-            const isRarest = birdName === record.rarestBird;
-            
-            if (isRarest) {
-                screenshotCtx.fillStyle = '#FFD700';
-                screenshotCtx.font = 'bold 14px "Microsoft YaHei"';
-                screenshotCtx.fillText(`${i + 1}. ${birdName} ★`, columnX, columnY);
-                screenshotCtx.font = '14px "Microsoft YaHei"';
-            } else if (isRare) {
-                screenshotCtx.fillStyle = '#FFA500';
-                screenshotCtx.fillText(`${i + 1}. ${birdName} (稀有)`, columnX, columnY);
-            } else {
-                screenshotCtx.fillStyle = '#FFFFFF';
-                screenshotCtx.fillText(`${i + 1}. ${birdName}`, columnX, columnY);
-            }
-            columnY += lineHeight;
-        }
-    }
-    
-    // 3. 如果物种太多，添加提示
-    if (sortedSpecies.length > itemsPerColumn * columnCount) {
+        screenshotCtx.font = 'bold 14px "Microsoft YaHei"';
+        screenshotCtx.fillText(`${index + 1}. ${birdName} ★`, columnX, columnY);
+        screenshotCtx.font = '14px "Microsoft YaHei"';
+      } else if (isRare) {
         screenshotCtx.fillStyle = '#FFA500';
-        screenshotCtx.font = '12px "Microsoft YaHei"';
-        screenshotCtx.fillText(`... 还有 ${sortedSpecies.length - (itemsPerColumn * columnCount)} 种未显示`, 
-                              x, screenshotCanvas.height - 20);
+        screenshotCtx.fillText(`${index + 1}. ${birdName} (稀有)`, columnX, columnY);
+      } else {
+        screenshotCtx.fillStyle = '#FFFFFF';
+        screenshotCtx.fillText(`${index + 1}. ${birdName}`, columnX, columnY);
+      }
+      
+      columnY += lineHeight;
     }
-    
-    return y;
+  }
+  
+  // 如果鸟种太多，超过显示空间，添加提示
+  if (sortedSpecies.length > itemsPerColumn * actualColumnCount) {
+    const remainingCount = sortedSpecies.length - (itemsPerColumn * actualColumnCount);
+    screenshotCtx.fillStyle = '#FFA500';
+    screenshotCtx.font = '12px "Microsoft YaHei"';
+    screenshotCtx.fillText(`... 还有 ${remainingCount} 种未显示`, x, y + itemsPerColumn * lineHeight + 10);
+  }
+  
+  return y;
 }
 
 // 显示截图预览
@@ -3882,9 +4140,11 @@ function saveScreenshot() {
     }
 }
 
+// 修改 handleKeyDown 函数，添加键盘导航支持
 function handleKeyDown(e) {
   if (e.key === 'Escape') {
     closeAlbum();
+    closeBirdingRecord();
   } else if (e.key === 'y' || e.key === 'Y') {
     generatePeregrine(false);
   } else if (e.key === 'h' || e.key === 'H') {
@@ -3926,6 +4186,20 @@ function handleKeyDown(e) {
   } else if (e.key === 'p' || e.key === 'P') {
     if (currentBirdingRecord) {
       captureBirdingRecord();
+    }
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    // 在观鸟记录界面时，左箭头或上箭头切换到上一条记录
+    const modal = document.getElementById('birdingRecordModal');
+    if (modal.style.display === 'block') {
+      e.preventDefault();
+      switchBirdingRecord(-1);
+    }
+  } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+    // 在观鸟记录界面时，右箭头或下箭头切换到下一条记录
+    const modal = document.getElementById('birdingRecordModal');
+    if (modal.style.display === 'block') {
+      e.preventDefault();
+      switchBirdingRecord(1);
     }
   }
 }
@@ -4647,10 +4921,10 @@ function showAllBirdsAlert() {
 }
 
 function createPhoto(x, y, width, height, capturedBird, capturedNightObject) {
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = width;
-    tempCanvas.height = height;
-    const tempCtx = tempCanvas.getContext('2d');
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = width;
+  tempCanvas.height = height;
+  const tempCtx = tempCanvas.getContext('2d');
     
     let sourceX = Math.max(0, Math.min(x, GAME_WIDTH));
     let sourceY = Math.max(0, Math.min(y, GAME_HEIGHT));
@@ -4732,29 +5006,41 @@ function createPhoto(x, y, width, height, capturedBird, capturedNightObject) {
         finalCtx.fillText(capturedNightObject.name, 5, viewfinderBaseHeight - 5);
     }
     
-    const hasCollectedAllBirds = checkIfAllBirdsCollected();
-    if (hasCollectedAllBirds && !hasShownAllBirdsAlert) {
-        showAllBirdsAlert();
-        hasShownAllBirdsAlert = true;
+  const hasCollectedAllBirds = checkIfAllBirdsCollected();
+  if (hasCollectedAllBirds && !hasShownAllBirdsAlert) {
+    showAllBirdsAlert();
+    hasShownAllBirdsAlert = true;
+  }
+  
+  const photo = {
+    id: photos.length,
+    x: x,
+    y: y,
+    width: width,
+    height: height,
+    lens: currentLens,
+    time: gameTime,
+    bird: capturedBird ? capturedBird.name : null,
+    birdType: capturedBird ? capturedBird.type : null,
+    nightObject: capturedNightObject ? capturedNightObject.name : null,
+    nightObjectType: capturedNightObject ? capturedNightObject.type : null,
+    imageData: finalCanvas.toDataURL('image/png')
+  };
+  
+  photos.push(photo);
+  
+  // 如果拍摄到鸟，并且处于观鸟模式，记录到本次观鸟的拍摄统计中
+  if (capturedBird && !capturedBird.type.isSpecial && !capturedBird.isBat && 
+      capturedBirds[capturedBird.name] !== undefined && !capturedBird.noStats) {
+    capturedBirds[capturedBird.name]++;
+    
+    // 记录到本次观鸟的拍摄统计
+    if (birdingModeActive && birdingModeCapturedSpecies) {
+      birdingModeCapturedSpecies.add(capturedBird.name);
     }
-    
-    const photo = {
-        id: photos.length,
-        x: x,
-        y: y,
-        width: width,
-        height: height,
-        lens: currentLens,
-        time: gameTime,
-        bird: capturedBird ? capturedBird.name : null,
-        birdType: capturedBird ? capturedBird.type : null,
-        nightObject: capturedNightObject ? capturedNightObject.name : null,
-        nightObjectType: capturedNightObject ? capturedNightObject.type : null,
-        imageData: finalCanvas.toDataURL('image/png')
-    };
-    
-    photos.push(photo);
-    updatePhotoPreview();
+  }
+  
+  updatePhotoPreview();
 }
 
 function updatePhotoPreview() {
