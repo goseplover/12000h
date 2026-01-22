@@ -619,20 +619,6 @@
     border-color: #FFFFFF;
   }
   
-  #lensIndicator {
-    position: absolute;
-    bottom: 60px;
-    left: 20px;
-    color: white;
-    font-size: 14px;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
-    z-index: 10;
-    opacity: 0.8;
-    background-color: rgba(0, 0, 0, 0.5);
-    padding: 4px 8px;
-    border-radius: 10px;
-  }
-  
   #goldenFilter {
     position: absolute;
     top: 0;
@@ -1197,13 +1183,6 @@
       min-width: 40px; /* 添加最小宽度，减小按钮宽度 */
     }
     
-    #lensIndicator {
-      bottom: 105px;
-      left: 15px;
-      font-size: 9px;
-      padding: 2px 4px;
-    }
-    
     #modeToggleContainer {
       bottom: 170px;
       right: 10px;
@@ -1596,12 +1575,6 @@
       min-width: 30px; /* 进一步减小最小宽度 */
     }
     
-    #lensIndicator {
-      bottom: 95px;
-      font-size: 8px;
-      padding: 1px 3px;
-    }
-    
     #modeToggleContainer {
       bottom: 60px;
       gap: 2px;
@@ -1786,10 +1759,6 @@
       right: 5px;
     }
     
-    #lensIndicator {
-      bottom: 65px;
-    }
-    
     #birdingRecordIconsContainer {
       top: 50px;
       max-height: 150px;
@@ -1918,7 +1887,6 @@
     <button id="lens1200Toggle" class="lensToggleButton">1200镜头</button>
   </div>
   
-  <div id="lensIndicator">当前镜头: 600mm</div>
   <div id="gameTitle">观鸟模拟器-一万两千鸻AI制作</div>
   <div id="specialAlert"></div>
   <div id="nightObjectAlert"></div>
@@ -3264,7 +3232,6 @@ function init() {
     }
     addToggleAreaClickListeners();
     updateTimeIndicator();
-    updateLensIndicator();
     initBirdingRecords();
     updateBirdingModeButton();
 // 初始化观鸟记录图标显示
@@ -3874,7 +3841,6 @@ function setLens(lens) {
   showSpecialAlert(`切换到${LENS_SETTINGS[lens].name}镜头`);
   
   updateLensToggleButtons();
-  updateLensIndicator();
 }
 
 function updateLensToggleButtons() {
@@ -3885,11 +3851,6 @@ function updateLensToggleButtons() {
   lens600Button.classList.toggle('active', currentLens === '600');
   lens800Button.classList.toggle('active', currentLens === '800');
   lens1200Button.classList.toggle('active', currentLens === '1200');
-}
-
-function updateLensIndicator() {
-  const lensIndicator = document.getElementById('lensIndicator');
-  lensIndicator.textContent = `当前镜头: ${LENS_SETTINGS[currentLens].name}`;
 }
 
 function getViewfinderSize() {
