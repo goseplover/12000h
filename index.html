@@ -1030,8 +1030,86 @@
     cursor: pointer;
   }
   
-  /* 观鸟记录模态框响应式调整 */
-  @media (orientation: portrait) {
+/* 陀螺仪模式下的隐藏区域样式 */
+#lensToggleContainer.hidden-by-gyro,
+#modeToggleContainer.hidden-by-gyro {
+  opacity: 0.3;
+  background-color: rgba(0, 0, 0, 0.3);
+  border-color: rgba(255, 215, 0, 0.3);
+  cursor: pointer;
+  transition: opacity 0.3s, background-color 0.3s;
+}
+
+#lensToggleContainer.hidden-by-gyro:hover,
+#modeToggleContainer.hidden-by-gyro:hover {
+  opacity: 0.7;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+#lensToggleContainer.hidden-by-gyro::after,
+#modeToggleContainer.hidden-by-gyro::after {
+  content: '点击显示';
+  position: absolute;
+  font-size: 10px;
+  color: #FFD700;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 2px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  z-index: 71;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+#lensToggleContainer.hidden-by-gyro:hover::after,
+#modeToggleContainer.hidden-by-gyro:hover::after {
+  opacity: 1;
+}
+
+#lensToggleContainer.hidden-by-gyro::after {
+  bottom: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+#modeToggleContainer.hidden-by-gyro::after {
+  bottom: -20px;
+  right: 10px;
+}
+
+/* 临时显示状态 */
+#lensToggleContainer.temporarily-show,
+#modeToggleContainer.temporarily-show {
+  opacity: 1 !important;
+  background-color: rgba(0, 0, 0, 0.7) !important;
+  border-color: #FFD700 !important;
+  display: flex !important;
+}
+
+/* 横屏模式下陀螺仪开启时的特殊样式 */
+@media (orientation: landscape) {
+  /* 陀螺仪开启时隐藏控制区域 */
+  .gyro-active #lensToggleContainer,
+  .gyro-active #modeToggleContainer {
+    display: none;
+  }
+  
+  /* 当控制区域被隐藏时，显示点击提示 */
+  .gyro-active #lensToggleContainer.hidden-by-gyro,
+  .gyro-active #modeToggleContainer.hidden-by-gyro {
+    display: flex;
+  }
+  
+  /* 确保隐藏状态下的按钮也有正确的悬停效果 */
+  .gyro-active #lensToggleContainer.hidden-by-gyro .lensToggleButton,
+  .gyro-active #modeToggleContainer.hidden-by-gyro .modeToggleButton {
+    pointer-events: none;
+    opacity: 0.5;
+  }
+}
+
+@media (orientation: portrait) { 
     #photoPreview {
       top: 10px;
       left: 10px;
@@ -2847,65 +2925,131 @@ function toggleGyroMode() {
 }
 
 function startGyroMode() {
-    gyroModeActive = true;
-    isGyroCalibrated = false;
-    const gyroModeButton = document.getElementById('gyroModeToggle');
-    const gyroStatusIndicator = document.getElementById('gyroStatusIndicator');
-    const sensitivityContainer = document.getElementById('gyroSensitivityContainer');
-    const calibrateButton = document.getElementById('gyroCalibrateButton');
-    const cameraButton = document.getElementById('cameraButton'); // 获取快门按钮
-    const goldenFilter = document.getElementById('goldenFilter');
-    
-    goldenFilter.style.backgroundColor = 'rgba(255, 215, 0, 0)';
-    gyroModeButton.classList.add('active');
-    gyroModeButton.textContent = "关闭陀螺仪";
-    gyroModeButton.style.opacity = '1'; // 恢复正常不透明度
-    
-    // 显示其他陀螺仪相关元素
-    gyroStatusIndicator.style.display = 'block';
-    sensitivityContainer.style.display = 'block';
-    calibrateButton.style.display = 'block';
-    cameraButton.style.display = 'flex'; // 显示快门按钮
-    
-    gyroStatusIndicator.textContent = "校准中...";
-    gyroX = GAME_WIDTH / 2;
-    gyroY = GAME_HEIGHT / 2;
-    mouseX = gyroX;
-    mouseY = gyroY;
-    
-    showSpecialAlert("陀螺仪模式已启动！请保持设备水平以进行校准。");
-    
-    setTimeout(() => {
-        if (gyroModeActive && !isGyroCalibrated) {
-            calibrateGyro();
-        }
-    }, 2000);
-    
-    window.addEventListener('deviceorientation', handleDeviceOrientation);
+  gyroModeActive = true;
+  isGyroCalibrated = false;
+  const gyroModeButton = document.getElementById('gyroModeToggle');
+  const gyroStatusIndicator = document.getElementById('gyroStatusIndicator');
+  const sensitivityContainer = document.getElementById('gyroSensitivityContainer');
+  const calibrateButton = document.getElementById('gyroCalibrateButton');
+  const cameraButton = document.getElementById('cameraButton');
+  const goldenFilter = document.getElementById('goldenFilter');
+  const lensToggleContainer = document.getElementById('lensToggleContainer');
+  const modeToggleContainer = document.getElementById('modeToggleContainer');
+  
+  goldenFilter.style.backgroundColor = 'rgba(255, 215, 0, 0)';
+  
+  gyroModeButton.classList.add('active');
+  gyroModeButton.textContent = "关闭陀螺仪";
+  gyroModeButton.style.opacity = '1';
+  gyroStatusIndicator.style.display = 'block';
+  sensitivityContainer.style.display = 'block';
+  calibrateButton.style.display = 'block';
+  cameraButton.style.display = 'flex';
+  gyroStatusIndicator.textContent = "校准中...";
+  
+  // 横屏时隐藏镜头切换区和模式切换区
+  if (window.matchMedia("(orientation: landscape)").matches) {
+    if (lensToggleContainer) {
+      lensToggleContainer.style.display = 'none';
+      lensToggleContainer.classList.add('hidden-by-gyro');
+    }
+    if (modeToggleContainer) {
+      modeToggleContainer.style.display = 'none';
+      modeToggleContainer.classList.add('hidden-by-gyro');
+    }
+  }
+  
+  gyroX = GAME_WIDTH / 2;
+  gyroY = GAME_HEIGHT / 2;
+  mouseX = gyroX;
+  mouseY = gyroY;
+  
+  showSpecialAlert("陀螺仪模式已启动！请保持设备水平以进行校准。");
+  
+  setTimeout(() => {
+    if (gyroModeActive && !isGyroCalibrated) {
+      calibrateGyro();
+    }
+  }, 2000);
+  
+  window.addEventListener('deviceorientation', handleDeviceOrientation);
 }
 
 function stopGyroMode() {
-    gyroModeActive = false;
-    const gyroModeButton = document.getElementById('gyroModeToggle');
-    const gyroStatusIndicator = document.getElementById('gyroStatusIndicator');
-    const sensitivityContainer = document.getElementById('gyroSensitivityContainer');
-    const calibrateButton = document.getElementById('gyroCalibrateButton');
-    const cameraButton = document.getElementById('cameraButton'); // 获取快门按钮
-    
-    gyroModeButton.classList.remove('active');
-    gyroModeButton.textContent = "陀螺仪";
-    gyroModeButton.style.opacity = '0.5'; // 恢复半透明
-    
-    // 隐藏其他陀螺仪相关元素
-    gyroStatusIndicator.style.display = 'none';
-    sensitivityContainer.style.display = 'none';
-    calibrateButton.style.display = 'none';
-    cameraButton.style.display = 'none'; // 隐藏快门按钮
-    
-    gyroStatusIndicator.textContent = "关闭";
-    
-    window.removeEventListener('deviceorientation', handleDeviceOrientation);
-    showSpecialAlert("陀螺仪模式已关闭");
+  gyroModeActive = false;
+  const gyroModeButton = document.getElementById('gyroModeToggle');
+  const gyroStatusIndicator = document.getElementById('gyroStatusIndicator');
+  const sensitivityContainer = document.getElementById('gyroSensitivityContainer');
+  const calibrateButton = document.getElementById('gyroCalibrateButton');
+  const cameraButton = document.getElementById('cameraButton');
+  const lensToggleContainer = document.getElementById('lensToggleContainer');
+  const modeToggleContainer = document.getElementById('modeToggleContainer');
+  
+  gyroModeButton.classList.remove('active');
+  gyroModeButton.textContent = "陀螺仪";
+  gyroModeButton.style.opacity = '0.5';
+  gyroStatusIndicator.style.display = 'none';
+  sensitivityContainer.style.display = 'none';
+  calibrateButton.style.display = 'none';
+  cameraButton.style.display = 'none';
+  gyroStatusIndicator.textContent = "关闭";
+  
+  // 恢复显示镜头切换区和模式切换区
+  if (lensToggleContainer) {
+    lensToggleContainer.style.display = 'flex';
+    lensToggleContainer.classList.remove('hidden-by-gyro');
+  }
+  if (modeToggleContainer) {
+    modeToggleContainer.style.display = 'flex';
+    modeToggleContainer.classList.remove('hidden-by-gyro');
+  }
+  
+  window.removeEventListener('deviceorientation', handleDeviceOrientation);
+  showSpecialAlert("陀螺仪模式已关闭");
+}
+
+// 添加点击事件监听器，允许点击被隐藏的区域来显示它们
+function addToggleAreaClickListeners() {
+  const lensToggleContainer = document.getElementById('lensToggleContainer');
+  const modeToggleContainer = document.getElementById('modeToggleContainer');
+  
+  if (lensToggleContainer) {
+    lensToggleContainer.addEventListener('click', function(e) {
+      // 如果这个区域被陀螺仪隐藏了，点击时显示它
+      if (this.classList.contains('hidden-by-gyro') && gyroModeActive) {
+        this.style.display = 'flex';
+        this.classList.remove('hidden-by-gyro');
+        e.stopPropagation();
+        
+        // 5秒后自动隐藏
+        setTimeout(() => {
+          if (gyroModeActive && window.matchMedia("(orientation: landscape)").matches) {
+            this.style.display = 'none';
+            this.classList.add('hidden-by-gyro');
+          }
+        }, 5000);
+      }
+    });
+  }
+  
+  if (modeToggleContainer) {
+    modeToggleContainer.addEventListener('click', function(e) {
+      // 如果这个区域被陀螺仪隐藏了，点击时显示它
+      if (this.classList.contains('hidden-by-gyro') && gyroModeActive) {
+        this.style.display = 'flex';
+        this.classList.remove('hidden-by-gyro');
+        e.stopPropagation();
+        
+        // 5秒后自动隐藏
+        setTimeout(() => {
+          if (gyroModeActive && window.matchMedia("(orientation: landscape)").matches) {
+            this.style.display = 'none';
+            this.classList.add('hidden-by-gyro');
+          }
+        }, 5000);
+      }
+    });
+  }
 }
 
 function calibrateGyro() {
@@ -3118,7 +3262,7 @@ function init() {
     if (!gyroModeActive) {
         goldenFilter.style.backgroundColor = 'rgba(255, 215, 0, 0.1)';
     }
-    
+    addToggleAreaClickListeners();
     updateTimeIndicator();
     updateLensIndicator();
     initBirdingRecords();
