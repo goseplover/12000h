@@ -973,6 +973,66 @@ body {
     border-color: #FFD700 !important;
     display: flex !important;
 }
+// 添加CSS样式：
+#campContainer {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 400px;
+  height: 200px;
+  z-index: 30;
+  cursor: pointer;
+  display: none;
+}
+
+#camp {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+#camp::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 150px;
+  height: 100px;
+  background-color: #8B4513;
+  clip-path: polygon(0% 100%, 15% 0%, 85% 0%, 100% 100%);
+}
+
+#camp::after {
+  content: '';
+  position: absolute;
+  bottom: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 80px;
+  background: radial-gradient(circle at center, #FF4500 0%, #FFA500 30%, #FFD700 70%, transparent 100%);
+  border-radius: 50%;
+  animation: campfire 2s infinite alternate;
+  box-shadow: 0 0 30px rgba(255, 69, 0, 0.5);
+}
+
+@keyframes campfire {
+  0% { transform: translateX(-50%) scale(1); }
+  100% { transform: translateX(-50%) scale(1.1); }
+}
+
+#campText {
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #FFD700;
+  font-size: 16px;
+  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+  white-space: nowrap;
+}
 @media (orientation: landscape) {
     .gyro-active #lensToggleContainer, .gyro-active #modeToggleContainer {
         display: none;
@@ -1651,7 +1711,9 @@ body {
         <div id="birdingStatusIndicator">未开始</div>
         <div id="birdingRecordIcon" style="display: none;"></div>
     </div>
-    
+    <div id="campContainer" onclick="skipNight()">
+  <div id="camp"></div>
+</div>
     <div id="birdingRecordIconsContainer" style="position: absolute; top: 100px; right: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 70; max-height: 200px; overflow-y: auto; display: none;"></div>
     
     <div id="textStats">
@@ -3161,7 +3223,26 @@ function loadCreatorInfo() {
             }
         });
 }
+function updateCampVisibility() {
+  const campContainer = document.getElementById('campContainer');
+  const isNightMode = gameMode === 'night' || (gameMode === 'normal' && !isDaytime);
+  
+  if (isNightMode) {
+    campContainer.style.display = 'block';
+  } else {
+    campContainer.style.display = 'none';
+  }
+}
 
+function skipNight() {
+  if (gameMode === 'night') {
+    setGameMode('day');
+    showSpecialAlert("跳过了夜晚，切换到日间模式！");
+  } else if (gameMode === 'normal' && !isDaytime) {
+    dayNightTimer = DAY_NIGHT_CYCLE_DURATION / 2;
+    showSpecialAlert("跳过夜晚，即将迎来黎明！");
+  }
+}
 
 function init() {
     canvas = document.getElementById('gameCanvas');
@@ -3220,7 +3301,8 @@ function init() {
     updateBirdingModeButton();
 // 初始化观鸟记录图标显示
     updateBirdingRecordIcons();
-
+  // 初始化营地
+  updateCampVisibility();
     requestAnimationFrame(gameLoop);
 
 // 确保截图按钮在页面加载时就绑定事件
@@ -4002,7 +4084,9 @@ function setGameMode(mode) {
       nightObjects = [];
     }
   }
-  
+    // 更新营地可见性
+  updateCampVisibility();
+
   updateModeToggleButtons();
   updateTimeIndicator();
 }
@@ -4911,9 +4995,31 @@ function updateAlbumStats() {
     });
 }
 
-function handleMouseClick() {
-    if (isTakingPhoto) return;
+// 在画布点击事件中添加对营地的检测
+function handleMouseClick(e) {
+  if (isTakingPhoto) return;
+  
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const clickX = (e.clientX - rect.left) * scaleX;
+  const clickY = (e.clientY - rect.top) * scaleY;
+  
+  const isNightMode = gameMode === 'night' || (gameMode === 'normal' && !isDaytime);
+  
+  // 检查是否点击了营地区域
+  if (isNightMode) {
+    const campX = GAME_WIDTH / 2 - 200;
+    const campY = GAME_HEIGHT - 220;
+    const campWidth = 400;
+    const campHeight = 200;
     
+    if (clickX >= campX && clickX <= campX + campWidth &&
+        clickY >= campY && clickY <= campY + campHeight) {
+      skipNight();
+      return;
+    }
+  }
     isTakingPhoto = true;
     
     const viewfinderSize = getViewfinderSize();
@@ -6934,7 +7040,78 @@ function drawBackground() {
     
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 }
-
+// 在drawBackground函数中添加营地绘制（或使用上面的HTML/CSS方式）
+function drawCamp() {
+  const isNightMode = gameMode === 'night' || (gameMode === 'normal' && !isDaytime);
+  if (!isNightMode) return;
+  
+  const campX = GAME_WIDTH / 2 - 200;
+  const campY = GAME_HEIGHT - 220;
+  
+  // 绘制帐篷
+  ctx.fillStyle = '#8B4513';
+  ctx.beginPath();
+  ctx.moveTo(campX + 100, campY + 200);
+  ctx.lineTo(campX + 125, campY + 100);
+  ctx.lineTo(campX + 175, campY + 100);
+  ctx.lineTo(campX + 200, campY + 200);
+  ctx.closePath();
+  ctx.fill();
+  
+  // 帐篷门
+  ctx.fillStyle = '#A0522D';
+  ctx.fillRect(campX + 140, campY + 150, 20, 50);
+  
+  // 篝火
+  const fireX = campX + 300;
+  const fireY = campY + 180;
+  
+  const fireAnimation = Math.sin(gameTime * 0.005) * 0.2 + 0.8;
+  
+  // 火焰核心
+  const fireGradient = ctx.createRadialGradient(
+    fireX, fireY, 0,
+    fireX, fireY, 40
+  );
+  fireGradient.addColorStop(0, '#FFFF00');
+  fireGradient.addColorStop(0.3, '#FFA500');
+  fireGradient.addColorStop(0.7, '#FF4500');
+  fireGradient.addColorStop(1, 'rgba(255, 69, 0, 0)');
+  
+  ctx.fillStyle = fireGradient;
+  ctx.beginPath();
+  ctx.arc(fireX, fireY, 40 * fireAnimation, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // 柴火
+  ctx.fillStyle = '#8B4513';
+  // 水平柴火
+  ctx.fillRect(fireX - 30, fireY + 20, 60, 10);
+  // 垂直柴火
+  ctx.save();
+  ctx.translate(fireX, fireY + 25);
+  ctx.rotate(Math.PI / 4);
+  ctx.fillRect(-20, -5, 40, 10);
+  ctx.restore();
+  
+  ctx.save();
+  ctx.translate(fireX, fireY + 25);
+  ctx.rotate(-Math.PI / 4);
+  ctx.fillRect(-20, -5, 40, 10);
+  ctx.restore();
+  
+  // 篝火光芒
+  ctx.fillStyle = 'rgba(255, 165, 0, 0.1)';
+  ctx.beginPath();
+  ctx.arc(fireX, fireY, 100, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // 点击提示文字
+  ctx.fillStyle = '#FFD700';
+  ctx.font = 'bold 16px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('点击营地跳过夜晚', campX + 200, campY + 215);
+}
 function drawSunMoon() {
     if (gameMode !== 'normal') {
         return;
@@ -11882,9 +12059,11 @@ if (birdingModeActive) {
     drawReeds();
     drawWallAndHole();
     drawGroundObjects();
-    
+drawCamp();
     generateBird();
-    
+      // 更新营地可见性
+  updateCampVisibility();
+
     updateBirds(deltaTime);
     updatePoops(deltaTime);
     updateGroundObjects(deltaTime);
