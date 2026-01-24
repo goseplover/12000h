@@ -1,1821 +1,1827 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>观鸟模拟器 - 一万两千鸻使用AI制作</title>
-<style>
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    user-select: none;
-}
-body {
-    background-color: #000;
-    overflow: hidden;
-    font-family: 'SimSun', sans-serif;
-    color: #333;
-}
-#gameContainer {
-    position: relative;
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
-}
-#gameCanvas {
-    display: block;
-    background: linear-gradient(to bottom, #87CEEB 0%, #E0F7FF 100%);
-    cursor: crosshair;
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-}
-#poopCanvas {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
-    z-index: 5;
-}
-#viewfinder {
-    position: absolute;
-    border: 2px dashed rgba(255, 255, 255, 0.8);
-    background-color: rgba(255, 255, 255, 0.1);
-    pointer-events: none;
-    display: none;
-    z-index: 100;
-}
-#photoPreview {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    width: 120px;
-    height: 80px;
-    border: 2px solid white;
-    border-radius: 5px;
-    background-color: rgba(0, 0, 0, 0.3);
-    overflow: hidden;
-    z-index: 60;
-    cursor: pointer;
-}
-#photoPreview img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-#photoPreview .noPhoto {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    color: white;
-    font-size: 12px;
-    text-align: center;
-}
-#birdingToggleContainer {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    z-index: 70;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 5px;
-}
-#helpButton {
-    background-color: rgba(0, 0, 0, 0.7);
-    color: #FFD700;
-    border: 2px solid #FFD700;
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 5px;
-}
-#helpButton:hover {
-    background-color: rgba(255, 215, 0, 0.3);
-    transform: scale(1.1);
-}
-#helpButton:active {
-    transform: scale(0.95);
-}
-#birdingModeToggle {
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    border: 2px solid #90EE90;
-    border-radius: 20px;
-    padding: 8px 16px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.3s;
-    min-width: 120px;
-    text-align: center;
-}
-#birdingModeToggle:hover {
-    background-color: rgba(144, 238, 144, 0.3);
-}
-#birdingModeToggle.active {
-    background-color: rgba(144, 238, 144, 0.5);
-    border-color: #FFFFFF;
-}
-#birdingStatusIndicator {
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 4px 10px;
-    border-radius: 10px;
-    font-size: 12px;
-    border: 1px solid #90EE90;
-    text-align: center;
-    min-width: 120px;
-}
-#birdingRecordIcon {
-    background: rgba(0, 0, 0, 0.8);
-    border: 2px solid #FFD700;
-    border-radius: 8px;
-    width: 120px;
-    height: 20px;
-    cursor: pointer;
-    transition: all 0.3s;
-    position: relative;
-    overflow: hidden;
-    margin-top: 5px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    font-size: 10px;
-    color: #FFD700;
-    font-weight: bold;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
-}
-#birdingRecordIcon:hover {
-    background: rgba(255, 215, 0, 0.15);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(255, 215, 0, 0.2);
-}
-#birdingRecordIcon:active {
-    transform: translateY(0);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-}
-#birdingRecordIcon::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 3px;
-    background: linear-gradient(90deg, #FFD700, #FFA500);
-}
-#birdingRecordIcon .iconNumber {
-    font-size: 11px;
-    font-weight: bold;
-    color: #FFD700;
-    margin-right: 4px;
-}
-#birdingRecordIcon .iconTime {
-    font-size: 9px;
-    color: #87CEEB;
-    margin-right: 4px;
-}
-#birdingRecordIcon .iconBirdCount {
-    font-size: 9px;
-    color: #90EE90;
-}
-#birdingRecordNav {
-    position: fixed;
-    top: 50%;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: space-between;
-    padding: 0 20px;
-    z-index: 410;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-#birdingRecordNav.show {
-    opacity: 1;
-}
-.birdingRecordNavButton {
-    pointer-events: auto;
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    border: 2px solid #FFD700;
-    border-radius: 50%;
-    width: 50px;
-    height: 50px;
-    font-size: 24px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s;
-}
-.birdingRecordNavButton:hover {
-    background-color: rgba(255, 215, 0, 0.3);
-    transform: scale(1.1);
-}
-.birdingRecordNavButton:disabled {
-    opacity: 0.3;
-    cursor: not-allowed;
-}
-.birdingRecordNavButton:disabled:hover {
-    background-color: rgba(0, 0, 0, 0.7);
-    transform: none;
-}
-#birdingRecordCounter {
-    position: fixed;
-    bottom: 20px;
-    left: 0;
-    right: 0;
-    text-align: center;
-    color: white;
-    font-size: 16px;
-    z-index: 410;
-    background-color: rgba(0, 0, 0, 0.5);
-    padding: 10px;
-    border-radius: 10px;
-    margin: 0 auto;
-    width: fit-content;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-#birdingRecordCounter.show {
-    opacity: 1;
-}
-.swipe-hint {
-    position: fixed;
-    bottom: 80px;
-    left: 0;
-    right: 0;
-    text-align: center;
-    color: #FFD700;
-    font-size: 14px;
-    z-index: 410;
-    opacity: 0.7;
-    animation: pulse 2s infinite;
-}
-#textStats {
-    position: absolute;
-    top: 95px;
-    left: 10px;
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 6px 12px;
-    border-radius: 6px;
-    z-index: 50;
-    font-size: 12px;
-    max-width: 90%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-#textStats span {
-    margin: 0 8px;
-    color: #FFD700;
-    font-weight: bold;
-}
-#albumModal {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.85);
-    z-index: 200;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-}
-#albumTitle {
-    color: white;
-    margin-bottom: 10px;
-    font-size: 24px;
-}
-#albumPromotion {
-    color: #FFD700;
-    margin-bottom: 20px;
-    font-size: 16px;
-    text-align: center;
-}
-#albumPhotos {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    align-content: flex-start;
-    max-width: 90%;
-    max-height: 70%;
-    overflow-x: auto;
-    overflow-y: auto;
-    padding: 20px;
-    width: 100%;
-}
-.albumPhoto {
-    width: 160px;
-    height: 140px;
-    margin: 10px;
-    border: 2px solid white;
-    border-radius: 5px;
-    overflow: hidden;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-}
-.albumPhoto img {
-    width: 100%;
-    height: 100px;
-    object-fit: cover;
-}
-.photoInfo {
-    background: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 5px;
-    font-size: 12px;
-    text-align: center;
-    flex-grow: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-#albumStats {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    max-width: 90%;
-    max-height: 20%;
-    overflow-y: auto;
-    padding: 10px;
-    margin-top: 10px;
-}
-.albumStatItem {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 4px 8px;
-    margin: 2px;
-    border-radius: 4px;
-    background-color: rgba(255, 255, 255, 0.1);
-    color: white;
-    font-size: 12px;
-    min-width: 120px;
-}
-#closeAlbum {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background-color: rgba(255, 255, 255, 0.2);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    font-size: 20px;
-    cursor: pointer;
-}
-#gameTitle {
-    position: absolute;
-    top: 100px;
-    left: 0;
-    width: 100%;
-    text-align: center;
-    color: white;
-    font-size: 24px;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
-    z-index: 10;
-    display: none;
-}
-#creator {
-    position: absolute;
-    top: 5px;
-    left: 0;
-    width: 100%;
-    text-align: center;
-    color: white;
-    font-size: 16px;
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
-    z-index: 10;
-}
-#specialAlert {
-    position: absolute;
-    top: 140px;
-    left: 0;
-    width: 100%;
-    text-align: center;
-    color: #FFD700;
-    font-size: 20px;
-    font-weight: bold;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
-    z-index: 10;
-    opacity: 0;
-    transition: opacity 0.5s;
-}
-#captureAlert {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    color: #FFD700;
-    text-align: center;
-    font-size: 18px;
-    font-weight: bold;
-    z-index: 150;
-    opacity: 0;
-    transition: opacity 0.3s;
-    pointer-events: none;
-    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9);
-    background-color: transparent;
-    padding: 0;
-}
-#gameNote {
-    position: absolute;
-    bottom: 5px;
-    left: 0;
-    width: 100%;
-    text-align: center;
-    color: white;
-    font-size: 12px;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
-    z-index: 10;
-    opacity: 0.7;
-    padding: 0 10px;
-}
-#modeToggleContainer {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    display: flex;
-    gap: 10px;
-    z-index: 70;
-}
-.modeToggleButton {
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    border: 2px solid #FFD700;
-    border-radius: 20px;
-    padding: 8px 16px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-.modeToggleButton:hover {
-    background-color: rgba(255, 215, 0, 0.3);
-}
-.modeToggleButton.active {
-    background-color: rgba(255, 215, 0, 0.5);
-    border-color: #FFFFFF;
-}
-#timeIndicator {
-    position: absolute;
-    top: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: white;
-    font-size: 14px;
-    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
-    z-index: 10;
-    opacity: 0.8;
-}
-#nightObjectAlert {
-    position: absolute;
-    top: 180px;
-    left: 0;
-    width: 100%;
-    text-align: center;
-    color: #87CEEB;
-    font-size: 18px;
-    font-weight: bold;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
-    z-index: 10;
-    opacity: 0;
-    transition: opacity 0.5s;
-}
-.meteor-trail {
-    position: absolute;
-    background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0) 100%);
-    border-radius: 2px;
-    z-index: 2;
-    pointer-events: none;
-}
-.comet-trail {
-    position: absolute;
-    background: radial-gradient(circle, rgba(173,216,230,0.8) 0%, rgba(173,216,230,0) 70%);
-    border-radius: 50%;
-    z-index: 2;
-    pointer-events: none;
-}
-.ufo-beam {
-    position: absolute;
-    background: linear-gradient(to bottom, rgba(144,238,144,0.7) 0%, rgba(144,238,144,0) 100%);
-    border-radius: 50%;
-    z-index: 2;
-    pointer-events: none;
-}
-#allBirdsAlert {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: rgba(0, 0, 0, 0.9);
-    color: #FFD700;
-    padding: 30px 40px;
-    border-radius: 15px;
-    border: 3px solid #FFD700;
-    font-size: 24px;
-    font-weight: bold;
-    text-align: center;
-    z-index: 300;
-    max-width: 80%;
-    box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
-    animation: pulse 2s infinite;
-}
-@keyframes pulse {
-    0% {
-        transform: translate(-50%, -50%) scale(1);
-    }
-    50% {
-        transform: translate(-50%, -50%) scale(1.05);
-    }
-    100% {
-        transform: translate(-50%, -50%) scale(1);
-    }
-}
-#lensToggleContainer {
-    position: absolute;
-    bottom: 10px;
-    left: 10px;
-    display: flex;
-    gap: 10px;
-    z-index: 70;
-    background-color: rgba(0, 0, 0, 0.7);
-    padding: 8px;
-    border-radius: 20px;
-    border: 2px solid #FFD700;
-}
-.lensToggleButton {
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    border: 1px solid #FFD700;
-    border-radius: 15px;
-    padding: 6px 12px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.3s;
-}
-.lensToggleButton:hover {
-    background-color: rgba(255, 215, 0, 0.3);
-}
-.lensToggleButton.active {
-    background-color: rgba(255, 215, 0, 0.5);
-    border-color: #FFFFFF;
-}
-#goldenFilter {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(255, 215, 0, 0);
-    pointer-events: none;
-    z-index: 5;
-    transition: background-color 1s ease;
-}
-.birdingRecordIcon {
-    background: rgba(0, 0, 0, 0.8);
-    border: 2px solid #FFD700;
-    border-radius: 10px;
-    width: 60px;
-    height: 60px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s;
-    position: relative;
-    overflow: hidden;
-}
-.birdingRecordIcon:hover {
-    background: rgba(255, 215, 0, 0.2);
-    transform: scale(1.05);
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
-}
-.birdingRecordIcon::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 5px;
-    background: linear-gradient(90deg, #FFD700, #FFA500);
-}
-.birdingRecordIcon .iconNumber {
-    font-size: 18px;
-    font-weight: bold;
-    color: #FFD700;
-    margin-bottom: 2px;
-}
-.birdingRecordIcon .iconTime {
-    font-size: 11px;
-    color: #87CEEB;
-}
-.birdingRecordIcon .iconBirdCount {
-    font-size: 10px;
-    color: #90EE90;
-    margin-top: 2px;
-}
-.birdRecordText {
-    background: rgba(0, 0, 0, 0.7);
-    border-radius: 8px;
-    padding: 15px;
-    margin-bottom: 10px;
-    border-left: 4px solid #87CEEB;
-}
-.birdRecordText.highlight {
-    border-left-color: #FFD700;
-    background: rgba(255, 215, 0, 0.1);
-}
-.birdRecordText .birdName {
-    color: white;
-    font-size: 16px;
-    font-weight: bold;
-    margin-bottom: 5px;
-}
-.birdRecordText .birdStats {
-    font-size: 14px;
-    color: #87CEEB;
-}
-.birdRecordText .birdStats span {
-    margin-right: 15px;
-}
-.birdRecordText.highlight .birdName {
-    color: #FFD700;
-}
-.recordSummaryText {
-    background: rgba(0, 0, 0, 0.5);
-    border-radius: 8px;
-    padding: 12px;
-    margin-bottom: 15px;
-    border-top: 2px solid #90EE90;
-}
-.recordSummaryText .summaryItem {
-    display: inline-block;
-    margin-right: 20px;
-    font-size: 14px;
-}
-.recordSummaryText .summaryLabel {
-    color: #87CEEB;
-}
-.recordSummaryText .summaryValue {
-    color: white;
-    font-weight: bold;
-}
-.rareBirdText {
-    background: rgba(255, 215, 0, 0.15);
-    border: 1px solid #FFD700;
-    border-radius: 6px;
-    padding: 8px 12px;
-    margin: 5px 0;
-    color: #FFD700;
-    font-size: 14px;
-}
-.rareBirdText::before {
-    content: '★ ';
-}
-#gyroToggleContainer {
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 70;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 5px;
-}
-#gyroSensitivityContainer {
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 3px 8px;
-    border-radius: 8px;
-    border: 1px solid #FFA500;
-    z-index: 70;
-    width: 80px;
-    margin-bottom: 5px;
-    height: 35px;
-    display: none;
-}
-#gyroSensitivityContainer.active {
-    display: block;
-}
-#gyroSensitivityLabel {
-    font-size: 10px;
-    margin-bottom: 2px;
-    text-align: center;
-}
-#gyroSensitivitySlider {
-    width: 100%;
-    height: 4px;
-    -webkit-appearance: none;
-    appearance: none;
-    background: #555;
-    border-radius: 2px;
-    outline: none;
-}
-#gyroSensitivitySlider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 12px;
-    height: 12px;
-    background: #FFA500;
-    border-radius: 50%;
-    cursor: pointer;
-}
-#gyroSensitivityValue {
-    font-size: 10px;
-    margin-top: 1px;
-    text-align: center;
-}
-#gyroModeToggle {
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    border: 2px solid #FFA500;
-    border-radius: 20px;
-    padding: 6px 12px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.3s;
-    min-width: 60px;
-    max-width: 80px;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-#gyroModeToggle:hover {
-    background-color: rgba(255, 165, 0, 0.3);
-}
-#gyroModeToggle.active {
-    background-color: rgba(255, 165, 0, 0.5);
-    border-color: #FFFFFF;
-}
-#gyroStatusIndicator {
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    padding: 4px 8px;
-    border-radius: 10px;
-    font-size: 10px;
-    border: 1px solid #FFA500;
-    text-align: center;
-    min-width: 60px;
-    max-width: 80px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    margin-bottom: 5px;
-}
-#gyroCalibrateButton {
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    border: 2px solid #4CAF50;
-    border-radius: 20px;
-    padding: 4px 8px;
-    font-size: 10px;
-    cursor: pointer;
-    transition: all 0.3s;
-    min-width: 60px;
-    max-width: 80px;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-#gyroCalibrateButton:hover {
-    background-color: rgba(76, 175, 80, 0.3);
-}
-#cameraButton {
-    position: absolute;
-    right: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 70px;
-    height: 70px;
-    background-color: rgba(255, 255, 255, 0.9);
-    border-radius: 50%;
-    border: 4px solid #FFD700;
-    cursor: pointer;
-    z-index: 80;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-}
-#cameraButton:hover {
-    background-color: rgba(255, 255, 255, 1);
-    transform: translateY(-50%) scale(1.05);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-}
-#cameraButton:active {
-    background-color: rgba(230, 230, 230, 1);
-    transform: translateY(-50%) scale(0.95);
-}
-#cameraButton::after {
-    content: '';
-    width: 40px;
-    height: 40px;
-    background-color: #FFD700;
-    border-radius: 50%;
-    border: 3px solid #333;
-}
-#screenshotCanvas {
-    position: fixed;
-    top: -10000px;
-    left: -10000px;
-    width: 300px;
-    height: 450px;
-    z-index: 1000;
-}
-#screenshotButton {
-    background-color: rgba(0, 0, 0, 0.7);
-    color: white;
-    border: 2px solid #87CEEB;
-    border-radius: 20px;
-    padding: 8px 16px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.3s;
-    position: absolute;
-    top: 20px;
-    right: 70px;
-    z-index: 401;
-    display: none;
-}
-#screenshotButton:hover {
-    background-color: rgba(135, 206, 235, 0.3);
-}
-#screenshotButton:active {
-    background-color: rgba(135, 206, 235, 0.5);
-}
-#screenshotPreviewModal {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.9);
-    z-index: 500;
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    padding-top: 20px;
-    overflow-y: auto;
-}
-#screenshotPreviewImage {
-    max-height: 90vh;
-    max-width: 90%;
-    object-fit: contain;
-    border: 3px solid #FFD700;
-    border-radius: 10px;
-    box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
-    margin-bottom: 20px;
-}
-#screenshotPreviewControls {
-    margin-top: 20px;
-    display: flex;
-    gap: 15px;
-    margin-bottom: 20px;
-}
-.screenshotPreviewButton {
-    background-color: rgba(255, 215, 0, 0.8);
-    color: black;
-    border: none;
-    border-radius: 25px;
-    padding: 10px 25px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.3s;
-    min-width: 120px;
-}
-.screenshotPreviewButton:hover {
-    background-color: rgba(255, 215, 0, 1);
-    transform: scale(1.05);
-}
-.screenshotPreviewButton:active {
-    transform: scale(0.95);
-}
-#screenshotPreviewClose {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    background-color: rgba(255, 255, 255, 0.2);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    font-size: 20px;
-    cursor: pointer;
-}
-#lensToggleContainer.hidden-by-gyro, #modeToggleContainer.hidden-by-gyro {
-    opacity: 0.3;
-    background-color: rgba(0, 0, 0, 0.3);
-    border-color: rgba(255, 215, 0, 0.3);
-    cursor: pointer;
-    transition: opacity 0.3s, background-color 0.3s;
-}
-#lensToggleContainer.hidden-by-gyro:hover, #modeToggleContainer.hidden-by-gyro:hover {
-    opacity: 0.7;
-    background-color: rgba(0, 0, 0, 0.5);
-}
-#lensToggleContainer.hidden-by-gyro::after, #modeToggleContainer.hidden-by-gyro::after {
-    content: '点击显示';
-    position: absolute;
-    font-size: 10px;
-    color: #FFD700;
-    background: rgba(0, 0, 0, 0.7);
-    padding: 2px 5px;
-    border-radius: 3px;
-    white-space: nowrap;
-    z-index: 71;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s;
-}
-#lensToggleContainer.hidden-by-gyro:hover::after, #modeToggleContainer.hidden-by-gyro:hover::after {
-    opacity: 1;
-}
-#lensToggleContainer.hidden-by-gyro::after {
-    bottom: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-}
-#modeToggleContainer.hidden-by-gyro::after {
-    bottom: -20px;
-    right: 10px;
-}
-#lensToggleContainer.temporarily-show, #modeToggleContainer.temporarily-show {
-    opacity: 1 !important;
-    background-color: rgba(0, 0, 0, 0.7) !important;
-    border-color: #FFD700 !important;
-    display: flex !important;
-}
-// 添加CSS样式：
-#campContainer {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 400px;
-  height: 200px;
-  z-index: 30;
-  cursor: pointer;
-  display: none;
-}
-
-#camp {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-#camp::before {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 150px;
-  height: 100px;
-  background-color: #8B4513;
-  clip-path: polygon(0% 100%, 15% 0%, 85% 0%, 100% 100%);
-}
-
-#camp::after {
-  content: '';
-  position: absolute;
-  bottom: 50px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 80px;
-  height: 80px;
-  background: radial-gradient(circle at center, #FF4500 0%, #FFA500 30%, #FFD700 70%, transparent 100%);
-  border-radius: 50%;
-  animation: campfire 2s infinite alternate;
-  box-shadow: 0 0 30px rgba(255, 69, 0, 0.5);
-}
-
-@keyframes campfire {
-  0% { transform: translateX(-50%) scale(1); }
-  100% { transform: translateX(-50%) scale(1.1); }
-}
-
-#campText {
-  position: absolute;
-  top: -30px;
-  left: 50%;
-  transform: translateX(-50%);
-  color: #FFD700;
-  font-size: 16px;
-  text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
-  white-space: nowrap;
-}
-@media (orientation: landscape) {
-    .gyro-active #lensToggleContainer, .gyro-active #modeToggleContainer {
-        display: none;
-    }
-    .gyro-active #lensToggleContainer.hidden-by-gyro, .gyro-active #modeToggleContainer.hidden-by-gyro {
-        display: flex;
-    }
-    .gyro-active #lensToggleContainer.hidden-by-gyro .lensToggleButton, .gyro-active #modeToggleContainer.hidden-by-gyro .modeToggleButton {
-        pointer-events: none;
-        opacity: 0.5;
-    }
-}
-@media (orientation: portrait) {
-    #photoPreview {
-        top: 10px;
-        left: 10px;
-        width: 90px;
-        height: 70px;
-    }
-    #photoPreview .noPhoto {
-        font-size: 10px;
-        padding: 3px;
-    }
-    #birdingToggleContainer {
-        top: 10px;
-        right: 10px;
-    }
-    #helpButton {
-        width: 25px;
-        height: 25px;
-        font-size: 14px;
-    }
-    #birdingModeToggle {
-        padding: 5px 10px;
-        font-size: 12px;
-        min-width: 100px;
-    }
-    #birdingStatusIndicator {
-        font-size: 10px;
-        padding: 3px 8px;
-        min-width: 100px;
-    }
-    #birdingRecordIcon {
-        width: 100px;
-        height: 18px;
-        font-size: 9px;
-        border-width: 1px;
-        border-radius: 6px;
-        margin-top: 3px;
-    }
-    #birdingRecordIcon::before {
-        height: 2px;
-    }
-    #birdingRecordIcon .iconNumber {
-        font-size: 10px;
-        margin-right: 3px;
-    }
-    #birdingRecordIcon .iconTime, #birdingRecordIcon .iconBirdCount {
-        font-size: 8px;
-        margin-right: 3px;
-    }
-    #textStats {
-        top: 85px;
-        left: 10px;
-        padding: 5px 10px;
-        font-size: 11px;
-        max-width: 60%;
-        white-space: normal;
-        max-height: 70px;
-        overflow-y: auto;
-    }
-    #textStats span {
-        margin: 0 5px;
-    }
-    #lensToggleContainer {
-        bottom: 170px;
-        left: 10px;
-        padding: 3px;
-        gap: 3px;
-        border-radius: 15px;
-        border-width: 1px;
-        min-width: auto;
-        max-width: 120px;
-    }
-    .lensToggleButton {
-        padding: 2px 6px;
-        font-size: 9px;
-        border-radius: 8px;
-        border-width: 0.5px;
-        min-height: 24px;
-        min-width: 40px;
-    }
-    #modeToggleContainer {
-        bottom: 170px;
-        right: 10px;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-        gap: 3px;
-        max-width: 45%;
-    }
-    .modeToggleButton {
-        padding: 2px 6px;
-        font-size: 9px;
-        border-radius: 8px;
-        border-width: 1px;
-        min-height: 24px;
-        flex-shrink: 1;
-        min-width: 50px;
-        text-align: center;
-        line-height: 1.2;
-    }
-    #birdingModeToggle {
-        padding: 2px 6px;
-        font-size: 9px;
-        min-width: 50px;
-        border-width: 1px;
-        border-radius: 8px;
-    }
-    #birdingStatusIndicator {
-        font-size: 8px;
-        padding: 1px 4px;
-        min-width: 50px;
-        border-radius: 5px;
-        border-width: 0.5px;
-    }
-    #birdingRecordIconsContainer {
-        top: 85px;
-        left: 10px;
-        max-height: 150px;
-    }
-    .birdingRecordIcon {
-        width: 50px;
-        height: 50px;
-    }
-    .birdingRecordIcon .iconNumber {
-        font-size: 16px;
-    }
-    .birdingRecordIcon .iconTime {
-        font-size: 10px;
-    }
-    .birdingRecordIcon .iconBirdCount {
-        font-size: 9px;
-    }
-    #timeIndicator {
-        top: 30px;
-        font-size: 12px;
-    }
-    #creator {
-        top: 5px;
-        font-size: 14px;
-    }
-    #gameTitle {
-        top: 90px;
-        font-size: 20px;
-    }
-    #specialAlert {
-        top: 130px;
-        font-size: 16px;
-    }
-    #gameNote {
-        bottom: 20px;
-        font-size: 10px;
-        padding: 0 5px;
-    }
-    #albumModal {
-        padding: 10px;
-    }
-    #albumTitle {
-        font-size: 20px;
-        margin-bottom: 5px;
-    }
-    #albumPromotion {
-        font-size: 14px;
-        margin-bottom: 10px;
-    }
-    .albumPhoto {
-        width: 120px;
-        height: 105px;
-        margin: 5px;
-    }
-    .albumPhoto img {
-        height: 75px;
-    }
-    .photoInfo {
-        font-size: 10px;
-        padding: 3px;
-    }
-    .albumStatItem {
-        font-size: 10px;
-        min-width: 100px;
-        padding: 3px 6px;
-    }
-    #birdingRecordModal {
-        padding: 10px;
-    }
-    #birdingRecordModal > div {
-        width: 95%;
-        padding: 15px;
-        margin-top: 20px;
-    }
-    #birdingRecordTitle {
-        font-size: 22px;
-        margin-bottom: 15px;
-    }
-    .birdRecordText {
-        padding: 10px;
-        margin-bottom: 8px;
-    }
-    .birdRecordText .birdName {
-        font-size: 14px;
-    }
-    .birdRecordText .birdStats {
-        font-size: 12px;
-    }
-    .recordSummaryText {
-        padding: 8px;
-        margin-bottom: 10px;
-    }
-    .recordSummaryText .summaryItem {
-        margin-right: 10px;
-        font-size: 12px;
-    }
-    .rareBirdText {
-        padding: 6px 10px;
-        font-size: 12px;
-    }
-    #allBirdsAlert {
-        padding: 20px 25px;
-        font-size: 18px;
-        max-width: 90%;
-    }
-    #allBirdsAlert button {
-        padding: 8px 20px;
-        font-size: 14px;
-    }
-    #gyroToggleContainer {
-        left: auto !important;
-        right: 10px !important;
-        top: 100px !important;
-        transform: none !important;
-        flex-direction: column !important;
-        align-items: flex-end !important;
-        z-index: 71 !important;
-    }
-    #gyroSensitivityContainer {
-        width: 100px !important;
-        height: 35px !important;
-        margin-bottom: 5px !important;
-    }
-    #gyroSensitivityLabel {
-        font-size: 8px;
-        margin-bottom: 1px;
-    }
-    #gyroSensitivitySlider {
-        height: 3px;
-    }
-    #gyroSensitivitySlider::-webkit-slider-thumb {
-        width: 8px;
-        height: 8px;
-    }
-    #gyroSensitivityValue {
-        font-size: 8px;
-        margin-top: 0;
-    }
-    #gyroModeToggle {
-        padding: 2px 4px;
-        font-size: 9px;
-        min-width: 100px !important;
-        max-width: 100px !important;
-        border-width: 1px;
-        border-radius: 10px;
-    }
-    #gyroStatusIndicator {
-        font-size: 8px;
-        padding: 1px 3px;
-        min-width: 100px !important;
-        max-width: 100px !important;
-        border-width: 0.5px;
-        border-radius: 5px;
-    }
-    #gyroCalibrateButton {
-        padding: 1px 3px;
-        font-size: 8px;
-        min-width: 100px !important;
-        max-width: 100px !important;
-        border-width: 1px;
-        border-radius: 10px;
-    }
-    #cameraButton {
-        right: auto;
-        top: auto;
-        bottom: 70px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 80px;
-        height: 80px;
-        background-color: rgba(255, 255, 255, 0.9);
-        border-radius: 50%;
-        border: 4px solid #FFD700;
-        cursor: pointer;
-        z-index: 80;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    }
-    #cameraButton:hover {
-        background-color: rgba(255, 255, 255, 1);
-        transform: translateX(-50%) scale(1.05);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
-    }
-    #cameraButton:active {
-        background-color: rgba(230, 230, 230, 1);
-        transform: translateX(-50%) scale(0.95);
-    }
-    #cameraButton::after {
-        content: '';
-        width: 45px;
-        height: 45px;
-        background-color: #FFD700;
-        border-radius: 50%;
-        border: 3px solid #333;
-    }
-    #screenshotButton {
-        top: 10px;
-        right: 70px;
-        padding: 5px 10px;
-        font-size: 12px;
-        border-width: 1px;
-        border-radius: 15px;
-    }
-    .screenshotPreviewButton {
-        padding: 8px 20px;
-        font-size: 14px;
-        min-width: 100px;
-    }
-    #birdingRecordModal > div[style*="position: fixed; top: 0"] {
-        padding: 8px 15px !important;
-    }
-    #birdingRecordModal > div[style*="position: fixed; top: 0"] div:first-child {
-        font-size: 16px !important;
-    }
-    #birdingRecordModal > div[style*="position: fixed; top: 0"] #birdingRecordCounter {
-        font-size: 12px !important;
-        padding: 3px 8px !important;
-    }
-    #birdingRecordModal > div[style*="position: fixed; top: 0"] #screenshotButton {
-        padding: 6px 12px !important;
-        font-size: 12px !important;
-    }
-    #birdingRecordModal > div[style*="position: fixed; top: 0"] #closeBirdingRecord {
-        width: 30px !important;
-        height: 30px !important;
-        font-size: 16px !important;
-    }
-    #birdingRecordContent {
-        margin-top: 65px !important;
-        padding: 0 15px 20px 15px !important;
-        font-size: 15px !important;
-    }
-    #birdingRecordNav {
-        padding: 0 10px !important;
-    }
-    .birdingRecordNavButton {
-        width: 40px !important;
-        height: 40px !important;
-        font-size: 20px !important;
-    }
-}
-@media (orientation: portrait) and (max-width: 400px) {
-    #photoPreview {
-        width: 70px;
-        height: 50px;
-    }
-    #textStats {
-        font-size: 10px;
-        padding: 4px 8px;
-        top: 65px;
-    }
-    #birdingModeToggle, .lensToggleButton, .modeToggleButton {
-        padding: 4px 8px;
-        font-size: 11px;
-        min-width: 80px;
-    }
-    #helpButton {
-        width: 22px;
-        height: 22px;
-        font-size: 12px;
-    }
-    #birdingStatusIndicator {
-        font-size: 9px;
-        padding: 2px 6px;
-        min-width: 80px;
-    }
-    #birdingRecordIcon {
-        width: 80px;
-        height: 16px;
-        font-size: 8px;
-        border-radius: 4px;
-        margin-top: 2px;
-    }
-    #birdingRecordIcon .iconNumber {
-        font-size: 9px;
-        margin-right: 2px;
-    }
-    #birdingRecordIcon .iconTime, #birdingRecordIcon .iconBirdCount {
-        font-size: 7px;
-        margin-right: 2px;
-    }
-    #lensToggleContainer {
-        bottom: 60px;
-        gap: 2px;
-        padding: 2px;
-        border-radius: 12px;
-        max-width: 90px;
-    }
-    .lensToggleButton {
-        padding: 1px 4px;
-        font-size: 8px;
-        border-radius: 6px;
-        min-height: 20px;
-        min-width: 30px;
-    }
-    #modeToggleContainer {
-        bottom: 60px;
-        gap: 2px;
-    }
-    .modeToggleButton {
-        padding: 1px 4px;
-        font-size: 8px;
-        border-radius: 6px;
-        min-width: 40px;
-        min-height: 20px;
-    }
-    #birdingModeToggle {
-        padding: 1px 4px;
-        font-size: 8px;
-        min-width: 40px;
-        border-radius: 6px;
-    }
-    #birdingStatusIndicator {
-        font-size: 7px;
-        padding: 1px 2px;
-        min-width: 40px;
-        border-radius: 4px;
-    }
-    .birdingRecordIcon {
-        width: 40px;
-        height: 40px;
-    }
-    .birdingRecordIcon .iconNumber {
-        font-size: 14px;
-    }
-    .birdingRecordIcon .iconTime, .birdingRecordIcon .iconBirdCount {
-        font-size: 9px;
-    }
-    #gyroToggleContainer {
-        top: 70px !important;
-        right: 5px !important;
-    }
-    #gyroSensitivityContainer {
-        width: 80px !important;
-        height: 30px !important;
-    }
-    #gyroModeToggle, #gyroCalibrateButton {
-        min-width: 80px !important;
-        max-width: 80px !important;
-        font-size: 10px !important;
-        padding: 3px 6px !important;
-    }
-    #gyroStatusIndicator {
-        min-width: 80px !important;
-        max-width: 80px !important;
-        font-size: 10px !important;
-        padding: 2px 4px !important;
-    }
-    #cameraButton {
-        right: auto;
-        top: auto;
-        bottom: 60px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 70px;
-        height: 70px;
-    }
-    #cameraButton::after {
-        width: 40px;
-        height: 40px;
-    }
-    #screenshotButton {
-        right: 70px;
-        padding: 4px 8px;
-        font-size: 10px;
-    }
-    #birdingRecordModal > div[style*="position: fixed; top: 0"] {
-        padding: 6px 10px !important;
-    }
-    #birdingRecordModal > div[style*="position: fixed; top: 0"] div:first-child {
-        font-size: 14px !important;
-    }
-    #birdingRecordModal > div[style*="position: fixed; top: 0"] #birdingRecordCounter {
-        font-size: 11px !important;
-        padding: 2px 6px !important;
-    }
-    #birdingRecordModal > div[style*="position: fixed; top: 0"] #screenshotButton {
-        padding: 4px 8px !important;
-        font-size: 11px !important;
-    }
-    #birdingRecordModal > div[style*="position: fixed; top: 0"] #closeBirdingRecord {
-        width: 28px !important;
-        height: 28px !important;
-        font-size: 14px !important;
-    }
-    #birdingRecordContent {
-        margin-top: 55px !important;
-        padding: 0 10px 15px 10px !important;
-        font-size: 14px !important;
-        line-height: 1.5 !important;
-    }
-    .birdingRecordNavButton {
-        width: 35px !important;
-        height: 35px !important;
-        font-size: 18px !important;
-    }
-    #swipeHint {
-        font-size: 12px !important;
-        bottom: 10px !important;
-    }
-}
-@media (orientation: landscape) and (max-height: 500px) {
-    #photoPreview {
-        top: 5px;
-        left: 5px;
-        width: 80px;
-        height: 60px;
-    }
-    #birdingToggleContainer {
-        top: 5px;
-        right: 5px;
-    }
-    #helpButton {
-        width: 25px;
-        height: 25px;
-        font-size: 14px;
-    }
-    #birdingModeToggle {
-        padding: 4px 8px;
-        font-size: 12px;
-        min-width: 100px;
-    }
-    #birdingStatusIndicator {
-        font-size: 10px;
-        padding: 2px 6px;
-        min-width: 100px;
-    }
-    #birdingRecordIcon {
-        width: 100px;
-        height: 18px;
-        font-size: 9px;
-        border-width: 1px;
-        border-radius: 6px;
-        margin-top: 3px;
-    }
-    #birdingRecordIcon::before {
-        height: 2px;
-    }
-    #textStats {
-        top: 70px;
-        left: 5px;
-        font-size: 10px;
-        padding: 4px 8px;
-    }
-    #lensToggleContainer {
-        bottom: 40px;
-        left: 5px;
-    }
-    #modeToggleContainer {
-        bottom: 40px;
-        right: 5px;
-    }
-    #birdingRecordIconsContainer {
-        top: 50px;
-        max-height: 150px;
-    }
-    .birdingRecordIcon {
-        width: 40px;
-        height: 40px;
-    }
-    .birdingRecordIcon .iconNumber {
-        font-size: 14px;
-    }
-    .birdingRecordIcon .iconTime {
-        font-size: 9px;
-    }
-    .birdingRecordIcon .iconBirdCount {
-        font-size: 8px;
-    }
-    #gyroToggleContainer {
-        left: 5px;
-        top: 50%;
-    }
-    #gyroSensitivityContainer {
-        width: 70px;
-        padding: 3px 6px;
-        height: 32px;
-    }
-    #gyroModeToggle {
-        padding: 4px 8px;
-        font-size: 11px;
-        min-width: 55px;
-        max-width: 70px;
-    }
-    #gyroStatusIndicator {
-        font-size: 9px;
-        padding: 2px 6px;
-        min-width: 55px;
-        max-width: 70px;
-    }
-    #gyroCalibrateButton {
-        padding: 3px 6px;
-        font-size: 9px;
-        min-width: 55px;
-        max-width: 70px;
-    }
-    #cameraButton {
-        right: 10px;
-        top: 50%;
-        transform: translateY(-50%);
-        width: 60px;
-        height: 60px;
-    }
-    #cameraButton::after {
-        width: 35px;
-        height: 35px;
-    }
-}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>观鸟模拟器 - 一万两千鸻使用AI制作</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            background-color: #000;
+            overflow: hidden;
+            font-family: 'SimSun', sans-serif;
+            color: #333;
+        }
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+        #gameCanvas {
+            display: block;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F7FF 100%);
+            cursor: crosshair;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        #poopCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+        #viewfinder {
+            position: absolute;
+            border: 2px dashed rgba(255, 255, 255, 0.8);
+            background-color: rgba(255, 255, 255, 0.1);
+            pointer-events: none;
+            display: none;
+            z-index: 100;
+        }
+        #photoPreview {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 120px;
+            height: 80px;
+            border: 2px solid white;
+            border-radius: 5px;
+            background-color: rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+            z-index: 60;
+            cursor: pointer;
+        }
+        #photoPreview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        #photoPreview .noPhoto {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: white;
+            font-size: 12px;
+            text-align: center;
+        }
+        #birdingToggleContainer {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 70;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+        #helpButton {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: #FFD700;
+            border: 2px solid #FFD700;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 5px;
+        }
+        #helpButton:hover {
+            background-color: rgba(255, 215, 0, 0.3);
+            transform: scale(1.1);
+        }
+        #helpButton:active {
+            transform: scale(0.95);
+        }
+        #birdingModeToggle {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 2px solid #90EE90;
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 120px;
+            text-align: center;
+        }
+        #birdingModeToggle:hover {
+            background-color: rgba(144, 238, 144, 0.3);
+        }
+        #birdingModeToggle.active {
+            background-color: rgba(144, 238, 144, 0.5);
+            border-color: #FFFFFF;
+        }
+        #birdingStatusIndicator {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 10px;
+            font-size: 12px;
+            border: 1px solid #90EE90;
+            text-align: center;
+            min-width: 120px;
+        }
+        #birdingRecordIcon {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #FFD700;
+            border-radius: 8px;
+            width: 120px;
+            height: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            margin-top: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            font-size: 10px;
+            color: #FFD700;
+            font-weight: bold;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
+        #birdingRecordIcon:hover {
+            background: rgba(255, 215, 0, 0.15);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(255, 215, 0, 0.2);
+        }
+        #birdingRecordIcon:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        }
+        #birdingRecordIcon::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, #FFD700, #FFA500);
+        }
+        #birdingRecordIcon .iconNumber {
+            font-size: 11px;
+            font-weight: bold;
+            color: #FFD700;
+            margin-right: 4px;
+        }
+        #birdingRecordIcon .iconTime {
+            font-size: 9px;
+            color: #87CEEB;
+            margin-right: 4px;
+        }
+        #birdingRecordIcon .iconBirdCount {
+            font-size: 9px;
+            color: #90EE90;
+        }
+        #birdingRecordNav {
+            position: fixed;
+            top: 50%;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 410;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #birdingRecordNav.show {
+            opacity: 1;
+        }
+        .birdingRecordNavButton {
+            pointer-events: auto;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 2px solid #FFD700;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+        .birdingRecordNavButton:hover {
+            background-color: rgba(255, 215, 0, 0.3);
+            transform: scale(1.1);
+        }
+        .birdingRecordNavButton:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .birdingRecordNavButton:disabled:hover {
+            background-color: rgba(0, 0, 0, 0.7);
+            transform: none;
+        }
+        #birdingRecordCounter {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: white;
+            font-size: 16px;
+            z-index: 410;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 10px;
+            margin: 0 auto;
+            width: fit-content;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #birdingRecordCounter.show {
+            opacity: 1;
+        }
+        .swipe-hint {
+            position: fixed;
+            bottom: 80px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: #FFD700;
+            font-size: 14px;
+            z-index: 410;
+            opacity: 0.7;
+            animation: pulse 2s infinite;
+        }
+        #textStats {
+            position: absolute;
+            top: 95px;
+            left: 10px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            z-index: 50;
+            font-size: 12px;
+            max-width: 90%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        #textStats span {
+            margin: 0 8px;
+            color: #FFD700;
+            font-weight: bold;
+        }
+        #albumModal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            z-index: 200;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #albumTitle {
+            color: white;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        #albumPromotion {
+            color: #FFD700;
+            margin-bottom: 20px;
+            font-size: 16px;
+            text-align: center;
+        }
+        #albumPhotos {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-start;
+            align-content: flex-start;
+            max-width: 90%;
+            max-height: 70%;
+            overflow-x: auto;
+            overflow-y: auto;
+            padding: 20px;
+            width: 100%;
+        }
+        .albumPhoto {
+            width: 160px;
+            height: 140px;
+            margin: 10px;
+            border: 2px solid white;
+            border-radius: 5px;
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+        }
+        .albumPhoto img {
+            width: 100%;
+            height: 100px;
+            object-fit: cover;
+        }
+        .photoInfo {
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px;
+            font-size: 12px;
+            text-align: center;
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #albumStats {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            max-width: 90%;
+            max-height: 20%;
+            overflow-y: auto;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        .albumStatItem {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 4px 8px;
+            margin: 2px;
+            border-radius: 4px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 12px;
+            min-width: 120px;
+        }
+        #closeAlbum {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        #gameTitle {
+            position: absolute;
+            top: 100px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 24px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+            z-index: 10;
+            display: none;
+        }
+        #creator {
+            position: absolute;
+            top: 5px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 16px;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
+            z-index: 10;
+        }
+        #specialAlert {
+            position: absolute;
+            top: 140px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: #FFD700;
+            font-size: 20px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        #captureAlert {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #FFD700;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+            z-index: 150;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9);
+            background-color: transparent;
+            padding: 0;
+        }
+        #gameNote {
+            position: absolute;
+            bottom: 5px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: white;
+            font-size: 12px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+            z-index: 10;
+            opacity: 0.7;
+            padding: 0 10px;
+        }
+        #modeToggleContainer {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+            z-index: 70;
+        }
+        .modeToggleButton {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 2px solid #FFD700;
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .modeToggleButton:hover {
+            background-color: rgba(255, 215, 0, 0.3);
+        }
+        .modeToggleButton.active {
+            background-color: rgba(255, 215, 0, 0.5);
+            border-color: #FFFFFF;
+        }
+        #timeIndicator {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 14px;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+            z-index: 10;
+            opacity: 0.8;
+        }
+        #nightObjectAlert {
+            position: absolute;
+            top: 180px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: #87CEEB;
+            font-size: 18px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        .meteor-trail {
+            position: absolute;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0) 100%);
+            border-radius: 2px;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .comet-trail {
+            position: absolute;
+            background: radial-gradient(circle, rgba(173,216,230,0.8) 0%, rgba(173,216,230,0) 70%);
+            border-radius: 50%;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .ufo-beam {
+            position: absolute;
+            background: linear-gradient(to bottom, rgba(144,238,144,0.7) 0%, rgba(144,238,144,0) 100%);
+            border-radius: 50%;
+            z-index: 2;
+            pointer-events: none;
+        }
+        #allBirdsAlert {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.9);
+            color: #FFD700;
+            padding: 30px 40px;
+            border-radius: 15px;
+            border: 3px solid #FFD700;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            z-index: 300;
+            max-width: 80%;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            50% { transform: translate(-50%, -50%) scale(1.05); }
+            100% { transform: translate(-50%, -50%) scale(1); }
+        }
+        #lensToggleContainer {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            display: flex;
+            gap: 10px;
+            z-index: 70;
+            background-color: rgba(0, 0, 0, 0.7);
+            padding: 8px;
+            border-radius: 20px;
+            border: 2px solid #FFD700;
+        }
+        .lensToggleButton {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 1px solid #FFD700;
+            border-radius: 15px;
+            padding: 6px 12px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .lensToggleButton:hover {
+            background-color: rgba(255, 215, 0, 0.3);
+        }
+        .lensToggleButton.active {
+            background-color: rgba(255, 215, 0, 0.5);
+            border-color: #FFFFFF;
+        }
+        #goldenFilter {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 215, 0, 0);
+            pointer-events: none;
+            z-index: 5;
+            transition: background-color 1s ease;
+        }
+        .birdingRecordIcon {
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #FFD700;
+            border-radius: 10px;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .birdingRecordIcon:hover {
+            background: rgba(255, 215, 0, 0.2);
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+        }
+        .birdingRecordIcon::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: linear-gradient(90deg, #FFD700, #FFA500);
+        }
+        .birdingRecordIcon .iconNumber {
+            font-size: 18px;
+            font-weight: bold;
+            color: #FFD700;
+            margin-bottom: 2px;
+        }
+        .birdingRecordIcon .iconTime {
+            font-size: 11px;
+            color: #87CEEB;
+        }
+        .birdingRecordIcon .iconBirdCount {
+            font-size: 10px;
+            color: #90EE90;
+            margin-top: 2px;
+        }
+        .birdRecordText {
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #87CEEB;
+        }
+        .birdRecordText.highlight {
+            border-left-color: #FFD700;
+            background: rgba(255, 215, 0, 0.1);
+        }
+        .birdRecordText .birdName {
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .birdRecordText .birdStats {
+            font-size: 14px;
+            color: #87CEEB;
+        }
+        .birdRecordText .birdStats span {
+            margin-right: 15px;
+        }
+        .birdRecordText.highlight .birdName {
+            color: #FFD700;
+        }
+        .recordSummaryText {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+            border-top: 2px solid #90EE90;
+        }
+        .recordSummaryText .summaryItem {
+            display: inline-block;
+            margin-right: 20px;
+            font-size: 14px;
+        }
+        .recordSummaryText .summaryLabel {
+            color: #87CEEB;
+        }
+        .recordSummaryText .summaryValue {
+            color: white;
+            font-weight: bold;
+        }
+        .rareBirdText {
+            background: rgba(255, 215, 0, 0.15);
+            border: 1px solid #FFD700;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin: 5px 0;
+            color: #FFD700;
+            font-size: 14px;
+        }
+        .rareBirdText::before {
+            content: '★ ';
+        }
+        #gyroToggleContainer {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 70;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+        #gyroSensitivityContainer {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 3px 8px;
+            border-radius: 8px;
+            border: 1px solid #FFA500;
+            z-index: 70;
+            width: 80px;
+            margin-bottom: 5px;
+            height: 35px;
+            display: none;
+        }
+        #gyroSensitivityContainer.active {
+            display: block;
+        }
+        #gyroSensitivityLabel {
+            font-size: 10px;
+            margin-bottom: 2px;
+            text-align: center;
+        }
+        #gyroSensitivitySlider {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: #555;
+            border-radius: 2px;
+            outline: none;
+        }
+        #gyroSensitivitySlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: #FFA500;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        #gyroSensitivityValue {
+            font-size: 10px;
+            margin-top: 1px;
+            text-align: center;
+        }
+        #gyroModeToggle {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 2px solid #FFA500;
+            border-radius: 20px;
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 60px;
+            max-width: 80px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        #gyroModeToggle:hover {
+            background-color: rgba(255, 165, 0, 0.3);
+        }
+        #gyroModeToggle.active {
+            background-color: rgba(255, 165, 0, 0.5);
+            border-color: #FFFFFF;
+        }
+        #gyroStatusIndicator {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            border: 1px solid #FFA500;
+            text-align: center;
+            min-width: 60px;
+            max-width: 80px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-bottom: 5px;
+        }
+        #gyroCalibrateButton {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 2px solid #4CAF50;
+            border-radius: 20px;
+            padding: 4px 8px;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 60px;
+            max-width: 80px;
+            text-align: center;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        #gyroCalibrateButton:hover {
+            background-color: rgba(76, 175, 80, 0.3);
+        }
+        #cameraButton {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 70px;
+            height: 70px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 50%;
+            border: 4px solid #FFD700;
+            cursor: pointer;
+            z-index: 80;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+        #cameraButton:hover {
+            background-color: rgba(255, 255, 255, 1);
+            transform: translateY(-50%) scale(1.05);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+        }
+        #cameraButton:active {
+            background-color: rgba(230, 230, 230, 1);
+            transform: translateY(-50%) scale(0.95);
+        }
+        #cameraButton::after {
+            content: '';
+            width: 40px;
+            height: 40px;
+            background-color: #FFD700;
+            border-radius: 50%;
+            border: 3px solid #333;
+        }
+        #screenshotCanvas {
+            position: fixed;
+            top: -10000px;
+            left: -10000px;
+            width: 300px;
+            height: 450px;
+            z-index: 1000;
+        }
+        #screenshotButton {
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: 2px solid #87CEEB;
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: absolute;
+            top: 20px;
+            right: 70px;
+            z-index: 401;
+            display: none;
+        }
+        #screenshotButton:hover {
+            background-color: rgba(135, 206, 235, 0.3);
+        }
+        #screenshotButton:active {
+            background-color: rgba(135, 206, 235, 0.5);
+        }
+        #screenshotPreviewModal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.9);
+            z-index: 500;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding-top: 20px;
+            overflow-y: auto;
+        }
+        #screenshotPreviewImage {
+            max-height: 90vh;
+            max-width: 90%;
+            object-fit: contain;
+            border: 3px solid #FFD700;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+            margin-bottom: 20px;
+        }
+        #screenshotPreviewControls {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .screenshotPreviewButton {
+            background-color: rgba(255, 215, 0, 0.8);
+            color: black;
+            border: none;
+            border-radius: 25px;
+            padding: 10px 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            min-width: 120px;
+        }
+        .screenshotPreviewButton:hover {
+            background-color: rgba(255, 215, 0, 1);
+            transform: scale(1.05);
+        }
+        .screenshotPreviewButton:active {
+            transform: scale(0.95);
+        }
+        #screenshotPreviewClose {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        #lensToggleContainer.hidden-by-gyro,
+        #modeToggleContainer.hidden-by-gyro {
+            opacity: 0.3;
+            background-color: rgba(0, 0, 0, 0.3);
+            border-color: rgba(255, 215, 0, 0.3);
+            cursor: pointer;
+            transition: opacity 0.3s, background-color 0.3s;
+        }
+        #lensToggleContainer.hidden-by-gyro:hover,
+        #modeToggleContainer.hidden-by-gyro:hover {
+            opacity: 0.7;
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+        #lensToggleContainer.hidden-by-gyro::after,
+        #modeToggleContainer.hidden-by-gyro::after {
+            content: '点击显示';
+            position: absolute;
+            font-size: 10px;
+            color: #FFD700;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 2px 5px;
+            border-radius: 3px;
+            white-space: nowrap;
+            z-index: 71;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        #lensToggleContainer.hidden-by-gyro:hover::after,
+        #modeToggleContainer.hidden-by-gyro:hover::after {
+            opacity: 1;
+        }
+        #lensToggleContainer.hidden-by-gyro::after {
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        #modeToggleContainer.hidden-by-gyro::after {
+            bottom: -20px;
+            right: 10px;
+        }
+        #lensToggleContainer.temporarily-show,
+        #modeToggleContainer.temporarily-show {
+            opacity: 1 !important;
+            background-color: rgba(0, 0, 0, 0.7) !important;
+            border-color: #FFD700 !important;
+            display: flex !important;
+        }
+        
+        /* 营地样式 */
+        #campsite {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 400px;
+            height: 200px;
+            display: none;
+            z-index: 25;
+            cursor: pointer;
+        }
+        
+        @keyframes flame-flicker {
+            0% { transform: translateX(-50%) scale(1.0); opacity: 0.9; }
+            100% { transform: translateX(-50%) scale(1.1); opacity: 1.0; }
+        }
+        
+        #campsite:hover #campfire-flame {
+            animation: flame-flicker 0.3s infinite alternate;
+            background: radial-gradient(circle, #FF6347 0%, #FFA500 30%, #FFFF00 70%);
+        }
+        
+        #campsite:hover {
+            filter: brightness(1.2);
+        }
+        
+        @media (orientation: landscape) {
+            .gyro-active #lensToggleContainer,
+            .gyro-active #modeToggleContainer {
+                display: none;
+            }
+            .gyro-active #lensToggleContainer.hidden-by-gyro,
+            .gyro-active #modeToggleContainer.hidden-by-gyro {
+                display: flex;
+            }
+            .gyro-active #lensToggleContainer.hidden-by-gyro .lensToggleButton,
+            .gyro-active #modeToggleContainer.hidden-by-gyro .modeToggleButton {
+                pointer-events: none;
+                opacity: 0.5;
+            }
+        }
+        @media (orientation: portrait) {
+            #photoPreview {
+                top: 10px;
+                left: 10px;
+                width: 90px;
+                height: 70px;
+            }
+            #photoPreview .noPhoto {
+                font-size: 10px;
+                padding: 3px;
+            }
+            #birdingToggleContainer {
+                top: 10px;
+                right: 10px;
+            }
+            #helpButton {
+                width: 25px;
+                height: 25px;
+                font-size: 14px;
+            }
+            #birdingModeToggle {
+                padding: 5px 10px;
+                font-size: 12px;
+                min-width: 100px;
+            }
+            #birdingStatusIndicator {
+                font-size: 10px;
+                padding: 3px 8px;
+                min-width: 100px;
+            }
+            #birdingRecordIcon {
+                width: 100px;
+                height: 18px;
+                font-size: 9px;
+                border-width: 1px;
+                border-radius: 6px;
+                margin-top: 3px;
+            }
+            #birdingRecordIcon::before {
+                height: 2px;
+            }
+            #birdingRecordIcon .iconNumber {
+                font-size: 10px;
+                margin-right: 3px;
+            }
+            #birdingRecordIcon .iconTime,
+            #birdingRecordIcon .iconBirdCount {
+                font-size: 8px;
+                margin-right: 3px;
+            }
+            #textStats {
+                top: 85px;
+                left: 10px;
+                padding: 5px 10px;
+                font-size: 11px;
+                max-width: 60%;
+                white-space: normal;
+                max-height: 70px;
+                overflow-y: auto;
+            }
+            #textStats span {
+                margin: 0 5px;
+            }
+            #lensToggleContainer {
+                bottom: 170px;
+                left: 10px;
+                padding: 3px;
+                gap: 3px;
+                border-radius: 15px;
+                border-width: 1px;
+                min-width: auto;
+                max-width: 120px;
+            }
+            .lensToggleButton {
+                padding: 2px 6px;
+                font-size: 9px;
+                border-radius: 8px;
+                border-width: 0.5px;
+                min-height: 24px;
+                min-width: 40px;
+            }
+            #modeToggleContainer {
+                bottom: 170px;
+                right: 10px;
+                flex-wrap: wrap;
+                justify-content: flex-end;
+                gap: 3px;
+                max-width: 45%;
+            }
+            .modeToggleButton {
+                padding: 2px 6px;
+                font-size: 9px;
+                border-radius: 8px;
+                border-width: 1px;
+                min-height: 24px;
+                flex-shrink: 1;
+                min-width: 50px;
+                text-align: center;
+                line-height: 1.2;
+            }
+            #birdingModeToggle {
+                padding: 2px 6px;
+                font-size: 9px;
+                min-width: 50px;
+                border-width: 1px;
+                border-radius: 8px;
+            }
+            #birdingStatusIndicator {
+                font-size: 8px;
+                padding: 1px 4px;
+                min-width: 50px;
+                border-radius: 5px;
+                border-width: 0.5px;
+            }
+            #birdingRecordIconsContainer {
+                top: 85px;
+                left: 10px;
+                max-height: 150px;
+            }
+            .birdingRecordIcon {
+                width: 50px;
+                height: 50px;
+            }
+            .birdingRecordIcon .iconNumber {
+                font-size: 16px;
+            }
+            .birdingRecordIcon .iconTime {
+                font-size: 10px;
+            }
+            .birdingRecordIcon .iconBirdCount {
+                font-size: 9px;
+            }
+            #timeIndicator {
+                top: 30px;
+                font-size: 12px;
+            }
+            #creator {
+                top: 5px;
+                font-size: 14px;
+            }
+            #gameTitle {
+                top: 90px;
+                font-size: 20px;
+            }
+            #specialAlert {
+                top: 130px;
+                font-size: 16px;
+            }
+            #gameNote {
+                bottom: 20px;
+                font-size: 10px;
+                padding: 0 5px;
+            }
+            #albumModal {
+                padding: 10px;
+            }
+            #albumTitle {
+                font-size: 20px;
+                margin-bottom: 5px;
+            }
+            #albumPromotion {
+                font-size: 14px;
+                margin-bottom: 10px;
+            }
+            .albumPhoto {
+                width: 120px;
+                height: 105px;
+                margin: 5px;
+            }
+            .albumPhoto img {
+                height: 75px;
+            }
+            .photoInfo {
+                font-size: 10px;
+                padding: 3px;
+            }
+            .albumStatItem {
+                font-size: 10px;
+                min-width: 100px;
+                padding: 3px 6px;
+            }
+            #birdingRecordModal {
+                padding: 10px;
+            }
+            #birdingRecordModal > div {
+                width: 95%;
+                padding: 15px;
+                margin-top: 20px;
+            }
+            #birdingRecordTitle {
+                font-size: 22px;
+                margin-bottom: 15px;
+            }
+            .birdRecordText {
+                padding: 10px;
+                margin-bottom: 8px;
+            }
+            .birdRecordText .birdName {
+                font-size: 14px;
+            }
+            .birdRecordText .birdStats {
+                font-size: 12px;
+            }
+            .recordSummaryText {
+                padding: 8px;
+                margin-bottom: 10px;
+            }
+            .recordSummaryText .summaryItem {
+                margin-right: 10px;
+                font-size: 12px;
+            }
+            .rareBirdText {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+            #allBirdsAlert {
+                padding: 20px 25px;
+                font-size: 18px;
+                max-width: 90%;
+            }
+            #allBirdsAlert button {
+                padding: 8px 20px;
+                font-size: 14px;
+            }
+            #gyroToggleContainer {
+                left: auto !important;
+                right: 10px !important;
+                top: 100px !important;
+                transform: none !important;
+                flex-direction: column !important;
+                align-items: flex-end !important;
+                z-index: 71 !important;
+            }
+            #gyroSensitivityContainer {
+                width: 100px !important;
+                height: 35px !important;
+                margin-bottom: 5px !important;
+            }
+            #gyroSensitivityLabel {
+                font-size: 8px;
+                margin-bottom: 1px;
+            }
+            #gyroSensitivitySlider {
+                height: 3px;
+            }
+            #gyroSensitivitySlider::-webkit-slider-thumb {
+                width: 8px;
+                height: 8px;
+            }
+            #gyroSensitivityValue {
+                font-size: 8px;
+                margin-top: 0;
+            }
+            #gyroModeToggle {
+                padding: 2px 4px;
+                font-size: 9px;
+                min-width: 100px !important;
+                max-width: 100px !important;
+                border-width: 1px;
+                border-radius: 10px;
+            }
+            #gyroStatusIndicator {
+                font-size: 8px;
+                padding: 1px 3px;
+                min-width: 100px !important;
+                max-width: 100px !important;
+                border-width: 0.5px;
+                border-radius: 5px;
+            }
+            #gyroCalibrateButton {
+                padding: 1px 3px;
+                font-size: 8px;
+                min-width: 100px !important;
+                max-width: 100px !important;
+                border-width: 1px;
+                border-radius: 10px;
+            }
+            #cameraButton {
+                right: auto;
+                top: auto;
+                bottom: 70px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 80px;
+                height: 80px;
+                background-color: rgba(255, 255, 255, 0.9);
+                border-radius: 50%;
+                border: 4px solid #FFD700;
+                cursor: pointer;
+                z-index: 80;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: all 0.2s;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            }
+            #cameraButton:hover {
+                background-color: rgba(255, 255, 255, 1);
+                transform: translateX(-50%) scale(1.05);
+                box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+            }
+            #cameraButton:active {
+                background-color: rgba(230, 230, 230, 1);
+                transform: translateX(-50%) scale(0.95);
+            }
+            #cameraButton::after {
+                content: '';
+                width: 45px;
+                height: 45px;
+                background-color: #FFD700;
+                border-radius: 50%;
+                border: 3px solid #333;
+            }
+            #screenshotButton {
+                top: 10px;
+                right: 70px;
+                padding: 5px 10px;
+                font-size: 12px;
+                border-width: 1px;
+                border-radius: 15px;
+            }
+            .screenshotPreviewButton {
+                padding: 8px 20px;
+                font-size: 14px;
+                min-width: 100px;
+            }
+            #birdingRecordModal > div[style*="position: fixed; top: 0"] {
+                padding: 8px 15px !important;
+            }
+            #birdingRecordModal > div[style*="position: fixed; top: 0"] div:first-child {
+                font-size: 16px !important;
+            }
+            #birdingRecordModal > div[style*="position: fixed; top: 0"] #birdingRecordCounter {
+                font-size: 12px !important;
+                padding: 3px 8px !important;
+            }
+            #birdingRecordModal > div[style*="position: fixed; top: 0"] #screenshotButton {
+                padding: 6px 12px !important;
+                font-size: 12px !important;
+            }
+            #birdingRecordModal > div[style*="position: fixed; top: 0"] #closeBirdingRecord {
+                width: 30px !important;
+                height: 30px !important;
+                font-size: 16px !important;
+            }
+            #birdingRecordContent {
+                margin-top: 65px !important;
+                padding: 0 15px 20px 15px !important;
+                font-size: 15px !important;
+            }
+            #birdingRecordNav {
+                padding: 0 10px !important;
+            }
+            .birdingRecordNavButton {
+                width: 40px !important;
+                height: 40px !important;
+                font-size: 20px !important;
+            }
+        }
+        @media (orientation: portrait) and (max-width: 400px) {
+            #photoPreview {
+                width: 70px;
+                height: 50px;
+            }
+            #textStats {
+                font-size: 10px;
+                padding: 4px 8px;
+                top: 65px;
+            }
+            #birdingModeToggle,
+            .lensToggleButton,
+            .modeToggleButton {
+                padding: 4px 8px;
+                font-size: 11px;
+                min-width: 80px;
+            }
+            #helpButton {
+                width: 22px;
+                height: 22px;
+                font-size: 12px;
+            }
+            #birdingStatusIndicator {
+                font-size: 9px;
+                padding: 2px 6px;
+                min-width: 80px;
+            }
+            #birdingRecordIcon {
+                width: 80px;
+                height: 16px;
+                font-size: 8px;
+                border-radius: 4px;
+                margin-top: 2px;
+            }
+            #birdingRecordIcon .iconNumber {
+                font-size: 9px;
+                margin-right: 2px;
+            }
+            #birdingRecordIcon .iconTime,
+            #birdingRecordIcon .iconBirdCount {
+                font-size: 7px;
+                margin-right: 2px;
+            }
+            #lensToggleContainer {
+                bottom: 60px;
+                gap: 2px;
+                padding: 2px;
+                border-radius: 12px;
+                max-width: 90px;
+            }
+            .lensToggleButton {
+                padding: 1px 4px;
+                font-size: 8px;
+                border-radius: 6px;
+                min-height: 20px;
+                min-width: 30px;
+            }
+            #modeToggleContainer {
+                bottom: 60px;
+                gap: 2px;
+            }
+            .modeToggleButton {
+                padding: 1px 4px;
+                font-size: 8px;
+                border-radius: 6px;
+                min-width: 40px;
+                min-height: 20px;
+            }
+            #birdingModeToggle {
+                padding: 1px 4px;
+                font-size: 8px;
+                min-width: 40px;
+                border-radius: 6px;
+            }
+            #birdingStatusIndicator {
+                font-size: 7px;
+                padding: 1px 2px;
+                min-width: 40px;
+                border-radius: 4px;
+            }
+            .birdingRecordIcon {
+                width: 40px;
+                height: 40px;
+            }
+            .birdingRecordIcon .iconNumber {
+                font-size: 14px;
+            }
+            .birdingRecordIcon .iconTime,
+            .birdingRecordIcon .iconBirdCount {
+                font-size: 9px;
+            }
+            #gyroToggleContainer {
+                top: 70px !important;
+                right: 5px !important;
+            }
+            #gyroSensitivityContainer {
+                width: 80px !important;
+                height: 30px !important;
+            }
+            #gyroModeToggle,
+            #gyroCalibrateButton {
+                min-width: 80px !important;
+                max-width: 80px !important;
+                font-size: 10px !important;
+                padding: 3px 6px !important;
+            }
+            #gyroStatusIndicator {
+                min-width: 80px !important;
+                max-width: 80px !important;
+                font-size: 10px !important;
+                padding: 2px 4px !important;
+            }
+            #cameraButton {
+                right: auto;
+                top: auto;
+                bottom: 60px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 70px;
+                height: 70px;
+            }
+            #cameraButton::after {
+                width: 40px;
+                height: 40px;
+            }
+            #screenshotButton {
+                right: 70px;
+                padding: 4px 8px;
+                font-size: 10px;
+            }
+            #birdingRecordModal > div[style*="position: fixed; top: 0"] {
+                padding: 6px 10px !important;
+            }
+            #birdingRecordModal > div[style*="position: fixed; top: 0"] div:first-child {
+                font-size: 14px !important;
+            }
+            #birdingRecordModal > div[style*="position: fixed; top: 0"] #birdingRecordCounter {
+                font-size: 11px !important;
+                padding: 2px 6px !important;
+            }
+            #birdingRecordModal > div[style*="position: fixed; top: 0"] #screenshotButton {
+                padding: 4px 8px !important;
+                font-size: 11px !important;
+            }
+            #birdingRecordModal > div[style*="position: fixed; top: 0"] #closeBirdingRecord {
+                width: 28px !important;
+                height: 28px !important;
+                font-size: 14px !important;
+            }
+            #birdingRecordContent {
+                margin-top: 55px !important;
+                padding: 0 10px 15px 10px !important;
+                font-size: 14px !important;
+                line-height: 1.5 !important;
+            }
+            .birdingRecordNavButton {
+                width: 35px !important;
+                height: 35px !important;
+                font-size: 18px !important;
+            }
+            #swipeHint {
+                font-size: 12px !important;
+                bottom: 10px !important;
+            }
+        }
+        @media (orientation: landscape) and (max-height: 500px) {
+            #photoPreview {
+                top: 5px;
+                left: 5px;
+                width: 80px;
+                height: 60px;
+            }
+            #birdingToggleContainer {
+                top: 5px;
+                right: 5px;
+            }
+            #helpButton {
+                width: 25px;
+                height: 25px;
+                font-size: 14px;
+            }
+            #birdingModeToggle {
+                padding: 4px 8px;
+                font-size: 12px;
+                min-width: 100px;
+            }
+            #birdingStatusIndicator {
+                font-size: 10px;
+                padding: 2px 6px;
+                min-width: 100px;
+            }
+            #birdingRecordIcon {
+                width: 100px;
+                height: 18px;
+                font-size: 9px;
+                border-width: 1px;
+                border-radius: 6px;
+                margin-top: 3px;
+            }
+            #birdingRecordIcon::before {
+                height: 2px;
+            }
+            #textStats {
+                top: 70px;
+                left: 5px;
+                font-size: 10px;
+                padding: 4px 8px;
+            }
+            #lensToggleContainer {
+                bottom: 40px;
+                left: 5px;
+            }
+            #modeToggleContainer {
+                bottom: 40px;
+                right: 5px;
+            }
+            #birdingRecordIconsContainer {
+                top: 50px;
+                max-height: 150px;
+            }
+            .birdingRecordIcon {
+                width: 40px;
+                height: 40px;
+            }
+            .birdingRecordIcon .iconNumber {
+                font-size: 14px;
+            }
+            .birdingRecordIcon .iconTime {
+                font-size: 9px;
+            }
+            .birdingRecordIcon .iconBirdCount {
+                font-size: 8px;
+            }
+            #gyroToggleContainer {
+                left: 5px;
+                top: 50%;
+            }
+            #gyroSensitivityContainer {
+                width: 70px;
+                padding: 3px 6px;
+                height: 32px;
+            }
+            #gyroModeToggle {
+                padding: 4px 8px;
+                font-size: 11px;
+                min-width: 55px;
+                max-width: 70px;
+            }
+            #gyroStatusIndicator {
+                font-size: 9px;
+                padding: 2px 6px;
+                min-width: 55px;
+                max-width: 70px;
+            }
+            #gyroCalibrateButton {
+                padding: 3px 6px;
+                font-size: 9px;
+                min-width: 55px;
+                max-width: 70px;
+            }
+            #cameraButton {
+                right: 10px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 60px;
+                height: 60px;
+            }
+            #cameraButton::after {
+                width: 35px;
+                height: 35px;
+            }
+        }
+    </style>
 </head>
 <body>
-<div id="gameContainer">
-    <canvas id="gameCanvas"></canvas>
-    <canvas id="poopCanvas"></canvas>
-    <div id="goldenFilter"></div>
-    <div id="viewfinder"></div>
-    <div id="photoPreview" onclick="openAlbum()">
-        <div class="noPhoto">点击查看相册<br>暂无照片</div>
-    </div>
-    <canvas id="screenshotCanvas"></canvas>
-    
-    <div id="screenshotPreviewModal">
-        <button id="screenshotPreviewClose" onclick="closeScreenshotPreview()">×</button>
-        <img id="screenshotPreviewImage" src="" alt="截图预览">
-        <div id="screenshotPreviewControls">
-            <button class="screenshotPreviewButton" onclick="saveScreenshot()">💾 保存图片</button>
-            <button class="screenshotPreviewButton" onclick="closeScreenshotPreview()">✕ 关闭</button>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        <canvas id="poopCanvas"></canvas>
+        <div id="goldenFilter"></div>
+        <div id="viewfinder"></div>
+        <div id="photoPreview" onclick="openAlbum()">
+            <div class="noPhoto">点击查看相册<br>暂无照片</div>
         </div>
-    </div>
-    
-    <div id="gyroToggleContainer">
-        <div id="gyroSensitivityContainer">
-            <div id="gyroSensitivityLabel">灵敏度</div>
-            <input type="range" id="gyroSensitivitySlider" min="5" max="20" value="10">
-            <div id="gyroSensitivityValue">10</div>
-        </div>
-        <div id="gyroStatusIndicator">关闭</div>
-        <button id="gyroModeToggle">陀螺仪</button>
-        <button id="gyroCalibrateButton">校准</button>
-    </div>
-    
-    <div id="cameraButton" onclick="handleCameraButtonClick()"></div>
-    
-    <div id="birdingToggleContainer">
-        <button id="helpButton" class="help-button" title="查看帮助">?</button>
-        <button id="birdingModeToggle">观鸟模式</button>
-        <div id="birdingStatusIndicator">未开始</div>
-        <div id="birdingRecordIcon" style="display: none;"></div>
-    </div>
-    <div id="campContainer" onclick="skipNight()">
-  <div id="camp"></div>
-</div>
-    <div id="birdingRecordIconsContainer" style="position: absolute; top: 100px; right: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 70; max-height: 200px; overflow-y: auto; display: none;"></div>
-    
-    <div id="textStats">
-        已出现鸟类: <span id="appearedCount">0</span> | 已拍摄鸟类: <span id="capturedCount">0</span>
-    </div>
-    
-    <div id="modeToggleContainer">
-        <button id="dayModeToggle" class="modeToggleButton">永久日间</button>
-        <button id="normalModeToggle" class="modeToggleButton active">普通模式</button>
-        <button id="nightModeToggle" class="modeToggleButton">永久夜间</button>
-    </div>
-    
-    <div id="timeIndicator">白天 30:00 / 30:00 | 00:00</div>
-    
-    <div id="lensToggleContainer">
-        <button id="lens600Toggle" class="lensToggleButton active">600镜头</button>
-        <button id="lens800Toggle" class="lensToggleButton">800镜头</button>
-        <button id="lens1200Toggle" class="lensToggleButton">1200镜头</button>
-    </div>
-    
-    <div id="gameTitle">观鸟模拟器-一万两千鸻AI制作</div>
-    <div id="specialAlert"></div>
-    <div id="nightObjectAlert"></div>
-    <div id="captureAlert"></div>
-    <div id="creator">正在加载创作者信息...</div>
-    
-    <div id="albumModal">
-        <h2 id="albumTitle">我的相册 - 一万两千鸻</h2>
-        <div id="albumPhotos"></div>
-        <div id="albumStats"></div>
-        <button id="closeAlbum" onclick="closeAlbum()">×</button>
-    </div>
-    
-    <div id="birdingRecordModal" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.95); z-index: 400; display: none; color: white; font-family: 'SimSun', monospace; overflow-y: auto; white-space: pre-wrap;">
-        <div style="position: fixed; top: 0; left: 0; right: 0; background: rgba(0, 0, 0, 0.9); border-bottom: 2px solid #FFD700; padding: 12px 20px; z-index: 10; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);">
-            <div style="font-size: 20px; font-weight: bold; color: #FFD700;">📖 观鸟记录</div>
-            <div id="birdingRecordCounter" style="color: white; font-size: 14px; background: rgba(255, 215, 0, 0.2); padding: 4px 12px; border-radius: 12px; border: 1px solid #FFD700;">记录 1 / 1</div>
-            <div style="display: flex; gap: 10px;">
-                <button id="screenshotButton" onclick="captureBirdingRecord()" style="background: rgba(255, 215, 0, 0.8); color: black; border: none; border-radius: 15px; padding: 8px 15px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.3s;">📸 截图</button>
-                <button id="closeBirdingRecord" onclick="closeBirdingRecord()" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 18px; cursor: pointer; transition: all 0.3s;">×</button>
+        <canvas id="screenshotCanvas"></canvas>
+        <div id="screenshotPreviewModal">
+            <button id="screenshotPreviewClose" onclick="closeScreenshotPreview()">×</button>
+            <img id="screenshotPreviewImage" src="" alt="截图预览">
+            <div id="screenshotPreviewControls">
+                <button class="screenshotPreviewButton" onclick="saveScreenshot()">💾 保存图片</button>
+                <button class="screenshotPreviewButton" onclick="closeScreenshotPreview()">✕ 关闭</button>
             </div>
         </div>
-        <div id="birdingRecordNav" style="position: fixed; top: 50%; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 15px; z-index: 5; pointer-events: none; opacity: 0; transition: opacity 0.3s;">
-            <button id="prevRecordButton" class="birdingRecordNavButton" onclick="switchBirdingRecord(-1)" style="pointer-events: auto; background-color: rgba(0, 0, 0, 0.7); color: white; border: 2px solid #FFD700; border-radius: 50%; width: 45px; height: 45px; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s;">←</button>
-            <button id="nextRecordButton" class="birdingRecordNavButton" onclick="switchBirdingRecord(1)" style="pointer-events: auto; background-color: rgba(0, 0, 0, 0.7); color: white; border: 2px solid #FFD700; border-radius: 50%; width: 45px; height: 45px; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s;">→</button>
+        
+        <!-- 营地元素 -->
+        <div id="campsite" style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 400px; height: 200px; display: none; z-index: 25; cursor: pointer;" onclick="accelerateNightTime()">
+            <div style="position: relative; width: 100%; height: 100%;">
+                <!-- 营地地面 -->
+                <div style="position: absolute; bottom: 0; left: 0; width: 100%; height: 50px; background: linear-gradient(to top, #8B4513 0%, #654321 100%); border-radius: 20px 20px 0 0;"></div>
+                
+                <!-- 帐篷 -->
+                <div style="position: absolute; bottom: 50px; right: 80px; width: 120px; height: 80px;">
+                    <!-- 帐篷主体 -->
+                    <div style="position: absolute; bottom: 0; width: 100%; height: 40px; background-color: #8B0000; border-radius: 5px;"></div>
+                    <!-- 帐篷顶部 -->
+                    <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 60px solid transparent; border-right: 60px solid transparent; border-bottom: 40px solid #B22222;"></div>
+                    <!-- 帐篷门 -->
+                    <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 30px; height: 25px; background-color: #A52A2A;"></div>
+                    <!-- 帐篷支柱 -->
+                    <div style="position: absolute; bottom: 0; left: 30px; width: 5px; height: 40px; background-color: #8B4513;"></div>
+                    <div style="position: absolute; bottom: 0; right: 30px; width: 5px; height: 40px; background-color: #8B4513;"></div>
+                </div>
+                
+                <!-- 篝火 -->
+                <div style="position: absolute; bottom: 50px; left: 100px; width: 80px; height: 60px;">
+                    <!-- 木柴 -->
+                    <div style="position: absolute; bottom: 0; left: 10px; width: 60px; height: 10px; background-color: #8B4513; transform: rotate(-15deg);"></div>
+                    <div style="position: absolute; bottom: 5px; left: 15px; width: 50px; height: 10px; background-color: #A0522D; transform: rotate(10deg);"></div>
+                    <!-- 火焰动画 -->
+                    <div id="campfire-flame" style="position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); width: 40px; height: 40px; background: radial-gradient(circle, #FF4500 0%, #FF8C00 30%, #FFD700 70%); border-radius: 50% 50% 20% 20%; filter: blur(2px); animation: flame-flicker 0.5s infinite alternate;"></div>
+                </div>
+                
+                <!-- 营地提示文字 -->
+                <div style="position: absolute; top: 10px; left: 50%; transform: translateX(-50%); color: #FFD700; font-size: 14px; font-weight: bold; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); text-align: center; background-color: rgba(0,0,0,0.5); padding: 5px 10px; border-radius: 10px;">
+                    点击营地加速夜晚 ⏩
+                </div>
+            </div>
         </div>
-        <div id="birdingRecordContent" style="margin-top: 80px; font-size: 16px; line-height: 1.6; padding: 0 20px 30px 20px;"></div>
-        <div id="swipeHint" class="swipe-hint" style="display: none; position: fixed; bottom: 15px; left: 0; right: 0; text-align: center; color: #FFD700; font-size: 14px; z-index: 410; opacity: 0.7; animation: pulse 2s infinite;">使用滚轮或滑动切换记录</div>
+        
+        <div id="gyroToggleContainer">
+            <div id="gyroSensitivityContainer">
+                <div id="gyroSensitivityLabel">灵敏度</div>
+                <input type="range" id="gyroSensitivitySlider" min="5" max="20" value="10">
+                <div id="gyroSensitivityValue">10</div>
+            </div>
+            <div id="gyroStatusIndicator">关闭</div>
+            <button id="gyroModeToggle">陀螺仪</button>
+            <button id="gyroCalibrateButton">校准</button>
+        </div>
+        <div id="cameraButton" onclick="handleCameraButtonClick()"></div>
+        <div id="birdingToggleContainer">
+            <button id="helpButton" class="help-button" title="查看帮助">?</button>
+            <button id="birdingModeToggle">观鸟模式</button>
+            <div id="birdingStatusIndicator">未开始</div>
+            <div id="birdingRecordIcon" style="display: none;"></div>
+        </div>
+        <div id="birdingRecordIconsContainer" style="position: absolute; top: 100px; right: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 70; max-height: 200px; overflow-y: auto; display: none;"></div>
+        <div id="textStats">
+            已出现鸟类: <span id="appearedCount">0</span> | 已拍摄鸟类: <span id="capturedCount">0</span>
+        </div>
+        <div id="modeToggleContainer">
+            <button id="dayModeToggle" class="modeToggleButton">永久日间</button>
+            <button id="normalModeToggle" class="modeToggleButton active">普通模式</button>
+            <button id="nightModeToggle" class="modeToggleButton">永久夜间</button>
+        </div>
+        <div id="timeIndicator">白天 30:00 / 30:00 | 00:00</div>
+        <div id="lensToggleContainer">
+            <button id="lens600Toggle" class="lensToggleButton active">600镜头</button>
+            <button id="lens800Toggle" class="lensToggleButton">800镜头</button>
+            <button id="lens1200Toggle" class="lensToggleButton">1200镜头</button>
+        </div>
+        <div id="gameTitle">观鸟模拟器-一万两千鸻AI制作</div>
+        <div id="specialAlert"></div>
+        <div id="nightObjectAlert"></div>
+        <div id="captureAlert"></div>
+        <div id="creator">正在加载创作者信息...</div>
+        <div id="albumModal">
+            <h2 id="albumTitle">我的相册 - 一万两千鸻</h2>
+            <div id="albumPhotos"></div>
+            <div id="albumStats"></div>
+            <button id="closeAlbum" onclick="closeAlbum()">×</button>
+        </div>
+        <div id="birdingRecordModal" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.95); z-index: 400; display: none; color: white; font-family: 'SimSun', monospace; overflow-y: auto; white-space: pre-wrap;">
+            <div style="position: fixed; top: 0; left: 0; right: 0; background: rgba(0, 0, 0, 0.9); border-bottom: 2px solid #FFD700; padding: 12px 20px; z-index: 10; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);">
+                <div style="font-size: 20px; font-weight: bold; color: #FFD700;">📖 观鸟记录</div>
+                <div id="birdingRecordCounter" style="color: white; font-size: 14px; background: rgba(255, 215, 0, 0.2); padding: 4px 12px; border-radius: 12px; border: 1px solid #FFD700;">记录 1 / 1</div>
+                <div style="display: flex; gap: 10px;">
+                    <button id="screenshotButton" onclick="captureBirdingRecord()" style="background: rgba(255, 215, 0, 0.8); color: black; border: none; border-radius: 15px; padding: 8px 15px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.3s;">📸 截图</button>
+                    <button id="closeBirdingRecord" onclick="closeBirdingRecord()" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 18px; cursor: pointer; transition: all 0.3s;">×</button>
+                </div>
+            </div>
+            <div id="birdingRecordNav" style="position: fixed; top: 50%; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 15px; z-index: 5; pointer-events: none; opacity: 0; transition: opacity 0.3s;">
+                <button id="prevRecordButton" class="birdingRecordNavButton" onclick="switchBirdingRecord(-1)" style="pointer-events: auto; background-color: rgba(0, 0, 0, 0.7); color: white; border: 2px solid #FFD700; border-radius: 50%; width: 45px; height: 45px; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s;">←</button>
+                <button id="nextRecordButton" class="birdingRecordNavButton" onclick="switchBirdingRecord(1)" style="pointer-events: auto; background-color: rgba(0, 0, 0, 0.7); color: white; border: 2px solid #FFD700; border-radius: 50%; width: 45px; height: 45px; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s;">→</button>
+            </div>
+            <div id="birdingRecordContent" style="margin-top: 80px; font-size: 16px; line-height: 1.6; padding: 0 20px 30px 20px;"></div>
+            <div id="swipeHint" class="swipe-hint" style="display: none; position: fixed; bottom: 15px; left: 0; right: 0; text-align: center; color: #FFD700; font-size: 14px; z-index: 410; opacity: 0.7; animation: pulse 2s infinite;">使用滚轮或滑动切换记录</div>
+        </div>
+        <div id="helpModal" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); z-index: 450; display: none; color: white; font-family: 'SimSun', monospace; overflow-y: auto; padding: 20px; box-sizing: border-box;">
+            <div style="position: absolute; top: 20px; right: 20px; background-color: rgba(255, 255, 255, 0.2); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center;" onclick="closeHelpModal()">×</div>
+            <div id="helpContent" style="margin-top: 40px; font-size: 16px; line-height: 1.6; white-space: pre-wrap; max-width: 800px; margin-left: auto; margin-right: auto;"></div>
+        </div>
     </div>
-    
-    <!-- 帮助模态框 -->
-    <div id="helpModal" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); z-index: 450; display: none; color: white; font-family: 'SimSun', monospace; overflow-y: auto; padding: 20px; box-sizing: border-box;">
-        <div style="position: absolute; top: 20px; right: 20px; background-color: rgba(255, 255, 255, 0.2); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center;" onclick="closeHelpModal()">×</div>
-        <div id="helpContent" style="margin-top: 40px; font-size: 16px; line-height: 1.6; white-space: pre-wrap; max-width: 800px; margin-left: auto; margin-right: auto;"></div>
-    </div>
-</div>
-
 <script>
+
 const GAME_WIDTH = 1600;
 const GAME_HEIGHT = 900;
 const ASPECT_RATIO = 16/9;
 
-let gyroModeActive = false;
-let isGyroCalibrated = false;
-let lastGyroUpdate = 0;
-let gyroSensitivity = 10;
-let gyroX = GAME_WIDTH / 2;
-let gyroY = GAME_HEIGHT / 2;
-let gyroAlpha = 0;
-let gyroBeta = 0;
-let gyroGamma = 0;
-let gyroCenterBeta = 0;
-let gyroCenterGamma = 0;
-let requestCalibration = true;
-let currentRecordIndex = 0;
-let isNavigatingRecords = false;
-let touchStartY = 0;
-let touchStartX = 0;
-let lastWheelTime = 0;
 const WHEEL_COOLDOWN = 500; // 滚轮冷却时间（毫秒）
 
 window.addEventListener('orientationchange', () => {
   requestCalibration = true;
 });
 
-let gamePaused = false;
-let pausedTimeState = {
-  gameTime: 0,
-  dayNightTimer: 0,
-  moonPhaseTimer: 0,
-  dayModeTimeState: 0,
-  nightModeTimeState: 0,
-  nightModeMoonPhaseTimer: 0,
-  lastFrameTime: 0,
-  lastBirdTime: 0,
-  lastRareBirdTime: 0,
-  lastLittleOwlTime: 0,
-  lastOwlSpawnTime: 0,
-  lastDoveSummonCheck: 0,
-  pauseStartTime: 0,
-  pauseDeltaOffset: 0
-};
+    // 营地相关变量
+    let isNightAccelerated = false;
+    let nightAccelerationMultiplier = 60;
+    
+    // 然后定义其他变量
+    let gyroModeActive = false;
+    let isGyroCalibrated = false;
+    let lastGyroUpdate = 0;
+    let gyroSensitivity = 10;
+    let gyroX = GAME_WIDTH / 2;
+    let gyroY = GAME_HEIGHT / 2;
+    let gyroAlpha = 0;
+    let gyroBeta = 0;
+    let gyroGamma = 0;
+    let gyroCenterBeta = 0;
+    let gyroCenterGamma = 0;
+    let requestCalibration = true;
+    let currentRecordIndex = 0;
+    let isNavigatingRecords = false;
+    let touchStartY = 0;
+    let touchStartX = 0;
+    let lastWheelTime = 0;
+    
+    window.addEventListener('orientationchange', () => {
+        requestCalibration = true;
+    });
+    
+    let gamePaused = false;
+    let pausedTimeState = {
+        gameTime: 0,
+        dayNightTimer: 0,
+        moonPhaseTimer: 0,
+        dayModeTimeState: 0,
+        nightModeTimeState: 0,
+        nightModeMoonPhaseTimer: 0,
+        lastFrameTime: 0,
+        lastBirdTime: 0,
+        lastRareBirdTime: 0,
+        lastLittleOwlTime: 0,
+        lastOwlSpawnTime: 0,
+        lastDoveSummonCheck: 0,
+        pauseStartTime: 0,
+        pauseDeltaOffset: 0
+    };
 
 const LENS_SETTINGS = {
   '600': { name: '600mm', multiplier: 2.0, viewfinderScale: 1.0 },
@@ -2865,6 +2871,50 @@ function closeHelpModal() {
     resumeGame();
 }
 
+// 更新营地可见性
+function updateCampsiteVisibility() {
+        const campsite = document.getElementById('campsite');
+        if (!campsite) return;
+        
+        // 只在普通模式且是夜晚时显示营地
+        if (gameMode === 'normal' && !isDaytime && !isNightAccelerated) {
+            campsite.style.display = 'block';
+        } else {
+            campsite.style.display = 'none';
+        }
+    }
+
+// 加速夜晚时间
+function accelerateNightTime() {
+        if (gameMode !== 'normal' || isDaytime || isNightAccelerated) return;
+        
+        isNightAccelerated = true;
+        
+        // 显示提示
+        showSpecialAlert("篝火点燃，夜晚加速流逝...");
+        
+        // 更新营地显示
+        updateCampsiteVisibility();
+        
+        // 设置加速结束监听
+        checkNightAcceleration();
+    }
+    
+    function checkNightAcceleration() {
+        if (!isNightAccelerated) return;
+        
+        // 如果已经变为白天，恢复正常速度
+        if (isDaytime) {
+            isNightAccelerated = false;
+            showSpecialAlert("黎明到来，恢复正常时间流速");
+            updateCampsiteVisibility();
+            return;
+        }
+        
+        // 继续检查
+        setTimeout(checkNightAcceleration, 1000);
+    }
+
 function initGyro() {
     const gyroModeButton = document.getElementById('gyroModeToggle');
     const gyroStatusIndicator = document.getElementById('gyroStatusIndicator');
@@ -3223,26 +3273,7 @@ function loadCreatorInfo() {
             }
         });
 }
-function updateCampVisibility() {
-  const campContainer = document.getElementById('campContainer');
-  const isNightMode = gameMode === 'night' || (gameMode === 'normal' && !isDaytime);
-  
-  if (isNightMode) {
-    campContainer.style.display = 'block';
-  } else {
-    campContainer.style.display = 'none';
-  }
-}
 
-function skipNight() {
-  if (gameMode === 'night') {
-    setGameMode('day');
-    showSpecialAlert("跳过了夜晚，切换到日间模式！");
-  } else if (gameMode === 'normal' && !isDaytime) {
-    dayNightTimer = DAY_NIGHT_CYCLE_DURATION / 2;
-    showSpecialAlert("跳过夜晚，即将迎来黎明！");
-  }
-}
 
 function init() {
     canvas = document.getElementById('gameCanvas');
@@ -3275,7 +3306,8 @@ function init() {
     initModeToggleButtons();
     initLensToggleButtons();
     initGyro();
-    
+            // 初始化营地
+        updateCampsiteVisibility();
     const birdingModeButton = document.getElementById('birdingModeToggle');
     birdingModeButton.addEventListener('click', toggleBirdingMode);
        
@@ -3297,12 +3329,12 @@ function init() {
     }
     addToggleAreaClickListeners();
     updateTimeIndicator();
+
     initBirdingRecords();
     updateBirdingModeButton();
 // 初始化观鸟记录图标显示
     updateBirdingRecordIcons();
-  // 初始化营地
-  updateCampVisibility();
+
     requestAnimationFrame(gameLoop);
 
 // 确保截图按钮在页面加载时就绑定事件
@@ -4000,6 +4032,8 @@ function setGameMode(mode) {
   
   const oldMode = gameMode;
   gameMode = mode;
+    // 重置加速状态
+    isNightAccelerated = false;
   
   if (mode === 'day') {
     if (oldMode === 'normal') {
@@ -4084,11 +4118,11 @@ function setGameMode(mode) {
       nightObjects = [];
     }
   }
-    // 更新营地可见性
-  updateCampVisibility();
-
+  
   updateModeToggleButtons();
-  updateTimeIndicator();
+    // 更新营地可见性
+    updateCampsiteVisibility();
+    updateTimeIndicator();
 }
 
 function updateModeToggleButtons() {
@@ -4112,16 +4146,23 @@ function updateTimeIndicator() {
     const remainingMinutes = Math.floor(remainingTime / 60000);
     const remainingSeconds = Math.floor((remainingTime % 60000) / 1000);
     
-    const timeText = `${isDaytime ? "白天" : "黑夜"} ${remainingMinutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')} / 15:00 | ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    timeIndicator.textContent = timeText;
-  } else if (gameMode === 'day') {
-    const timeText = `永久日间 | ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    timeIndicator.textContent = timeText;
-  } else if (gameMode === 'night') {
-    const timeText = `永久夜间 | ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-    timeIndicator.textContent = timeText;
-  }
-}
+let timeText = `${isDaytime ? "白天" : "黑夜"} ${remainingMinutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')} / 15:00`;
+            
+            // 添加加速状态提示
+            if (isNightAccelerated && !isDaytime) {
+                timeText += " ⏩ (加速中)";
+            }
+            
+            timeText += ` | ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            timeIndicator.textContent = timeText;
+        } else if (gameMode === 'day') {
+            const timeText = `永久日间 | ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            timeIndicator.textContent = timeText;
+        } else if (gameMode === 'night') {
+            const timeText = `永久夜间 | ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            timeIndicator.textContent = timeText;
+        }
+    }
 
 // 观鸟记录截图函数
 function captureBirdingRecord() {
@@ -4995,31 +5036,9 @@ function updateAlbumStats() {
     });
 }
 
-// 在画布点击事件中添加对营地的检测
-function handleMouseClick(e) {
-  if (isTakingPhoto) return;
-  
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
-  const clickX = (e.clientX - rect.left) * scaleX;
-  const clickY = (e.clientY - rect.top) * scaleY;
-  
-  const isNightMode = gameMode === 'night' || (gameMode === 'normal' && !isDaytime);
-  
-  // 检查是否点击了营地区域
-  if (isNightMode) {
-    const campX = GAME_WIDTH / 2 - 200;
-    const campY = GAME_HEIGHT - 220;
-    const campWidth = 400;
-    const campHeight = 200;
+function handleMouseClick() {
+    if (isTakingPhoto) return;
     
-    if (clickX >= campX && clickX <= campX + campWidth &&
-        clickY >= campY && clickY <= campY + campHeight) {
-      skipNight();
-      return;
-    }
-  }
     isTakingPhoto = true;
     
     const viewfinderSize = getViewfinderSize();
@@ -6962,7 +6981,38 @@ function drawNightObject(obj) {
     
     ctx.restore();
 }
-
+function drawCampsite() {
+    if (gameMode !== 'normal' || isDaytime || !isNightAccelerated) return;
+    
+    const campsiteX = GAME_WIDTH / 2 - 200;
+    const campsiteY = GAME_HEIGHT - 200;
+    
+    // 营地地面
+    ctx.fillStyle = '#8B4513';
+    ctx.fillRect(campsiteX, campsiteY + 150, 400, 50);
+    
+    // 帐篷
+    ctx.fillStyle = '#8B0000';
+    ctx.fillRect(campsiteX + 240, campsiteY + 110, 120, 40);
+    
+    ctx.fillStyle = '#B22222';
+    ctx.beginPath();
+    ctx.moveTo(campsiteX + 300, campsiteY + 80);
+    ctx.lineTo(campsiteX + 240, campsiteY + 110);
+    ctx.lineTo(campsiteX + 360, campsiteY + 110);
+    ctx.closePath();
+    ctx.fill();
+    
+    // 篝火
+    if (Math.floor(gameTime / 200) % 2 === 0) {
+        ctx.fillStyle = '#FF4500';
+    } else {
+        ctx.fillStyle = '#FF8C00';
+    }
+    ctx.beginPath();
+    ctx.arc(campsiteX + 120, campsiteY + 130, 20, 0, Math.PI * 2);
+    ctx.fill();
+}
 function updateNightObjects(deltaTime) {
     if (gamePaused) return;
     
@@ -7040,78 +7090,7 @@ function drawBackground() {
     
     ctx.fillRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
 }
-// 在drawBackground函数中添加营地绘制（或使用上面的HTML/CSS方式）
-function drawCamp() {
-  const isNightMode = gameMode === 'night' || (gameMode === 'normal' && !isDaytime);
-  if (!isNightMode) return;
-  
-  const campX = GAME_WIDTH / 2 - 200;
-  const campY = GAME_HEIGHT - 220;
-  
-  // 绘制帐篷
-  ctx.fillStyle = '#8B4513';
-  ctx.beginPath();
-  ctx.moveTo(campX + 100, campY + 200);
-  ctx.lineTo(campX + 125, campY + 100);
-  ctx.lineTo(campX + 175, campY + 100);
-  ctx.lineTo(campX + 200, campY + 200);
-  ctx.closePath();
-  ctx.fill();
-  
-  // 帐篷门
-  ctx.fillStyle = '#A0522D';
-  ctx.fillRect(campX + 140, campY + 150, 20, 50);
-  
-  // 篝火
-  const fireX = campX + 300;
-  const fireY = campY + 180;
-  
-  const fireAnimation = Math.sin(gameTime * 0.005) * 0.2 + 0.8;
-  
-  // 火焰核心
-  const fireGradient = ctx.createRadialGradient(
-    fireX, fireY, 0,
-    fireX, fireY, 40
-  );
-  fireGradient.addColorStop(0, '#FFFF00');
-  fireGradient.addColorStop(0.3, '#FFA500');
-  fireGradient.addColorStop(0.7, '#FF4500');
-  fireGradient.addColorStop(1, 'rgba(255, 69, 0, 0)');
-  
-  ctx.fillStyle = fireGradient;
-  ctx.beginPath();
-  ctx.arc(fireX, fireY, 40 * fireAnimation, 0, Math.PI * 2);
-  ctx.fill();
-  
-  // 柴火
-  ctx.fillStyle = '#8B4513';
-  // 水平柴火
-  ctx.fillRect(fireX - 30, fireY + 20, 60, 10);
-  // 垂直柴火
-  ctx.save();
-  ctx.translate(fireX, fireY + 25);
-  ctx.rotate(Math.PI / 4);
-  ctx.fillRect(-20, -5, 40, 10);
-  ctx.restore();
-  
-  ctx.save();
-  ctx.translate(fireX, fireY + 25);
-  ctx.rotate(-Math.PI / 4);
-  ctx.fillRect(-20, -5, 40, 10);
-  ctx.restore();
-  
-  // 篝火光芒
-  ctx.fillStyle = 'rgba(255, 165, 0, 0.1)';
-  ctx.beginPath();
-  ctx.arc(fireX, fireY, 100, 0, Math.PI * 2);
-  ctx.fill();
-  
-  // 点击提示文字
-  ctx.fillStyle = '#FFD700';
-  ctx.font = 'bold 16px Arial';
-  ctx.textAlign = 'center';
-  ctx.fillText('点击营地跳过夜晚', campX + 200, campY + 215);
-}
+
 function drawSunMoon() {
     if (gameMode !== 'normal') {
         return;
@@ -9256,14 +9235,25 @@ function updateDayNight(deltaTime) {
     if (gamePaused) return;
     
     gameTime += deltaTime;
-
-if (gameTime - lastRareBirdTime >= RARE_BIRD_INTERVAL && !birdingModeActive) {
-    generateRareBird();
-    lastRareBirdTime = gameTime;
-}
     
+    // 应用时间加速
+    let effectiveDeltaTime = deltaTime;
+    if (isNightAccelerated && gameMode === 'normal' && !isDaytime) {
+        effectiveDeltaTime = deltaTime * nightAccelerationMultiplier;
+    }
+    
+    // 更新时间状态
+    dayNightTimer += effectiveDeltaTime;
+    
+    // 稀有鸟类生成
+    if (gameTime - lastRareBirdTime >= RARE_BIRD_INTERVAL && !birdingModeActive) {
+        generateRareBird();
+        lastRareBirdTime = gameTime;
+    }
+    
+    // 普通模式：日夜循环
     if (gameMode === 'normal') {
-        dayNightTimer += deltaTime;
+        dayNightTimer += effectiveDeltaTime;
         moonPhaseTimer += deltaTime;
         if (moonPhaseTimer >= MOON_PHASE_CYCLE) {
             moonPhaseTimer = 0;
@@ -9271,16 +9261,27 @@ if (gameTime - lastRareBirdTime >= RARE_BIRD_INTERVAL && !birdingModeActive) {
         
         updateGoldenFilter();
         
+        // 检查日夜切换
         if (dayNightTimer >= DAY_NIGHT_CYCLE_DURATION) {
             isDaytime = !isDaytime;
             dayNightTimer = 0;
+            
+            // 夜晚切换为白天时，重置加速状态
+            if (isDaytime && isNightAccelerated) {
+                isNightAccelerated = false;
+                showSpecialAlert("黎明到来，恢复正常时间流速");
+            }
+            
             if (!isDaytime) {
                 moonPhaseTimer = Math.random() * MOON_PHASE_CYCLE;
             }
             
             updateModeToggleButtons();
+            // 更新营地可见性
+            updateCampsiteVisibility();
             showSpecialAlert(isDaytime ? "天亮了！" : "天黑了！");
             
+            // 切换时清理不符合当前时间的生物
             if (!isDaytime) {
                 for (let i = birds.length - 1; i >= 0; i--) {
                     if (!birds[i].isOwl && !birds[i].isBat && birds[i].name !== "小鸮" && birds[i].name !== "夜鹭") {
@@ -9303,14 +9304,27 @@ if (gameTime - lastRareBirdTime >= RARE_BIRD_INTERVAL && !birdingModeActive) {
             }
         }
         
+        // 更新太阳/月亮位置
         sunMoonPosition = dayNightTimer / DAY_NIGHT_CYCLE_DURATION;
-    } else if (gameMode === 'day') {
+    } 
+    // 永久日间模式
+    else if (gameMode === 'day') {
         dayModeTimeState += deltaTime;
         dayNightTimer = dayModeTimeState;
         
+        // 确保加速状态被重置
+        if (isNightAccelerated) {
+            isNightAccelerated = false;
+        }
+        
         const goldenFilter = document.getElementById('goldenFilter');
         goldenFilter.style.backgroundColor = 'rgba(255, 215, 0, 0.1)';
-    } else if (gameMode === 'night') {
+        
+        // 更新营地可见性
+        updateCampsiteVisibility();
+    } 
+    // 永久夜间模式
+    else if (gameMode === 'night') {
         nightModeTimeState += deltaTime;
         nightModeMoonPhaseTimer += deltaTime;
         dayNightTimer = nightModeTimeState;
@@ -9321,12 +9335,21 @@ if (gameTime - lastRareBirdTime >= RARE_BIRD_INTERVAL && !birdingModeActive) {
             nightModeMoonPhaseTimer = 0;
         }
         
+        // 确保加速状态被重置
+        if (isNightAccelerated) {
+            isNightAccelerated = false;
+        }
+        
         const goldenFilter = document.getElementById('goldenFilter');
         goldenFilter.style.backgroundColor = 'rgba(255, 215, 0, 0)';
+        
+        // 更新营地可见性
+        updateCampsiteVisibility();
     }
     
     updateTimeIndicator();
     
+    // 小鸮生成逻辑
     if (!littleOwl) {
         let cooldown;
         if (gameMode === 'day') {
@@ -9342,6 +9365,7 @@ if (gameTime - lastRareBirdTime >= RARE_BIRD_INTERVAL && !birdingModeActive) {
         }
     }
     
+    // 夜间猫头鹰生成
     if ((gameMode === 'night' || (gameMode === 'normal' && !isDaytime)) && gameTime - lastOwlSpawnTime > NIGHT_OWL_SPAWN_INTERVAL) {
         spawnNightOwls();
         lastOwlSpawnTime = gameTime;
@@ -12059,11 +12083,9 @@ if (birdingModeActive) {
     drawReeds();
     drawWallAndHole();
     drawGroundObjects();
-drawCamp();
+        drawCampsite();
     generateBird();
-      // 更新营地可见性
-  updateCampVisibility();
-
+    
     updateBirds(deltaTime);
     updatePoops(deltaTime);
     updateGroundObjects(deltaTime);
