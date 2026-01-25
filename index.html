@@ -1001,6 +1001,25 @@
     background: radial-gradient(circle, #FF6347 0%, #FFA500 30%, #FFFF00 70%);
 }
         
+    /* 确保篝火元素在各种状态下都正确显示 */
+    #campfire-flame {
+        transition: opacity 0.3s ease;
+    }
+    
+    /* 熄灭状态 */
+    #campfire-flame.extinguished {
+        display: none !important;
+        opacity: 0 !important;
+        visibility: hidden !important;
+    }
+    
+    /* 点燃状态 */
+    #campfire-flame:not(.extinguished) {
+        display: block !important;
+        opacity: 1 !important;
+        visibility: visible !important;
+    }
+
         @media (orientation: landscape) {
             .gyro-active #lensToggleContainer,
             .gyro-active #modeToggleContainer {
@@ -1374,7 +1393,43 @@
                 height: 40px !important;
                 font-size: 20px !important;
             }
+#campsite {
+            width: 250px !important;
+            height: 120px !important;
+            bottom: 5px !important;
         }
+        
+        #campsite > div > div:first-child {
+            /* 帐篷 */
+            width: 70px !important;
+            height: 50px !important;
+            right: 40px !important;
+        }
+        
+        #campsite > div > div:nth-child(2) {
+            /* 篝火 */
+            width: 50px !important;
+            height: 35px !important;
+            left: 50px !important;
+        }
+        
+        #campfire-flame {
+            width: 25px !important;
+            height: 25px !important;
+        }
+        
+        #campsite > div > div:last-child {
+            /* 提示文字 */
+            font-size: 9px !important;
+            padding: 1px 4px !important;
+            bottom: 20px !important;
+        }
+        #campfire-flame:not(.extinguished) {
+            display: block !important;
+            width: 25px !important;
+            height: 25px !important;
+        }
+    }
         @media (orientation: portrait) and (max-width: 400px) {
             #photoPreview {
                 width: 70px;
@@ -1539,7 +1594,36 @@
                 font-size: 12px !important;
                 bottom: 10px !important;
             }
+        #campsite {
+            width: 200px !important;
+            height: 100px !important;
         }
+        
+        #campsite > div > div:first-child {
+            /* 帐篷 */
+            width: 60px !important;
+            height: 40px !important;
+            right: 30px !important;
+        }
+        
+        #campsite > div > div:nth-child(2) {
+            /* 篝火 */
+            width: 40px !important;
+            height: 30px !important;
+            left: 40px !important;
+        }
+        
+        #campfire-flame {
+            width: 20px !important;
+            height: 20px !important;
+        }
+        
+        #campsite > div > div:last-child {
+            /* 提示文字 */
+            font-size: 8px !important;
+            bottom: 15px !important;
+        }
+    }
         @media (orientation: landscape) and (max-height: 500px) {
             #photoPreview {
                 top: 5px;
@@ -1669,33 +1753,33 @@
         </div>
         
 <!-- 营地元素 -->
-<div id="campsite" style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 400px; height: 200px; display: none; z-index: 25; cursor: pointer;" onclick="extinguishCampfire()">
+<div id="campsite" style="position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); width: 300px; height: 150px; display: none; z-index: 25; cursor: pointer;" onclick="extinguishCampfire()">
     <div style="position: relative; width: 100%; height: 100%;">
         
-        <!-- 帐篷 -->
-        <div style="position: absolute; bottom: 0; right: 80px; width: 120px; height: 80px;">
+        <!-- 帐篷（缩小以适应竖屏） -->
+        <div style="position: absolute; bottom: 0; right: 50px; width: 90px; height: 60px;">
             <!-- 帐篷主体 -->
-            <div style="position: absolute; bottom: 0; width: 100%; height: 40px; background-color: #8B0000; border-radius: 5px;"></div>
+            <div style="position: absolute; bottom: 0; width: 100%; height: 30px; background-color: #8B0000; border-radius: 4px;"></div>
             <!-- 帐篷顶部 -->
-            <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 60px solid transparent; border-right: 60px solid transparent; border-bottom: 40px solid #B22222;"></div>
+            <div style="position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 45px solid transparent; border-right: 45px solid transparent; border-bottom: 30px solid #B22222;"></div>
             <!-- 帐篷门 -->
-            <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 30px; height: 25px; background-color: #A52A2A;"></div>
+            <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 20px; height: 20px; background-color: #A52A2A;"></div>
             <!-- 帐篷支柱 -->
-            <div style="position: absolute; bottom: 0; left: 30px; width: 5px; height: 40px; background-color: #8B4513;"></div>
-            <div style="position: absolute; bottom: 0; right: 30px; width: 5px; height: 40px; background-color: #8B4513;"></div>
+            <div style="position: absolute; bottom: 0; left: 20px; width: 4px; height: 30px; background-color: #8B4513;"></div>
+            <div style="position: absolute; bottom: 0; right: 20px; width: 4px; height: 30px; background-color: #8B4513;"></div>
         </div>
         
-        <!-- 篝火 -->
-        <div style="position: absolute; bottom: 0; left: 100px; width: 80px; height: 60px;">
+        <!-- 篝火（缩小以适应竖屏） -->
+        <div style="position: absolute; bottom: 0; left: 70px; width: 60px; height: 45px;">
             <!-- 木柴 -->
-            <div style="position: absolute; bottom: 0; left: 10px; width: 60px; height: 10px; background-color: #8B4513; transform: rotate(-15deg);"></div>
-            <div style="position: absolute; bottom: 5px; left: 15px; width: 50px; height: 10px; background-color: #A0522D; transform: rotate(10deg);"></div>
-            <!-- 火焰动画 - 默认显示 -->
-            <div id="campfire-flame" style="position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); width: 40px; height: 40px; background: radial-gradient(circle, #FF4500 0%, #FF8C00 30%, #FFD700 70%); border-radius: 50% 50% 20% 20%; filter: blur(2px); animation: flame-flicker 0.5s infinite alternate;"></div>
+            <div style="position: absolute; bottom: 0; left: 8px; width: 45px; height: 8px; background-color: #8B4513; transform: rotate(-15deg);"></div>
+            <div style="position: absolute; bottom: 4px; left: 12px; width: 38px; height: 8px; background-color: #A0522D; transform: rotate(10deg);"></div>
+            <!-- 火焰动画 -->
+            <div id="campfire-flame" style="position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); width: 30px; height: 30px; background: radial-gradient(circle, #FF4500 0%, #FF8C00 30%, #FFD700 70%); border-radius: 50% 50% 20% 20%; filter: blur(2px); animation: flame-flicker 0.5s infinite alternate;"></div>
         </div>
         
-        <!-- 营地提示文字（修改为熄灭篝火） -->
-        <div style="position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); color: #FFD700; font-size: 12px; font-weight: bold; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); text-align: center; background-color: rgba(0,0,0,0.5); padding: 3px 8px; border-radius: 8px; opacity: 0.8;">
+        <!-- 营地提示文字（竖屏时调整） -->
+        <div style="position: absolute; bottom: 25px; left: 50%; transform: translateX(-50%); color: #FFD700; font-size: 10px; font-weight: bold; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); text-align: center; background-color: rgba(0,0,0,0.5); padding: 2px 6px; border-radius: 6px; opacity: 0.8;">
             点击熄灭篝火
         </div>
     </div>
@@ -2876,16 +2960,27 @@ function closeHelpModal() {
 
 // 更新营地可见性
 function updateCampsiteVisibility() {
-        const campsite = document.getElementById('campsite');
-        if (!campsite) return;
+    const campsite = document.getElementById('campsite');
+    if (!campsite) return;
+    
+    // 检查屏幕方向
+    const isPortrait = window.matchMedia("(orientation: portrait)").matches;
+    
+    // 只在普通模式且是夜晚时显示营地，并且篝火未熄灭
+    // 同时确保营地不会遮挡重要UI元素
+    if (gameMode === 'normal' && !isDaytime && !isCampfireExtinguished) {
+        // 在竖屏模式下也显示营地
+        campsite.style.display = 'block';
         
-        // 只在普通模式且是夜晚时显示营地，并且篝火未熄灭
-        if (gameMode === 'normal' && !isDaytime && !isCampfireExtinguished) {
-            campsite.style.display = 'block';
-        } else {
-            campsite.style.display = 'none';
+        // 如果是竖屏，调整位置避免遮挡
+        if (isPortrait) {
+            // 确保营地不会被其他UI元素遮挡
+            campsite.style.zIndex = '25';
         }
+    } else {
+        campsite.style.display = 'none';
     }
+}
 
 // 加速夜晚时间
 function extinguishCampfire() {
@@ -2893,10 +2988,14 @@ function extinguishCampfire() {
     
     isCampfireExtinguished = true;
     
-    // 熄灭篝火，隐藏火焰
+    // 使用更可靠的方式隐藏篝火
     const flame = document.getElementById('campfire-flame');
     if (flame) {
+        // 添加熄灭类名，便于CSS控制
+        flame.classList.add('extinguished');
         flame.style.display = 'none';
+        flame.style.opacity = '0';
+        flame.style.visibility = 'hidden';
     }
     
     // 修改提示文字
@@ -2904,6 +3003,8 @@ function extinguishCampfire() {
     if (hint) {
         hint.textContent = "篝火已熄灭";
         hint.style.color = "#87CEEB";
+        // 添加数据属性记录状态
+        hint.setAttribute('data-state', 'extinguished');
     }
     
     // 开始夜晚加速
@@ -2934,7 +3035,10 @@ function resetCampsite() {
     // 重新点燃篝火
     const flame = document.getElementById('campfire-flame');
     if (flame) {
+        flame.classList.remove('extinguished');
         flame.style.display = 'block';
+        flame.style.opacity = '1';
+        flame.style.visibility = 'visible';
     }
     
     // 恢复提示文字
@@ -2942,6 +3046,7 @@ function resetCampsite() {
     if (hint) {
         hint.textContent = "点击熄灭篝火";
         hint.style.color = "#FFD700";
+        hint.setAttribute('data-state', 'lit');
     }
     
     showSpecialAlert("黎明到来，恢复正常时间流速");
@@ -3486,6 +3591,16 @@ function init() {
     initModeToggleButtons();
     initLensToggleButtons();
     initGyro();
+    // 监听屏幕方向变化
+    window.addEventListener('orientationchange', function() {
+        // 方向变化后重新计算营地位置
+        setTimeout(updateCampsiteVisibility, 100);
+    });
+    
+    // 监听窗口大小变化
+    window.addEventListener('resize', function() {
+        updateCampsiteVisibility();
+    });
             // 初始化营地
         updateCampsiteVisibility();
     const birdingModeButton = document.getElementById('birdingModeToggle');
@@ -4644,6 +4759,78 @@ function saveScreenshot() {
         console.error("保存截图时出错:", error);
         showSpecialAlert("保存失败: " + error.message);
     }
+}
+
+// 在屏幕方向变化时保存和恢复篝火状态
+window.addEventListener('orientationchange', function() {
+    // 保存当前篝火状态
+    const wasExtinguished = isCampfireExtinguished;
+    const wasAccelerated = isNightAccelerated;
+    
+    // 短暂延迟后恢复状态
+    setTimeout(function() {
+        // 重新获取营地元素
+        const campsite = document.getElementById('campsite');
+        const flame = document.getElementById('campfire-flame');
+        const hint = document.querySelector('#campsite > div > div:last-child');
+        
+        if (campsite && flame && hint) {
+            // 根据保存的状态恢复篝火
+            if (wasExtinguished) {
+                // 如果是熄灭状态
+                flame.style.display = 'none';
+                flame.style.opacity = '0';
+                hint.textContent = "篝火已熄灭";
+                hint.style.color = "#87CEEB";
+                
+                // 确保加速状态也恢复
+                if (wasAccelerated) {
+                    isNightAccelerated = true;
+                }
+            } else {
+                // 如果是点燃状态
+                flame.style.display = 'block';
+                flame.style.opacity = '1';
+                hint.textContent = "点击熄灭篝火";
+                hint.style.color = "#FFD700";
+            }
+            
+            // 更新营地可见性
+            updateCampsiteVisibility();
+        }
+    }, 300); // 300ms延迟确保DOM已经更新
+});
+
+// 同样处理窗口大小变化
+window.addEventListener('resize', function() {
+    // 防抖处理，避免频繁触发
+    clearTimeout(window.resizeTimer);
+    window.resizeTimer = setTimeout(function() {
+        restoreCampfireState();
+    }, 250);
+});
+
+// 恢复篝火状态的函数
+function restoreCampfireState() {
+    const flame = document.getElementById('campfire-flame');
+    const hint = document.querySelector('#campsite > div > div:last-child');
+    
+    if (flame && hint) {
+        if (isCampfireExtinguished) {
+            flame.style.display = 'none';
+            flame.style.opacity = '0';
+            hint.textContent = "篝火已熄灭";
+            hint.style.color = "#87CEEB";
+        } else {
+            flame.style.display = 'block';
+            flame.style.opacity = '1';
+            hint.textContent = "点击熄灭篝火";
+            hint.style.color = "#FFD700";
+        }
+    }
+    
+    // 更新营地可见性
+    updateCampsiteVisibility();
 }
 
 // 修改 handleKeyDown 函数，添加键盘导航支持
