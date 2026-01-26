@@ -113,27 +113,14 @@ body {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 2px; /* 减小间距，让元素更紧凑 */
-    padding-bottom: 30px; /* 为观鸟记录图标留出空间 */
-}
-
-#birdingRecordIconsContainer {
-    position: absolute;
-    top: 120px; /* 在帮助按钮下方 */
-    right: 10px;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    z-index: 70;
-    max-height: 200px;
-    overflow-y: auto;
-    display: none;
+    gap: 2px;
+    padding-bottom: 30px;
 }
 
 #helpButton {
     position: absolute;
-    top: 105px; /* 观鸟记录图标下方：75px + 20px + 10px间距 = 105px */
-    right: 10px; /* 右对齐 */
+    top: 105px;
+    right: 10px;
     background-color: rgba(0, 0, 0, 0.7);
     color: #FFD700;
     border: 2px solid #FFD700;
@@ -170,8 +157,11 @@ body {
     transition: all 0.3s;
     min-width: 120px;
     text-align: center;
-    height: 36px; /* 固定高度 */
-    box-sizing: border-box; /* 包含边框和内边距 */
+    height: 36px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #birdingModeToggle:hover {
@@ -192,11 +182,11 @@ body {
     border: 1px solid #90EE90;
     text-align: center;
     min-width: 120px;
-    height: 30px; /* 固定高度，比按钮稍小 */
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
-    box-sizing: border-box; /* 包含边框和内边距 */
+    box-sizing: border-box;
 }
 
 #birdingRecordIcon {
@@ -208,8 +198,8 @@ body {
     cursor: pointer;
     transition: all 0.3s;
     position: absolute;
-    top: 75px; /* 紧贴状态指示器下方：观鸟模式按钮40px + 状态指示器30px + 间距5px = 75px */
-    right: 0; /* 在容器内右对齐 */
+    top: 75px;
+    right: 0;
     overflow: hidden;
     display: flex;
     align-items: center;
@@ -1145,12 +1135,100 @@ body {
 }
 
 #campsite {
-    position: absolute; /* 改为absolute，由JavaScript控制位置 */
+    position: absolute;
     z-index: 25;
     cursor: pointer;
     display: none;
     width: 300px;
     height: 150px;
+}
+
+#campsite > div {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+#campsite > div > div:first-child {
+    position: absolute;
+    bottom: 0;
+    right: 16.67%;
+    width: 30%;
+    height: 40%;
+    z-index: 2;
+}
+
+#campsite > div > div:first-child > div {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 15% solid transparent;
+    border-right: 15% solid transparent;
+    border-bottom: 40% solid #B22222;
+}
+
+#campsite > div > div:nth-child(2) {
+    position: absolute;
+    bottom: 0;
+    left: 23.33%;
+    width: 20%;
+    height: 30%;
+    z-index: 1;
+}
+
+#campsite > div > div:nth-child(2) > div:first-child {
+    position: absolute;
+    bottom: 0;
+    left: 13.33%;
+    width: 75%;
+    height: 17.78%;
+    background-color: #8B4513;
+    transform: rotate(-15deg);
+}
+
+#campsite > div > div:nth-child(2) > div:nth-child(2) {
+    position: absolute;
+    bottom: 8.89%;
+    left: 20%;
+    width: 63.33%;
+    height: 17.78%;
+    background-color: #A0522D;
+    transform: rotate(10deg);
+}
+
+#campfire-flame {
+    position: absolute;
+    bottom: 26.67%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 50%;
+    height: 66.67%;
+    background: radial-gradient(circle, #FF4500 0%, #FF8C00 30%, #FFD700 70%);
+    border-radius: 50% 50% 20% 20%;
+    filter: blur(2px);
+    animation: flame-flicker 0.5s infinite alternate;
+    z-index: 3;
+}
+
+#campsite > div > div:last-child {
+    position: absolute;
+    bottom: 16.67%;
+    left: 50%;
+    transform: translateX(-50%);
+    color: #FFD700;
+    font-size: 12px;
+    font-weight: bold;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.8);
+    text-align: center;
+    background-color: rgba(0,0,0,0.5);
+    padding: 2px 6px;
+    border-radius: 4px;
+    opacity: 0.8;
+    white-space: nowrap;
+    z-index: 4;
 }
 
 @keyframes flame-flicker {
@@ -1162,19 +1240,6 @@ body {
         transform: translateX(-50%) scale(1.1);
         opacity: 1.0;
     }
-}
-
-#campsite:not(.extinguished):hover {
-    filter: brightness(1.2);
-}
-
-#campsite:not(.extinguished):hover #campfire-flame {
-    animation: flame-flicker 0.3s infinite alternate;
-    background: radial-gradient(circle, #FF6347 0%, #FFA500 30%, #FFFF00 70%);
-}
-
-#campfire-flame {
-    transition: opacity 0.3s ease;
 }
 
 #campfire-flame.extinguished {
@@ -1207,14 +1272,12 @@ body {
         opacity: 0.5;
     }
     
-    /* 横屏下陀螺仪按钮正常显示 */
     #gyroToggleContainer {
         left: 10px;
         top: 50%;
         transform: translateY(-50%);
     }
     
-    /* 横屏下快门按钮在右侧中间 */
     #cameraButton {
         right: 15px;
         top: 50%;
@@ -1227,13 +1290,12 @@ body {
         width: 40px;
         height: 40px;
     }
-    /* 横屏下镜头切换区在底部10像素 */
+    
     #lensToggleContainer {
         bottom: 10px;
         left: 10px;
     }
     
-    /* 横屏下模式切换区在底部10像素 */
     #modeToggleContainer {
         bottom: 10px;
         right: 10px;
@@ -1253,34 +1315,26 @@ body {
         padding: 3px;
     }
     
-#birdingToggleContainer {
+    #birdingToggleContainer {
         top: 10px;
         right: 10px;
         gap: 2px;
-        padding-bottom: 25px; /* 竖屏下稍小 */
-    }
-    
-    #helpButton {
-        top: 100px; /* 70px + 20px + 10px = 100px */
-        right: 10px;
-        width: 25px;
-        height: 25px;
-        font-size: 14px;
+        padding-bottom: 25px;
     }
     
     #birdingModeToggle {
-        height: 35px; /* 竖屏下稍小 */
+        height: 35px;
         padding: 5px 12px;
         font-size: 13px;
     }
     
     #birdingStatusIndicator {
-        height: 28px; /* 竖屏下稍小 */
+        height: 28px;
         font-size: 11px;
     }
     
     #birdingRecordIcon {
-        top: 70px; /* 竖屏下：按钮35px + 状态指示器28px + 间距7px = 70px */
+        top: 70px;
         right: 0;
         width: 120px;
         height: 20px;
@@ -1317,9 +1371,8 @@ body {
         margin: 0 5px;
     }
     
-    /* 镜头切换按钮缩小一半 */
     #lensToggleContainer {
-        bottom: 170px; /* 在快门按钮上方 */
+        bottom: 170px;
         left: 10px;
         padding: 3px;
         gap: 3px;
@@ -1327,7 +1380,7 @@ body {
         border-width: 1px;
         min-width: auto;
         max-width: 200px;
-        transform: scale(0.85); /* 缩小到85% */
+        transform: scale(0.85);
         transform-origin: left bottom;
     }
     
@@ -1340,15 +1393,14 @@ body {
         min-width: 60px;
     }
     
-    /* 游戏模式按钮缩小一半 */
     #modeToggleContainer {
-        bottom: 170px; /* 在快门按钮上方 */
+        bottom: 170px;
         right: 10px;
         flex-wrap: wrap;
         justify-content: flex-end;
         gap: 3px;
         max-width: 220px;
-        transform: scale(0.85); /* 缩小到85% */
+        transform: scale(0.85);
         transform-origin: right bottom;
     }
     
@@ -1367,7 +1419,7 @@ body {
     #gyroToggleContainer {
         left: auto !important;
         right: 10px !important;
-        top: 140px !important; /* 帮助按钮下方：100px + 25px + 15px = 140px */
+        top: 140px !important;
         transform: none !important;
         flex-direction: column !important;
         align-items: flex-end !important;
@@ -1426,45 +1478,27 @@ body {
         border-radius: 10px;
     }
     
-    /* 快门按钮移动到下方中间 */
     #cameraButton {
         right: auto;
         top: auto;
-        bottom: 80px; /* 距离底部 */
+        bottom: 80px;
         left: 50%;
         transform: translateX(-50%);
         width: 80px;
         height: 80px;
-        background-color: rgba(255, 255, 255, 0.9);
-        border-radius: 50%;
-        border: 4px solid #FFD700;
-        cursor: pointer;
-        z-index: 80;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     }
     
     #cameraButton:hover {
-        background-color: rgba(255, 255, 255, 1);
         transform: translateX(-50%) scale(1.05);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
     }
     
     #cameraButton:active {
-        background-color: rgba(230, 230, 230, 1);
         transform: translateX(-50%) scale(0.95);
     }
     
     #cameraButton::after {
-        content: '';
         width: 45px;
         height: 45px;
-        background-color: #FFD700;
-        border-radius: 50%;
-        border: 3px solid #333;
     }
     
     #screenshotButton {
@@ -1482,80 +1516,20 @@ body {
         min-width: 100px;
     }
     
-    #birdingRecordModal > div[style*="position: fixed; top: 0"] {
-        padding: 8px 15px !important;
-    }
-    
-    #birdingRecordModal > div[style*="position: fixed; top: 0"] div:first-child {
-        font-size: 16px !important;
-    }
-    
-    #birdingRecordModal > div[style*="position: fixed; top: 0"] #birdingRecordCounter {
-        font-size: 12px !important;
-        padding: 3px 8px !important;
-    }
-    
-    #birdingRecordModal > div[style*="position: fixed; top: 0"] #screenshotButton {
-        padding: 6px 12px !important;
-        font-size: 12px !important;
-    }
-    
-    #birdingRecordModal > div[style*="position: fixed; top: 0"] #closeBirdingRecord {
-        width: 30px !important;
-        height: 30px !important;
-        font-size: 16px !important;
-    }
-    
-    #birdingRecordContent {
-        margin-top: 65px !important;
-        padding: 0 15px 20px 15px !important;
-        font-size: 15px !important;
-    }
-    
-    #birdingRecordNav {
-        padding: 0 10px !important;
-    }
-    
-    .birdingRecordNavButton {
-        width: 40px !important;
-        height: 40px !important;
-        font-size: 20px !important;
-    }
-    
     #campsite {
-        width: 80px !important;
-        height: 40px !important;
+        width: 200px !important;
+        height: 100px !important;
     }
     
-    #campsite > div > div:first-child {
-        width: 30% !important;
-        height: 40% !important;
-        right: 16.67% !important;
-    }
-    
-    #campsite > div > div:first-child::before {
-        border-left: 15% solid transparent !important;
-        border-right: 15% solid transparent !important;
-        border-bottom: 40% solid #B22222 !important;
-    }
-    
-    #campsite > div > div:nth-child(2) {
-        width: 20% !important;
-        height: 30% !important;
-        left: 23.33% !important;
+    #campsite > div > div:last-child {
+        font-size: 10px;
+        padding: 1px 4px;
     }
     
     #campfire-flame {
         width: 50% !important;
         height: 66.67% !important;
         bottom: 26.67% !important;
-    }
-    
-    #campsite > div > div:last-child {
-        font-size: 5px !important;
-        bottom: 16.67% !important;
-        padding: 1px 3px !important;
-        border-radius: 3px !important;
     }
 }
 
@@ -1571,19 +1545,16 @@ body {
         top: 65px;
     }
     
+    #birdingToggleContainer {
+        gap: 2px;
+        padding-bottom: 20px;
+    }
+    
     #birdingModeToggle {
         height: 30px;
         padding: 4px 8px;
         font-size: 11px;
         min-width: 100px;
-    }
-    
-    #helpButton {
-        top: 85px; /* 60px + 16px + 9px = 85px */
-        right: 10px;
-        width: 22px;
-        height: 22px;
-        font-size: 12px;
     }
     
     #birdingStatusIndicator {
@@ -1592,13 +1563,8 @@ body {
         min-width: 100px;
     }
     
-    #birdingToggleContainer {
-        gap: 2px;
-        padding-bottom: 20px; /* 小屏幕下更小 */
-    }
-    
     #birdingRecordIcon {
-        top: 60px; /* 小屏幕：按钮30px + 状态指示器25px + 间距5px = 60px */
+        top: 60px;
         right: 0;
         width: 80px;
         height: 16px;
@@ -1616,32 +1582,6 @@ body {
         margin-right: 2px;
     }
     
-    #gyroToggleContainer {
-        top: 120px !important; /* 帮助按钮下方：85px + 22px + 13px = 120px */
-        right: 5px !important;
-    }
-    
-    #gyroSensitivityContainer {
-        width: 100px !important;
-        height: 30px !important;
-    }
-    
-    #gyroModeToggle,
-    #gyroCalibrateButton {
-        min-width: 100px !important;
-        max-width: 100px !important;
-        font-size: 11px !important;
-        padding: 3px 6px !important;
-    }
-    
-    #gyroStatusIndicator {
-        min-width: 100px !important;
-        max-width: 100px !important;
-        font-size: 11px !important;
-        padding: 2px 4px !important;
-    }
-    
-    /* 镜头和模式按钮在小屏幕上进一步缩小 */
     #lensToggleContainer {
         bottom: 150px;
         max-width: 180px;
@@ -1670,19 +1610,31 @@ body {
         min-height: 20px;
     }
     
-    #birdingModeToggle {
-        padding: 4px 8px;
-        font-size: 11px;
-        min-width: 100px;
+    #gyroToggleContainer {
+        top: 120px !important;
+        right: 5px !important;
     }
     
-    #birdingStatusIndicator {
-        font-size: 10px;
-        padding: 2px 6px;
-        min-width: 100px;
+    #gyroSensitivityContainer {
+        width: 100px !important;
+        height: 30px !important;
     }
     
-    /* 快门按钮在小屏幕上稍小 */
+    #gyroModeToggle,
+    #gyroCalibrateButton {
+        min-width: 100px !important;
+        max-width: 100px !important;
+        font-size: 11px !important;
+        padding: 3px 6px !important;
+    }
+    
+    #gyroStatusIndicator {
+        min-width: 100px !important;
+        max-width: 100px !important;
+        font-size: 11px !important;
+        padding: 2px 4px !important;
+    }
+    
     #cameraButton {
         bottom: 70px;
         width: 70px;
@@ -1694,102 +1646,20 @@ body {
         height: 40px;
     }
     
-    .birdingRecordIcon {
-        width: 40px;
-        height: 40px;
-    }
-    
-    .birdingRecordIcon .iconNumber {
-        font-size: 14px;
-    }
-    
-    .birdingRecordIcon .iconTime,
-    .birdingRecordIcon .iconBirdCount {
-        font-size: 9px;
-    }
-    
     #screenshotButton {
         right: 70px;
         padding: 4px 8px;
         font-size: 10px;
     }
     
-    #birdingRecordModal > div[style*="position: fixed; top: 0"] {
-        padding: 6px 10px !important;
-    }
-    
-    #birdingRecordModal > div[style*="position: fixed; top: 0"] div:first-child {
-        font-size: 14px !important;
-    }
-    
-    #birdingRecordModal > div[style*="position: fixed; top: 0"] #birdingRecordCounter {
-        font-size: 11px !important;
-        padding: 2px 6px !important;
-    }
-    
-    #birdingRecordModal > div[style*="position: fixed; top: 0"] #screenshotButton {
-        padding: 4px 8px !important;
-        font-size: 11px !important;
-    }
-    
-    #birdingRecordModal > div[style*="position: fixed; top: 0"] #closeBirdingRecord {
-        width: 28px !important;
-        height: 28px !important;
-        font-size: 14px !important;
-    }
-    
-    #birdingRecordContent {
-        margin-top: 55px !important;
-        padding: 0 10px 15px 10px !important;
-        font-size: 14px !important;
-        line-height: 1.5 !important;
-    }
-    
-    .birdingRecordNavButton {
-        width: 35px !important;
-        height: 35px !important;
-        font-size: 18px !important;
-    }
-    
-    #swipeHint {
-        font-size: 12px !important;
-        bottom: 10px !important;
-    }
-    
     #campsite {
-        width: 60px !important;
-        height: 30px !important;
-    }
-    
-    #campsite > div > div:first-child {
-        width: 30% !important;
-        height: 40% !important;
-        right: 16.67% !important;
-    }
-    
-    #campsite > div > div:first-child::before {
-        border-left: 15% solid transparent !important;
-        border-right: 15% solid transparent !important;
-        border-bottom: 40% solid #B22222 !important;
-    }
-    
-    #campsite > div > div:nth-child(2) {
-        width: 20% !important;
-        height: 30% !important;
-        left: 23.33% !important;
-    }
-    
-    #campfire-flame {
-        width: 50% !important;
-        height: 66.67% !important;
-        bottom: 26.67% !important;
+        width: 150px !important;
+        height: 75px !important;
     }
     
     #campsite > div > div:last-child {
-        font-size: 3px !important;
-        bottom: 16.67% !important;
-        padding: 0.5px 1.5px !important;
-        border-radius: 1.5px !important;
+        font-size: 8px;
+        padding: 1px 3px;
     }
 }
 
@@ -1805,15 +1675,7 @@ body {
         top: 5px;
         right: 5px;
         gap: 2px;
-        padding-bottom: 20px; /* 小横屏下较小 */
-    }
-    
-    #helpButton {
-        top: 85px; /* 60px + 18px + 7px = 85px */
-        right: 5px;
-        width: 25px;
-        height: 25px;
-        font-size: 14px;
+        padding-bottom: 20px;
     }
     
     #birdingModeToggle {
@@ -1828,7 +1690,7 @@ body {
     }
     
     #birdingRecordIcon {
-        top: 60px; /* 小横屏：按钮30px + 状态指示器25px + 间距5px = 60px */
+        top: 60px;
         right: 0;
         width: 100px;
         height: 18px;
@@ -1847,28 +1709,13 @@ body {
     }
     
     #lensToggleContainer {
-        bottom: 10px; /* 改为距离底部10像素 */
+        bottom: 10px;
         left: 5px;
         padding: 3px;
         gap: 3px;
         border-radius: 10px;
         border-width: 1px;
-        transform: scale(0.9); /* 稍微缩小以适应小屏幕 */
-    }
-    
-    #modeToggleContainer {
-        bottom: 10px; /* 改为距离底部10像素 */
-        right: 5px;
-        gap: 3px;
-        transform: scale(0.9); /* 稍微缩小以适应小屏幕 */
-    }
-
-    .modeToggleButton {
-        padding: 3px 6px;
-        font-size: 10px;
-        border-radius: 6px;
-        border-width: 1px;
-        min-width: 60px;
+        transform: scale(0.9);
     }
     
     .lensToggleButton {
@@ -1878,27 +1725,20 @@ body {
         border-width: 0.5px;
         min-width: 50px;
     }
-
-    #birdingRecordIconsContainer {
-        top: 50px;
-        max-height: 150px;
+    
+    #modeToggleContainer {
+        bottom: 10px;
+        right: 5px;
+        gap: 3px;
+        transform: scale(0.9);
     }
     
-    .birdingRecordIcon {
-        width: 40px;
-        height: 40px;
-    }
-    
-    .birdingRecordIcon .iconNumber {
-        font-size: 14px;
-    }
-    
-    .birdingRecordIcon .iconTime {
-        font-size: 9px;
-    }
-    
-    .birdingRecordIcon .iconBirdCount {
-        font-size: 8px;
+    .modeToggleButton {
+        padding: 3px 6px;
+        font-size: 10px;
+        border-radius: 6px;
+        border-width: 1px;
+        min-width: 60px;
     }
     
     #gyroToggleContainer {
@@ -1933,7 +1773,6 @@ body {
         max-width: 70px;
     }
     
-    /* 小横屏下快门按钮稍小，但仍在右侧中间 */
     #cameraButton {
         right: 10px;
         top: 50%;
@@ -1973,18 +1812,22 @@ body {
             <button class="screenshotPreviewButton" onclick="closeScreenshotPreview()">✕ 关闭</button>
         </div>
     </div>
-    <div id="campsite" style="display: none; z-index: 25; cursor: pointer;" onclick="extinguishCampfire()">
-        <div style="position: relative; width: 100%; height: 100%;">
-            <div style="position: absolute; bottom: 0; right: 16.67%; width: 30%; height: 40%;">
-                <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15% solid transparent; border-right: 15% solid transparent; border-bottom: 40% solid #B22222;"></div>
-            </div>
-            <div style="position: absolute; bottom: 0; left: 23.33%; width: 20%; height: 30%;">
-                <div style="position: absolute; bottom: 0; left: 13.33%; width: 75%; height: 17.78%; background-color: #8B4513; transform: rotate(-15deg);"></div>
-                <div style="position: absolute; bottom: 8.89%; left: 20%; width: 63.33%; height: 17.78%; background-color: #A0522D; transform: rotate(10deg);"></div>
-                <div id="campfire-flame" style="position: absolute; bottom: 26.67%; left: 50%; transform: translateX(-50%); width: 50%; height: 66.67%; background: radial-gradient(circle, #FF4500 0%, #FF8C00 30%, #FFD700 70%); border-radius: 50% 50% 20% 20%; filter: blur(2px); animation: flame-flicker 0.5s infinite alternate;"></div>
-            </div>
-            <div style="position: absolute; bottom: 16.67%; left: 50%; transform: translateX(-50%); color: #FFD700; font-size: 0.67vw; font-weight: bold; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); text-align: center; background-color: rgba(0,0,0,0.5); padding: 0.13vw 0.4vw; border-radius: 0.4vw; opacity: 0.8; white-space: nowrap;">
-                点击熄灭篝火
+<div id="campsite" style="display: none; z-index: 25; cursor: pointer;" onclick="extinguishCampfire()">
+    <div style="position: relative; width: 100%; height: 100%;">
+        <!-- 帐篷结构 - 确保这部分存在 -->
+        <div style="position: absolute; bottom: 0; right: 16.67%; width: 30%; height: 40%;">
+            <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15% solid transparent; border-right: 15% solid transparent; border-bottom: 40% solid #B22222;"></div>
+        </div>
+        <!-- 木柴结构 -->
+        <div style="position: absolute; bottom: 0; left: 23.33%; width: 20%; height: 30%;">
+            <div style="position: absolute; bottom: 0; left: 13.33%; width: 75%; height: 17.78%; background-color: #8B4513; transform: rotate(-15deg);"></div>
+            <div style="position: absolute; bottom: 8.89%; left: 20%; width: 63.33%; height: 17.78%; background-color: #A0522D; transform: rotate(10deg);"></div>
+            <!-- 火焰 -->
+            <div id="campfire-flame" style="position: absolute; bottom: 26.67%; left: 50%; transform: translateX(-50%); width: 50%; height: 66.67%; background: radial-gradient(circle, #FF4500 0%, #FF8C00 30%, #FFD700 70%); border-radius: 50% 50% 20% 20%; filter: blur(2px); animation: flame-flicker 0.5s infinite alternate;"></div>
+        </div>
+        <!-- 提示文字 -->
+        <div style="position: absolute; bottom: 16.67%; left: 50%; transform: translateX(-50%); color: #FFD700; font-size: 0.67vw; font-weight: bold; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); text-align: center; background-color: rgba(0,0,0,0.5); padding: 0.13vw 0.4vw; border-radius: 0.4vw; opacity: 0.8; white-space: nowrap;">
+            点击熄灭篝火
         </div>
     </div>
 </div>
@@ -3273,71 +3116,113 @@ function updateCampfirePosition() {
     const canvasInContainerTop = canvasRect.top - containerRect.top;
     const canvasInContainerBottom = canvasInContainerTop + canvasRect.height;
     
-    // 营地尺寸
+    // 营地尺寸 - 注意：营地图片有透明边距
     const campsiteRect = campsite.getBoundingClientRect();
     const campsiteWidth = campsiteRect.width;
     const campsiteHeight = campsiteRect.height;
     
-    // 营地位置：在画布底部居中
-    const campsiteLeft = canvasInContainerLeft + (canvasRect.width / 2) - (campsiteWidth / 2);
-    const campsiteTop = canvasInContainerBottom - campsiteHeight - 10; // 距离画布底部10px
+    // 计算营地底部应该对齐的位置
+    // 注意：营地SVG/HTML元素可能有内部边距或透明区域
+    // 在竖屏模式下，我们需要让营地"底部"紧贴画布底部
+    const isPortrait = window.matchMedia("(orientation: portrait)").matches;
     
+    let campsiteTop;
+    
+    if (isPortrait) {
+        // 竖屏模式：营地紧贴地面
+        // 由于营地元素可能有内部布局，我们需要计算实际可视底部的位置
+        const visualBottomOffset = 0; // 营地底部就是可视底部，不需要额外偏移
+        
+        campsiteTop = canvasInContainerBottom - campsiteHeight - visualBottomOffset;
+        
+        console.log("竖屏营地位置计算:", {
+            canvasBottom: canvasInContainerBottom,
+            campsiteHeight: campsiteHeight,
+            visualBottomOffset: visualBottomOffset,
+            calculatedTop: campsiteTop
+        });
+    } else {
+        // 横屏模式：营地距离画布底部10像素
+        campsiteTop = canvasInContainerBottom - campsiteHeight - 10;
+    }
+    
+    // 营地水平居中
+    const campsiteLeft = canvasInContainerLeft + (canvasRect.width / 2) - (campsiteWidth / 2);
+    
+    // 应用位置
     campsite.style.position = 'absolute';
     campsite.style.top = campsiteTop + 'px';
     campsite.style.left = campsiteLeft + 'px';
-    campsite.style.bottom = 'auto'; // 清除CSS中的bottom属性
-    campsite.style.transform = 'none'; // 清除CSS中的transform属性
+    campsite.style.bottom = 'auto';
+    campsite.style.transform = 'none';
     
+    // 调试信息
     console.log("营地位置更新:", {
-        containerWidth: containerRect.width,
-        containerHeight: containerRect.height,
-        canvasRect: { 
-            left: canvasRect.left, 
-            top: canvasRect.top, 
-            width: canvasRect.width, 
-            height: canvasRect.height 
+        orientation: isPortrait ? "portrait" : "landscape",
+        container: `${containerRect.width}x${containerRect.height}`,
+        canvas: {
+            left: canvasRect.left,
+            top: canvasRect.top,
+            width: canvasRect.width,
+            height: canvasRect.height,
+            inContainer: {
+                left: canvasInContainerLeft,
+                top: canvasInContainerTop,
+                bottom: canvasInContainerBottom
+            }
         },
-        canvasInContainer: {
-            left: canvasInContainerLeft,
-            top: canvasInContainerTop,
-            bottom: canvasInContainerBottom
-        },
-        campsiteWidth,
-        campsiteHeight,
-        campsiteLeft,
-        campsiteTop
+        campsite: {
+            width: campsiteWidth,
+            height: campsiteHeight,
+            left: campsiteLeft,
+            top: campsiteTop
+        }
+    });
+    
+    // 额外调试：检查营地元素的实际样式
+    const computedStyle = window.getComputedStyle(campsite);
+    console.log("营地计算样式:", {
+        display: computedStyle.display,
+        position: computedStyle.position,
+        top: computedStyle.top,
+        left: computedStyle.left,
+        bottom: computedStyle.bottom,
+        transform: computedStyle.transform,
+        width: computedStyle.width,
+        height: computedStyle.height
     });
 }
 
 function updateCampsiteVisibility() {
-  const campsite = document.getElementById('campsite');
-  if (!campsite) return;
-  
-  if (gameMode === 'normal' && !isDaytime) {
-    campsite.style.display = 'block';
+    const campsite = document.getElementById('campsite');
+    if (!campsite) return;
     
-    // 确保营地位置正确
-    setTimeout(() => {
-      updateCampfirePosition();
-    }, 50);
-    
-    const flame = document.getElementById('campfire-flame');
-    const hint = document.querySelector('#campsite > div > div:last-child');
-    
-    if (flame && hint) {
-      if (isCampfireExtinguished) {
-        flame.classList.add('extinguished');
-        hint.textContent = "篝火已熄灭";
-        hint.style.color = "#87CEEB";
-      } else {
-        flame.classList.remove('extinguished');
-        hint.textContent = "点击熄灭篝火";
-        hint.style.color = "#FFD700";
-      }
+    if (gameMode === 'normal' && !isDaytime) {
+        campsite.style.display = 'block';
+        
+        // 确保营地内部结构正确初始化
+        const flame = document.getElementById('campfire-flame');
+        const hint = document.querySelector('#campsite > div > div:last-child');
+        
+        if (flame && hint) {
+            if (isCampfireExtinguished) {
+                flame.classList.add('extinguished');
+                hint.textContent = "篝火已熄灭";
+                hint.style.color = "#87CEEB";
+            } else {
+                flame.classList.remove('extinguished');
+                hint.textContent = "点击熄灭篝火";
+                hint.style.color = "#FFD700";
+            }
+        }
+        
+        // 更新位置
+        setTimeout(() => {
+            updateCampfirePosition();
+        }, 50);
+    } else {
+        campsite.style.display = 'none';
     }
-  } else {
-    campsite.style.display = 'none';
-  }
 }
 
 function extinguishCampfire() {
@@ -4033,24 +3918,25 @@ function init() {
     };
   }
   
-    // 监听方向变化，更新UI布局和营地位置
+    // 监听方向变化
     window.addEventListener('orientationchange', function() {
         setTimeout(() => {
             updateUIForOrientation();
-            // 更新营地位置
             if (gameMode === 'normal' && !isDaytime) {
-                updateCampfirePosition();
+                // 方向变化后需要等待布局稳定再更新营地位置
+                setTimeout(updateCampfirePosition, 200);
             }
         }, 300);
     });
     
     // 监听窗口大小变化
     window.addEventListener('resize', function() {
-        setTimeout(() => {
+        clearTimeout(window.campfireResizeTimer);
+        window.campfireResizeTimer = setTimeout(function() {
             if (gameMode === 'normal' && !isDaytime) {
                 updateCampfirePosition();
             }
-        }, 100);
+        }, 250);
     });
     
     // 初始调用一次
@@ -5364,58 +5250,137 @@ function restoreCampfireState() {
 
 // 修改 handleKeyDown 函数，添加键盘导航支持
 function handleKeyDown(e) {
-  if (e.key === 'Escape') {
-    closeAlbum();
-    closeBirdingRecord();
-  } else if (e.key === 'c' || e.key === 'C') {
-    generateBlackWingedKite(false);
-  } else if (e.key === 'x' || e.key === 'X') {
-    generateComet(false);
-  } else if (e.key === 'd' || e.key === 'D') {
-    generateGoldcrest(false);
-  } else if (e.key === '1') {
-    generateTwelveThousandPlover(false);
-  } else if (e.key === 'l' || e.key === 'L') {
-    generateMeteor(false);
-  } else if (e.key === 'w' || e.key === 'W') {
-    generateBlackbird(false);
-  } else if (e.key === 'b' || e.key === 'B') {
+    // 防止在输入框等元素中触发
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        return;
+    }
+    
+    if (e.key === 'Escape') {
+        closeAlbum();
+        closeBirdingRecord();
+        closeHelpModal();
+    } else if (e.key === 'c' || e.key === 'C') {
+        generateBlackWingedKite(false);
+    } else if (e.key === 'x' || e.key === 'X') {
+        generateComet(false);
+    } else if (e.key === 'd' || e.key === 'D') {
+        generateGoldcrest(false);
+    } else if (e.key === '1') {
+        generateTwelveThousandPlover(false);
+    } else if (e.key === 'l' || e.key === 'L') {
+        generateMeteor(false);
+    } else if (e.key === 'u' || e.key === 'U') {
+        generateUFO(false);
+    } else if (e.key === 'q' || e.key === 'Q') {
+        generateMagpie(false);
+    } else if (e.key === 'k' || e.key === 'K') {
+        generateKingfisher(false);
+    } else if (e.key === 'r' || e.key === 'R') {
+        createBirdingRecord();
+    } else if (e.key === 'v' || e.key === 'V') {
+        if (birdingRecords.length > 0) {
+            openBirdingRecord(birdingRecords.length - 1);
+        }
+    } else if (e.key === 'm' || e.key === 'M') {
+        toggleBirdingMode();
+    } else if (e.key === '0') {
+        generateRareBird();
+    } else if (e.key === 'p' || e.key === 'P') {
+        if (currentBirdingRecord) {
+            captureBirdingRecord();
+        }
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        const modal = document.getElementById('birdingRecordModal');
+        if (modal.style.display === 'block') {
+            e.preventDefault();
+            switchBirdingRecord(-1);
+        }
+    } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        const modal = document.getElementById('birdingRecordModal');
+        if (modal.style.display === 'block') {
+            e.preventDefault();
+            switchBirdingRecord(1);
+        }
+    } else if (e.key === 't' || e.key === 'T') {
+        // T键：跳过白天
+        skipToNight();
+    } else if (e.key === 'b' || e.key === 'B') {
         debugCoordinateSystem();
-  } else if (e.key === 'u' || e.key === 'U') {
-    generateUFO(false);
-  } else if (e.key === 'q' || e.key === 'Q') {
-    generateMagpie(false);
-  } else if (e.key === 'k' || e.key === 'K') {
-    generateKingfisher(false);
-  } else if (e.key === 'r' || e.key === 'R') {
-    createBirdingRecord();
-  } else if (e.key === 'v' || e.key === 'V') {
-    if (birdingRecords.length > 0) {
-      openBirdingRecord(birdingRecords.length - 1);
     }
-  } else if (e.key === 'm' || e.key === 'M') {
-    toggleBirdingMode();
-  } else if (e.key === '0') {
-    generateRareBird();
-  } else if (e.key === 'p' || e.key === 'P') {
-    if (currentBirdingRecord) {
-      captureBirdingRecord();
+}
+
+function skipToNight() {
+    // 只有在普通模式且是白天时才有效
+    if (gameMode !== 'normal' || !isDaytime) {
+        showSpecialAlert("只能在普通模式的白天跳过");
+        return;
     }
-  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
-    // 在观鸟记录界面时，左箭头或上箭头切换到上一条记录
-    const modal = document.getElementById('birdingRecordModal');
-    if (modal.style.display === 'block') {
-      e.preventDefault();
-      switchBirdingRecord(-1);
+    
+    // 保存当前时间状态
+    const savedTimeState = {
+        gameTime: gameTime,
+        dayNightTimer: dayNightTimer,
+        moonPhaseTimer: moonPhaseTimer
+    };
+    
+    // 计算跳过的时间
+    const timeToSkip = DAY_NIGHT_CYCLE_DURATION - dayNightTimer;
+    
+    // 直接切换到夜晚
+    isDaytime = false;
+    dayNightTimer = 0; // 重置为夜晚开始
+    
+    // 更新篝火状态
+    isCampfireExtinguished = false;
+    isNightAccelerated = false;
+    
+    // 清除白天的鸟类（除了夜间可以出现的）
+    for (let i = birds.length - 1; i >= 0; i--) {
+        const bird = birds[i];
+        // 保留夜鹭、猫头鹰、蝙蝠等夜间鸟类
+        const isNocturnal = bird.isOwl || bird.isBat || 
+                           bird.name === "小鸮" || 
+                           bird.name === "夜鹭" ||
+                           bird.name === "雕鸮" ||
+                           bird.name === "短耳鸮";
+        
+        if (!isNocturnal) {
+            birds.splice(i, 1);
+        }
     }
-  } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
-    // 在观鸟记录界面时，右箭头或下箭头切换到下一条记录
-    const modal = document.getElementById('birdingRecordModal');
-    if (modal.style.display === 'block') {
-      e.preventDefault();
-      switchBirdingRecord(1);
+    
+    // 清空白天物体
+    nightObjects = [];
+    
+    // 生成一些夜间鸟类
+    if (Math.random() < 0.3) {
+        spawnNightOwls();
     }
-  }
+    
+    // 显示提示
+    const skippedMinutes = Math.floor(timeToSkip / 60000);
+    const skippedSeconds = Math.floor((timeToSkip % 60000) / 1000);
+    showSpecialAlert(`跳过了 ${skippedMinutes}分${skippedSeconds}秒，已切换到夜晚`);
+    
+    // 更新UI
+    updateModeToggleButtons();
+    updateCampsiteVisibility();
+    updateTimeIndicator();
+    
+    // 播放音效（可选）
+    playTimeSkipSound();
+    
+    // 记录跳过操作（用于调试）
+    console.log("跳过白天:", {
+        skippedTime: timeToSkip,
+        skippedMinutes,
+        skippedSeconds,
+        previousTimeState: savedTimeState,
+        newTimeState: {
+            isDaytime: isDaytime,
+            dayNightTimer: dayNightTimer
+        }
+    });
 }
 
 function generateBlackbird(countStats = false) {
