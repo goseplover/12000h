@@ -1135,6 +1135,7 @@ body {
 }
 
 #campsite {
+    pointer-events: none; /* 默认不捕获鼠标事件 */
     position: absolute;
     z-index: 25;
     cursor: pointer;
@@ -1200,6 +1201,8 @@ body {
 }
 
 #campfire-flame {
+    pointer-events: auto; /* 只有篝火可以点击 */
+    cursor: pointer;
     position: absolute;
     bottom: 26.67%;
     left: 50%;
@@ -1826,7 +1829,7 @@ body {
             <div id="campfire-flame" style="position: absolute; bottom: 26.67%; left: 50%; transform: translateX(-50%); width: 50%; height: 66.67%; background: radial-gradient(circle, #FF4500 0%, #FF8C00 30%, #FFD700 70%); border-radius: 50% 50% 20% 20%; filter: blur(2px); animation: flame-flicker 0.5s infinite alternate;"></div>
         </div>
         <!-- 提示文字 -->
-        <div style="position: absolute; bottom: 16.67%; left: 50%; transform: translateX(-50%); color: #FFD700; font-size: 0.67vw; font-weight: bold; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); text-align: center; background-color: rgba(0,0,0,0.5); padding: 0.13vw 0.4vw; border-radius: 0.4vw; opacity: 0.8; white-space: nowrap;">
+        <div style="position: absolute; bottom: 1.5%; left: 50%; transform: translateX(-50%); color: #FFD700; font-size: 0.67vw; font-weight: bold; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); text-align: center; background-color: rgba(0,0,0,0.5); padding: 0.13vw 0.4vw; border-radius: 0.4vw; opacity: 0.8; white-space: nowrap;">
             点击熄灭篝火
         </div>
     </div>
@@ -3178,7 +3181,9 @@ function updateCampfirePosition() {
             top: campsiteTop
         }
     });
-    
+        // 确保营地不会捕获鼠标事件
+    campsite.style.pointerEvents = 'none';
+}
     // 额外调试：检查营地元素的实际样式
     const computedStyle = window.getComputedStyle(campsite);
     console.log("营地计算样式:", {
@@ -3191,7 +3196,6 @@ function updateCampfirePosition() {
         width: computedStyle.width,
         height: computedStyle.height
     });
-}
 
 function updateCampsiteVisibility() {
     const campsite = document.getElementById('campsite');
@@ -3199,8 +3203,6 @@ function updateCampsiteVisibility() {
     
     if (gameMode === 'normal' && !isDaytime) {
         campsite.style.display = 'block';
-        
-        // 确保营地内部结构正确初始化
         const flame = document.getElementById('campfire-flame');
         const hint = document.querySelector('#campsite > div > div:last-child');
         
@@ -3209,14 +3211,16 @@ function updateCampsiteVisibility() {
                 flame.classList.add('extinguished');
                 hint.textContent = "篝火已熄灭";
                 hint.style.color = "#87CEEB";
+                flame.style.pointerEvents = 'none'; // 篝火熄灭后不可点击
             } else {
                 flame.classList.remove('extinguished');
                 hint.textContent = "点击熄灭篝火";
                 hint.style.color = "#FFD700";
+                flame.style.pointerEvents = 'auto'; // 篝火未熄灭可点击
+                flame.style.cursor = 'pointer';
             }
         }
         
-        // 更新位置
         setTimeout(() => {
             updateCampfirePosition();
         }, 50);
@@ -3224,26 +3228,50 @@ function updateCampsiteVisibility() {
         campsite.style.display = 'none';
     }
 }
+// 新增：处理营地区域的点击事件
+function handleCampsiteClick(e) {
+    // 检查是否点击的是篝火元素
+    const flame = document.getElementById('campfire-flame');
+    if (flame && e.target === flame) {
+        // 点击的是篝火，触发熄灭功能
+        extinguishCampfire();
+        e.stopPropagation(); // 阻止事件冒泡，避免触发拍照
+        return;
+    }
+    // 检查是否点击的是篝火元素的子元素
+    let target = e.target;
+    while (target && target !== document) {
+        if (target.id === 'campfire-flame') {
+            extinguishCampfire();
+            e.stopPropagation();
+            return;
+        }
+        target = target.parentElement;
+    }
+    // 点击的是营地其他区域，不执行任何操作，让事件继续冒泡
+    // 这样相机点击功能可以正常工作
+}
 
 function extinguishCampfire() {
-  if (gameMode !== 'normal' || isDaytime || isCampfireExtinguished) return;
-  
-  isCampfireExtinguished = true;
-  isNightAccelerated = true;
-  
-  const flame = document.getElementById('campfire-flame');
-  if (flame) {
-    flame.classList.add('extinguished');
-  }
-  
-  const hint = document.querySelector('#campsite > div > div:last-child');
-  if (hint) {
-    hint.textContent = "篝火已熄灭";
-    hint.style.color = "#87CEEB";
-  }
-  
-  showSpecialAlert("篝火熄灭，夜晚加速流逝...");
-  checkNightAcceleration();
+    if (gameMode !== 'normal' || isDaytime || isCampfireExtinguished) return;
+    
+    isCampfireExtinguished = true;
+    isNightAccelerated = true;
+    
+    const flame = document.getElementById('campfire-flame');
+    if (flame) {
+        flame.classList.add('extinguished');
+        flame.style.pointerEvents = 'none'; // 熄灭后不可点击
+    }
+    
+    const hint = document.querySelector('#campsite > div > div:last-child');
+    if (hint) {
+        hint.textContent = "篝火已熄灭";
+        hint.style.color = "#87CEEB";
+    }
+    
+    showSpecialAlert("篝火熄灭，夜晚加速流逝...");
+    checkNightAcceleration();
 }
 
 // 修改checkNightAcceleration函数
@@ -3748,13 +3776,14 @@ function updateViewfinderFromGyro() {
 }
 
 function handleCameraButtonClick() {
-  handleMouseClick();
-  
-  const cameraButton = document.getElementById('cameraButton');
-  cameraButton.style.backgroundColor = 'rgba(200, 200, 200, 0.9)';
-  setTimeout(() => {
-    cameraButton.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
-  }, 100);
+    // 直接调用拍照逻辑，营地区域的点击由handleMouseClick处理
+    handleMouseClick();
+    
+    const cameraButton = document.getElementById('cameraButton');
+    cameraButton.style.backgroundColor = 'rgba(200, 200, 200, 0.9)';
+    setTimeout(() => {
+        cameraButton.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+    }, 100);
 }
 
 function handleMouseMove(e) {
@@ -3859,21 +3888,31 @@ function init() {
     setTimeout(updateCampsiteVisibility, 100);
   });
    
-  // 修复：确保篝火点击事件绑定正确
-  const campsite = document.getElementById('campsite');
-  if (campsite) {
-    campsite.onclick = extinguishCampfire;
-    console.log("篝火事件绑定成功");
+    const campsite = document.getElementById('campsite');
+    if (campsite) {
+        // 确保营地元素不会捕获鼠标事件
+        campsite.style.pointerEvents = 'none';
+        
+        campsite.style.position = 'absolute';
+        campsite.style.top = 'auto';
+        campsite.style.bottom = 'auto';
+        campsite.style.left = 'auto';
+        campsite.style.transform = 'none';
+        campsite.style.display = 'none';
+        
+        console.log("营地初始化完成，指针事件已禁用");
+    }
     
-    // 确保营地初始样式正确
-    campsite.style.position = 'absolute';
-    campsite.style.top = 'auto';
-    campsite.style.bottom = 'auto';
-    campsite.style.left = 'auto';
-    campsite.style.transform = 'none';
-    campsite.style.display = 'none';
-  }
-  
+    // 直接为篝火元素绑定点击事件
+    const flame = document.getElementById('campfire-flame');
+    if (flame) {
+        flame.onclick = function(e) {
+            e.stopPropagation(); // 阻止事件冒泡到营地
+            extinguishCampfire();
+        };
+        flame.style.cursor = 'pointer';
+        console.log("篝火点击事件绑定完成");
+    }
   updateCampsiteVisibility();
   
   const birdingModeButton = document.getElementById('birdingModeToggle');
@@ -3919,15 +3958,23 @@ function init() {
   }
   
     // 监听方向变化
-    window.addEventListener('orientationchange', function() {
-        setTimeout(() => {
-            updateUIForOrientation();
-            if (gameMode === 'normal' && !isDaytime) {
-                // 方向变化后需要等待布局稳定再更新营地位置
-                setTimeout(updateCampfirePosition, 200);
+window.addEventListener('orientationchange', function() {
+    setTimeout(function() {
+        if (gameMode === 'normal' && !isDaytime) {
+            updateCampfirePosition();
+            // 重新绑定篝火点击事件
+            const flame = document.getElementById('campfire-flame');
+            if (flame && !isCampfireExtinguished) {
+                flame.onclick = function(e) {
+                    e.stopPropagation();
+                    extinguishCampfire();
+                };
+                flame.style.pointerEvents = 'auto';
+                flame.style.cursor = 'pointer';
             }
-        }, 300);
-    });
+        }
+    }, 300);
+});
     
     // 监听窗口大小变化
     window.addEventListener('resize', function() {
@@ -5301,11 +5348,6 @@ function handleKeyDown(e) {
             e.preventDefault();
             switchBirdingRecord(1);
         }
-    } else if (e.key === 't' || e.key === 'T') {
-        // T键：跳过白天
-        skipToNight();
-    } else if (e.key === 'b' || e.key === 'B') {
-        debugCoordinateSystem();
     }
 }
 
@@ -6081,6 +6123,7 @@ function handleMouseClick() {
         capturedNightObject = fallbackCapturedNightObject;
     }
     
+    // 直接执行拍照逻辑，不再检查是否点击了营地
     createPhoto(viewfinderLeft, viewfinderTop, actualViewfinderWidth, actualViewfinderHeight, capturedBird, capturedNightObject);
     updateTextStats();
     playCameraSound();
