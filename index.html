@@ -1798,6 +1798,34 @@ body {
 </style>
 </head>
 <body>
+<div id="textBrowserOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.95); z-index: 10000; display: none; font-family: 'SimSun', monospace; pointer-events: none;">
+    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; pointer-events: none;">
+        <!-- 顶部控制栏 - 白色半透明 -->
+        <div style="background-color: rgba(255, 255, 255, 0.85); color: rgba(0, 0, 0, 0.85); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(0, 0, 0, 0.3); pointer-events: auto;">
+            <div style="font-size: 18px; font-weight: bold;">📄 文本浏览器</div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div style="font-size: 12px; color: rgba(0, 0, 0, 0.6);">按空格键显示/隐藏</div>
+                <button id="loadTextFile" style="background-color: rgba(76, 175, 80, 0.9); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 14px;">📂 加载文件</button>
+                <input type="file" id="textFileInput" accept=".txt,.md,.html,.js,.css,.json" style="display: none;">
+                <button id="closeTextBrowser" style="background-color: rgba(0, 0, 0, 0.1); color: rgba(0, 0, 0, 0.85); border: 1px solid rgba(0, 0, 0, 0.2); padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 14px;">✕ 关闭</button>
+            </div>
+        </div>
+        
+        <!-- 内容区域 - 80%不透明的白色 -->
+        <div id="textContentContainer" style="flex: 1; overflow-y: auto; padding: 20px; background-color: rgba(255, 255, 255, 0.8); pointer-events: auto;">
+            <!-- 文本区域 - 85%不透明的白色 -->
+            <div id="textBrowserContent" style="white-space: pre-wrap; font-size: 16px; line-height: 1.6; color: rgba(0, 0, 0, 0.85); max-width: 1200px; margin: 0 auto; font-family: 'Courier New', monospace; background-color: rgba(255, 255, 255, 0.85); padding: 20px; border-radius: 8px; border: 1px solid rgba(0, 0, 0, 0.1);">
+                <!-- 移除初始文本提示，保持空白 -->
+            </div>
+        </div>
+        
+        <!-- 底部状态栏 - 白色半透明 -->
+        <div style="background-color: rgba(255, 255, 255, 0.95); padding: 8px 20px; border-top: 1px solid rgba(0, 0, 0, 0.1); font-size: 12px; color: rgba(0, 0, 0, 0.6); display: flex; justify-content: space-between; pointer-events: auto;">
+            <div id="fileInfo">未加载文件</div>
+            <div id="characterCount">字符数: 0</div>
+        </div>
+    </div>
+</div>
 <div id="gameContainer">
     <canvas id="gameCanvas"></canvas>
     <canvas id="poopCanvas"></canvas>
@@ -2736,7 +2764,7 @@ let mouseX = GAME_WIDTH / 2, mouseY = GAME_HEIGHT / 2;
 let viewfinderVisible = false;
 let viewfinderWidth = 90, viewfinderHeight = 60;
 let lastBirdTime = 0;
-let birdInterval = 10000;
+let birdInterval = 20000;
 let birdIntervalVariation = 500;
 let gameTime = 0;
 let treePositions = [];
@@ -5300,8 +5328,16 @@ function handleKeyDown(e) {
     // 防止在输入框等元素中触发
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
         return;
-    }
+    }else if (e.key === ' ' || e.key === 'Spacebar') {
+    // 防止空格键滚动页面
+    e.preventDefault();
     
+    // 切换文本浏览器显示/隐藏
+    toggleTextBrowser();
+    
+    // 返回false防止事件冒泡
+    return false;
+}
     if (e.key === 'Escape') {
         closeAlbum();
         closeBirdingRecord();
@@ -5348,6 +5384,8 @@ function handleKeyDown(e) {
             e.preventDefault();
             switchBirdingRecord(1);
         }
+    } else if (e.key === 'b' || e.key === 'B') {
+        debugCoordinateSystem();
     }
 }
 
@@ -6491,7 +6529,7 @@ function generateBird() {
     
     if (birdingModeActive) {
         // 观鸟模式：15~25秒
-        currentInterval = 20000;  // 20秒基础
+        currentInterval = 40000;  // 40秒基础
         currentVariation = 5000;  // ±5秒变化
     }
     // 使用实际时间计算间隔
@@ -12939,6 +12977,304 @@ if (birdingModeActive) {
     drawViewfinder();
     
     requestAnimationFrame(gameLoop);
+}
+
+// ==================== 文本浏览器功能 ====================
+
+let textBrowserVisible = false;
+
+function loadTextOverlayContent() {
+    const contentDiv = document.getElementById('textBrowserContent');
+    if (!contentDiv) return;
+    
+    // 保持空白，不显示任何初始文本
+    contentDiv.textContent = '';
+    
+    // 检查是否有上次保存的内容
+    const savedContent = localStorage.getItem('textBrowserLastContent');
+    if (savedContent) {
+        contentDiv.textContent = savedContent;
+        updateCharacterCount();
+    }
+}
+
+function toggleTextBrowser() {
+    const overlay = document.getElementById('textBrowserOverlay');
+    if (!overlay) return;
+    
+    if (textBrowserVisible) {
+        overlay.style.display = 'none';
+        textBrowserVisible = false;
+    } else {
+        overlay.style.display = 'block';
+        textBrowserVisible = true;
+        
+        // 如果之前有加载过文本，重新显示
+        const savedContent = localStorage.getItem('textBrowserLastContent');
+        if (savedContent) {
+            document.getElementById('textBrowserContent').textContent = savedContent;
+            updateCharacterCount();
+        }
+    }
+}
+
+// 加载文本文件
+function setupTextBrowser() {
+    const loadBtn = document.getElementById('loadTextFile');
+    const fileInput = document.getElementById('textFileInput');
+    const closeBtn = document.getElementById('closeTextBrowser');
+    const textContent = document.getElementById('textBrowserContent');
+    
+    if (!loadBtn || !fileInput || !closeBtn || !textContent) return;
+    
+    // 加载文件按钮点击事件
+    loadBtn.addEventListener('click', function() {
+        fileInput.click();
+    });
+    
+    // 文件选择事件
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        // 检查文件类型
+        const validTypes = ['.txt', '.md', '.html', '.js', '.css', '.json'];
+        const fileName = file.name.toLowerCase();
+        const isValid = validTypes.some(type => fileName.endsWith(type));
+        
+        if (!isValid) {
+            alert('不支持的文件类型。请选择文本文件(.txt, .md, .html, .js, .css, .json)');
+            return;
+        }
+        
+        // 读取文件
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const content = event.target.result;
+            
+            // 显示文件内容
+            textContent.textContent = content;
+            
+            // 更新文件信息
+            document.getElementById('fileInfo').textContent = 
+                `已加载: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+            
+            // 更新字符数
+            updateCharacterCount();
+            
+            // 保存到本地存储，方便重新打开时显示
+            localStorage.setItem('textBrowserLastContent', content);
+            localStorage.setItem('textBrowserLastFileName', file.name);
+            
+            // 显示成功消息
+            showTextBrowserMessage(`成功加载文件: ${file.name}`);
+        };
+        
+        reader.onerror = function() {
+            showTextBrowserMessage('读取文件失败，请重试');
+        };
+        
+        reader.readAsText(file);
+    });
+    
+    // 关闭按钮事件
+    closeBtn.addEventListener('click', function() {
+        document.getElementById('textBrowserOverlay').style.display = 'none';
+        textBrowserVisible = false;
+    });
+    
+    // ESC键关闭
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && textBrowserVisible) {
+            document.getElementById('textBrowserOverlay').style.display = 'none';
+            textBrowserVisible = false;
+        }
+    });
+    
+    // 检查是否有上次保存的内容
+    const savedContent = localStorage.getItem('textBrowserLastContent');
+    const savedFileName = localStorage.getItem('textBrowserLastFileName');
+    
+    if (savedContent && savedFileName) {
+        document.getElementById('fileInfo').textContent = `上次加载: ${savedFileName}`;
+    }
+}
+
+// 更新字符数
+function updateCharacterCount() {
+    const content = document.getElementById('textBrowserContent').textContent;
+    const charCount = content.length;
+    const lineCount = content.split('\n').length;
+    document.getElementById('characterCount').textContent = 
+        `字符数: ${charCount.toLocaleString()} | 行数: ${lineCount}`;
+}
+
+// 在文本浏览器中显示消息
+function showTextBrowserMessage(message) {
+    const textContent = document.getElementById('textBrowserContent');
+    const originalContent = textContent.textContent;
+    
+    // 创建消息元素
+    const messageDiv = document.createElement('div');
+    messageDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background-color: #4CAF50;
+        color: white;
+        padding: 10px 20px;
+        border-radius: 5px;
+        z-index: 10001;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        animation: fadeInOut 3s ease-in-out;
+    `;
+    
+    // 添加CSS动画
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-20px); }
+            15% { opacity: 1; transform: translateY(0); }
+            85% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    messageDiv.textContent = message;
+    document.getElementById('textBrowserOverlay').appendChild(messageDiv);
+    
+    // 3秒后移除消息
+    setTimeout(() => {
+        if (messageDiv.parentNode) {
+            messageDiv.parentNode.removeChild(messageDiv);
+        }
+    }, 3000);
+}
+
+// 文本拖放功能
+function setupTextDragAndDrop() {
+    const overlay = document.getElementById('textBrowserOverlay');
+    const textContainer = document.getElementById('textContentContainer');
+    
+    if (!overlay || !textContainer) return;
+    
+    // 防止默认拖放行为
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        overlay.addEventListener(eventName, preventDefaults, false);
+        textContainer.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    // 高亮拖放区域
+    ['dragenter', 'dragover'].forEach(eventName => {
+        overlay.addEventListener(eventName, highlight, false);
+        textContainer.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        overlay.addEventListener(eventName, unhighlight, false);
+        textContainer.addEventListener(eventName, unhighlight, false);
+    });
+    
+    function highlight() {
+        textContainer.style.backgroundColor = '#f0f8ff';
+        textContainer.style.border = '3px dashed #4CAF50';
+    }
+    
+    function unhighlight() {
+        textContainer.style.backgroundColor = 'white';
+        textContainer.style.border = 'none';
+    }
+    
+    // 处理文件拖放
+    textContainer.addEventListener('drop', handleDrop, false);
+    
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+            const file = files[0];
+            const validTypes = ['.txt', '.md', '.html', '.js', '.css', '.json'];
+            const fileName = file.name.toLowerCase();
+            const isValid = validTypes.some(type => fileName.endsWith(type));
+            
+            if (!isValid) {
+                showTextBrowserMessage('不支持的文件类型');
+                return;
+            }
+            
+            // 创建FileList对象并触发文件输入
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+            document.getElementById('textFileInput').files = dataTransfer.files;
+            
+            // 触发change事件
+            document.getElementById('textFileInput').dispatchEvent(new Event('change'));
+        }
+    }
+}
+
+// 初始化文本浏览器
+function initTextBrowser() {
+    setupTextBrowser();
+    setupTextDragAndDrop();
+    
+    // 添加文本浏览器样式
+    const style = document.createElement('style');
+    style.textContent = `
+        #textContentContainer {
+            scrollbar-width: thin;
+            scrollbar-color: #ccc #f5f5f5;
+        }
+        
+        #textContentContainer::-webkit-scrollbar {
+            width: 10px;
+        }
+        
+        #textContentContainer::-webkit-scrollbar-track {
+            background: #f5f5f5;
+        }
+        
+        #textContentContainer::-webkit-scrollbar-thumb {
+            background-color: #ccc;
+            border-radius: 5px;
+        }
+        
+        #textContentContainer::-webkit-scrollbar-thumb:hover {
+            background-color: #aaa;
+        }
+        
+        #textBrowserContent {
+            font-family: 'Courier New', monospace;
+            tab-size: 4;
+        }
+        
+        #loadTextFile:hover {
+            background-color: #45a049 !important;
+            transform: scale(1.05);
+            transition: all 0.2s;
+        }
+        
+        #closeTextBrowser:hover {
+            background-color: #d32f2f !important;
+            transform: scale(1.05);
+            transition: all 0.2s;
+        }
+    `;
+    document.head.appendChild(style);
+}
+
+// 在页面加载完成后初始化文本浏览器
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initTextBrowser);
+} else {
+    initTextBrowser();
 }
 
 window.onload = init; </script></body></html>
