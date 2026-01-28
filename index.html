@@ -5423,6 +5423,9 @@ function handleKeyDown(e) {
             e.preventDefault();
             switchBirdingRecord(1);
         }
+       } else if (e.key === 'b' || e.key === 'B') {
+        debugCoordinateSystem();
+    }
 }
 
 function skipToNight() {
