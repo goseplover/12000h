@@ -369,12 +369,47 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    padding: 20px;
+    box-sizing: border-box;
 }
 
 #albumTitle {
-    color: white;
-    margin-bottom: 10px;
-    font-size: 24px;
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    padding: 0 20px;
+    text-align: center;
+}
+
+#albumTitle:hover #editAlbumIdBtn {
+    color: #FFD700;
+}
+
+#albumTitleText {
+    transition: color 0.3s;
+}
+
+#albumTitle:hover #albumTitleText {
+    color: #FFD700;
+}
+
+#editAlbumIdBtn {
+    font-size: 14px;
+    color: #87CEEB;
+    cursor: pointer;
+    text-decoration: underline;
+    white-space: nowrap;
+    transition: color 0.3s;
+    opacity: 0.8;
+}
+
+#editAlbumIdBtn:hover {
+    color: #FFD700;
+    opacity: 1;
 }
 
 #albumPromotion {
@@ -1901,11 +1936,16 @@ body {
         <div id="captureAlert"></div>
         <div id="creator">正在加载创作者信息...</div>
         <div id="albumModal">
-            <h2 id="albumTitle">我的相册 - 一万两千鸻</h2>
-            <div id="albumPhotos"></div>
-            <div id="albumStats"></div>
-            <button id="closeAlbum" onclick="closeAlbum()">×</button>
-        </div>
+    <h2 id="albumTitle" style="cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <span id="albumTitleText">我的相册 - 一万两千鸻制作</span>
+        <span id="editAlbumIdBtn" style="font-size: 14px; color: #87CEEB; cursor: pointer; text-decoration: underline; white-space: nowrap;">
+            点击修改ID
+        </span>
+    </h2>
+    <div id="albumPhotos"></div>
+    <div id="albumStats"></div>
+    <button id="closeAlbum" onclick="closeAlbum()">×</button>
+</div>
         <div id="birdingRecordModal" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.95); z-index: 400; display: none; color: white; font-family: 'SimSun', monospace; overflow-y: auto; white-space: pre-wrap;">
             <div style="position: fixed; top: 0; left: 0; right: 0; background: rgba(0, 0, 0, 0.9); border-bottom: 2px solid #FFD700; padding: 12px 20px; z-index: 10; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);">
                 <div style="font-size: 20px; font-weight: bold; color: #FFD700;">📖 观鸟记录</div>
@@ -1942,6 +1982,698 @@ window.addEventListener('orientationchange', () => {
 let fullscreenLongPressTimer = null;
 let isFullscreen = false;
 const LONG_PRESS_DURATION = 800; // 长按800毫秒触发全屏
+
+// 成就系统（修改版本）
+const ACHIEVEMENTS = {
+    // 鸟类收集成就（同一系列，只显示最高级）
+    BIRD_COLLECT_10: { 
+        name: "初识鸟类", 
+        desc: "在观鸟模式下观察到10种鸟类", 
+        threshold: 10, 
+        type: "collect",
+        series: "bird_collect",
+        level: 1
+    },
+    BIRD_COLLECT_20: { 
+        name: "鸟类爱好者", 
+        desc: "在观鸟模式下观察到20种鸟类", 
+        threshold: 20, 
+        type: "collect",
+        series: "bird_collect",
+        level: 2
+    },
+    BIRD_COLLECT_30: { 
+        name: "鸟类专家", 
+        desc: "在观鸟模式下观察到30种鸟类", 
+        threshold: 30, 
+        type: "collect",
+        series: "bird_collect",
+        level: 3
+    },
+    BIRD_COLLECT_40: { 
+        name: "鸟类大师", 
+        desc: "在观鸟模式下观察到40种鸟类", 
+        threshold: 40, 
+        type: "collect",
+        series: "bird_collect",
+        level: 4
+    },
+    BIRD_COLLECT_50: { 
+        name: "鸟类博士", 
+        desc: "在观鸟模式下观察到50种鸟类", 
+        threshold: 50, 
+        type: "collect",
+        series: "bird_collect",
+        level: 5
+    },
+    
+    // 鸟类拍摄成就
+    BIRD_PHOTO_10: { 
+        name: "拍摄新手", 
+        desc: "拍摄10种不同鸟类", 
+        threshold: 10, 
+        type: "photo",
+        series: "bird_photo",
+        level: 1
+    },
+    BIRD_PHOTO_20: { 
+        name: "拍摄达人", 
+        desc: "拍摄20种不同鸟类", 
+        threshold: 20, 
+        type: "photo",
+        series: "bird_photo",
+        level: 2
+    },
+    BIRD_PHOTO_30: { 
+        name: "拍摄专家", 
+        desc: "拍摄30种不同鸟类", 
+        threshold: 30, 
+        type: "photo",
+        series: "bird_photo",
+        level: 3
+    },
+    BIRD_PHOTO_40: { 
+        name: "拍摄大师", 
+        desc: "拍摄40种不同鸟类", 
+        threshold: 40, 
+        type: "photo",
+        series: "bird_photo",
+        level: 4
+    },
+    BIRD_PHOTO_50: { 
+        name: "拍摄宗师", 
+        desc: "拍摄50种不同鸟类", 
+        threshold: 50, 
+        type: "photo",
+        series: "bird_photo",
+        level: 5
+    },
+    
+    // 观鸟时间成就
+    TIME_1H: { 
+        name: "初窥门径", 
+        desc: "累计观鸟1小时", 
+        threshold: 3600000, 
+        type: "time",
+        series: "total_time",
+        level: 1
+    },
+    TIME_5H: { 
+        name: "持之以恒", 
+        desc: "累计观鸟5小时", 
+        threshold: 18000000, 
+        type: "time",
+        series: "total_time",
+        level: 2
+    },
+    TIME_10H: { 
+        name: "废寝忘食", 
+        desc: "累计观鸟10小时", 
+        threshold: 36000000, 
+        type: "time",
+        series: "total_time",
+        level: 3
+    },
+    
+    // 单次观鸟成就
+    SINGLE_60MIN: { 
+        name: "专注观察", 
+        desc: "单次观鸟60分钟", 
+        threshold: 3600000, 
+        type: "single",
+        series: "single_time",
+        level: 1
+    },
+    
+    // 兽类成就
+    BEAST_BAT: { 
+        name: "夜行生物", 
+        desc: "拍摄蝙蝠", 
+        threshold: 1, 
+        type: "beast",
+        series: "beast",
+        level: 1
+    },
+    
+    // 天文成就（每个独立显示）
+    ASTRO_METEOR: { 
+        name: "流星观测者", 
+        desc: "拍摄流星", 
+        threshold: 1, 
+        type: "astro",
+        series: "astro_meteor",
+        level: 1
+    },
+    ASTRO_UFO: { 
+        name: "UFO目击者", 
+        desc: "拍摄UFO", 
+        threshold: 1, 
+        type: "astro",
+        series: "astro_ufo",
+        level: 1
+    },
+    ASTRO_COMET: { 
+        name: "彗星猎手", 
+        desc: "拍摄彗星", 
+        threshold: 1, 
+        type: "astro",
+        series: "astro_comet",
+        level: 1
+    },
+    
+    // 稀有鸟类成就
+    RARE_BIRD_1: { 
+        name: "稀有鸟类入门", 
+        desc: "拍摄1种稀有鸟类", 
+        threshold: 1, 
+        type: "rare",
+        series: "rare_bird",
+        level: 1
+    },
+    RARE_BIRD_5: { 
+        name: "稀有鸟类收藏家", 
+        desc: "拍摄5种稀有鸟类", 
+        threshold: 5, 
+        type: "rare",
+        series: "rare_bird",
+        level: 2
+    },
+    RARE_BIRD_10: { 
+        name: "稀有鸟类大师", 
+        desc: "拍摄10种稀有鸟类", 
+        threshold: 10, 
+        type: "rare",
+        series: "rare_bird",
+        level: 3
+    }
+};
+
+// 游戏数据存档
+let gameSave = {
+    playerId: "",
+    appearedBirdSpecies: {},  // 已出现鸟种（记录每种鸟的出现次数）
+    capturedBirdSpecies: {},  // 已拍摄鸟种（记录每种鸟的拍摄次数）
+    totalBirdingTime: 0,      // 累计观鸟时间（毫秒）
+    beastPhotos: {},          // 兽类照片（蝙蝠等）
+    astroPhotos: {},          // 天文照片
+    rareBirdPhotos: {},       // 稀有鸟类照片
+    achievements: {},         // 已获得成就 {id: {achieved: true, timestamp: 1234567890, title: "成就头衔"}}
+    lastAchievementTime: 0,   // 上次获得成就时间
+    gameStartTime: Date.now()
+};
+
+// 稀有鸟类列表（从BIRD_TYPES中提取）
+const RARE_BIRD_TYPES = ['KENTISH_PLOVER', 'MINIVET', 'GOLDCREST', 'OWL', 'LITTLEGREBE', 
+                         'LONGTAILED_FINCH', 'ROBIN', 'RED_HEADED', 'PEREGRINE', 'KINGFISHER', 
+                         'BLUEFISHER', 'EAGLE_OWL', 'SHORT_EARED_OWL'];
+
+function initSaveData() {
+    if (typeof Storage !== 'undefined') {
+        const saved = localStorage.getItem('birding_simulator_save');
+        if (saved) {
+            try {
+                gameSave = JSON.parse(saved);
+                
+                // 确保存档数据格式正确
+                if (!gameSave.appearedBirdSpecies) gameSave.appearedBirdSpecies = {};
+                if (!gameSave.capturedBirdSpecies) gameSave.capturedBirdSpecies = {};
+                if (!gameSave.totalBirdingTime) gameSave.totalBirdingTime = 0;
+                if (!gameSave.beastPhotos) gameSave.beastPhotos = {};
+                if (!gameSave.astroPhotos) gameSave.astroPhotos = {};
+                if (!gameSave.rareBirdPhotos) gameSave.rareBirdPhotos = {};
+                if (!gameSave.achievements) gameSave.achievements = {};
+                if (!gameSave.lastAchievementTime) gameSave.lastAchievementTime = 0;
+                if (!gameSave.gameStartTime) gameSave.gameStartTime = Date.now();
+                if (!gameSave.playerId) gameSave.playerId = "";
+                
+                // 清理存档中的重复数据
+                cleanupSaveData();
+                
+                console.log("存档加载成功，已出现鸟种:", Object.keys(gameSave.appearedBirdSpecies).length, 
+                            "已拍摄鸟种:", Object.keys(gameSave.capturedBirdSpecies).length);
+            } catch (e) {
+                console.log("存档损坏，创建新存档:", e);
+                createNewSave();
+            }
+        } else {
+            createNewSave();
+        }
+    } else {
+        console.log("浏览器不支持本地存储，使用临时存档");
+        createNewSave();
+    }
+}
+
+// 清理存档中的重复数据
+function cleanupSaveData() {
+    console.log("清理存档数据...");
+    
+    // 确保鸟种数据是对象格式（不是数组）
+    if (Array.isArray(gameSave.appearedBirdSpecies)) {
+        const temp = {};
+        gameSave.appearedBirdSpecies.forEach(birdName => {
+            temp[birdName] = 1;
+        });
+        gameSave.appearedBirdSpecies = temp;
+    }
+    
+    if (Array.isArray(gameSave.capturedBirdSpecies)) {
+        const temp = {};
+        gameSave.capturedBirdSpecies.forEach(birdName => {
+            temp[birdName] = 1;
+        });
+        gameSave.capturedBirdSpecies = temp;
+    }
+    
+    // 确保每个鸟种的值是数字（出现次数/拍摄次数）
+    Object.keys(gameSave.appearedBirdSpecies).forEach(birdName => {
+        if (typeof gameSave.appearedBirdSpecies[birdName] !== 'number') {
+            gameSave.appearedBirdSpecies[birdName] = 1;
+        }
+    });
+    
+    Object.keys(gameSave.capturedBirdSpecies).forEach(birdName => {
+        if (typeof gameSave.capturedBirdSpecies[birdName] !== 'number') {
+            gameSave.capturedBirdSpecies[birdName] = 1;
+        }
+    });
+    
+    // 移除成就中的空值
+    Object.keys(gameSave.achievements).forEach(key => {
+        if (!gameSave.achievements[key] || !gameSave.achievements[key].achieved) {
+            delete gameSave.achievements[key];
+        }
+    });
+    
+    // 确保其他数据是对象格式
+    if (!gameSave.beastPhotos || typeof gameSave.beastPhotos !== 'object') {
+        gameSave.beastPhotos = {};
+    }
+    
+    if (!gameSave.astroPhotos || typeof gameSave.astroPhotos !== 'object') {
+        gameSave.astroPhotos = {};
+    }
+    
+    if (!gameSave.rareBirdPhotos || typeof gameSave.rareBirdPhotos !== 'object') {
+        gameSave.rareBirdPhotos = {};
+    }
+    
+    console.log("存档清理完成");
+    saveGameData();
+}
+
+// 创建新存档
+function createNewSave() {
+    gameSave = {
+        playerId: "",
+        appearedBirdSpecies: {},
+        capturedBirdSpecies: {},
+        totalBirdingTime: 0,
+        beastPhotos: {},
+        astroPhotos: {},
+        rareBirdPhotos: {},
+        achievements: {},
+        lastAchievementTime: 0,
+        gameStartTime: Date.now()
+    };
+    saveGameData();
+}
+
+// 保存游戏数据
+function saveGameData() {
+    if (typeof Storage !== 'undefined') {
+        localStorage.setItem('birding_simulator_save', JSON.stringify(gameSave));
+    }
+}
+
+function updateAlbumTitle() {
+    const albumTitleText = document.getElementById('albumTitleText');
+    if (albumTitleText) {
+        if (gameSave.playerId) {
+            albumTitleText.textContent = `${gameSave.playerId}的相册 - 一万两千鸻制作`;
+        } else {
+            albumTitleText.textContent = '我的相册 - 一万两千鸻制作';
+        }
+    }
+}
+function editAlbumId() {
+    if (playerIdInput) return; // 避免重复弹出
+    
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.9);
+        z-index: 10001;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    `;
+    
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        padding: 30px;
+        border-radius: 15px;
+        border: 3px solid #FFD700;
+        width: 450px;
+        max-width: 90%;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    `;
+    
+    const currentId = gameSave.playerId || '未设置';
+    
+    modal.innerHTML = `
+        <div style="color: #FFD700; font-size: 24px; font-weight: bold; text-align: center; margin-bottom: 15px;">
+            修改观鸟者ID
+        </div>
+        <div style="color: #87CEEB; font-size: 14px; text-align: center; margin-bottom: 10px;">
+            当前ID: <span style="color: #FFD700;">${currentId}</span>
+        </div>
+        <div style="color: #90EE90; font-size: 14px; text-align: center; margin-bottom: 20px;">
+            此ID将显示在您的相册和观鸟记录截图中
+        </div>
+        <input type="text" id="editPlayerIdInput" 
+               style="width: 100%; padding: 12px; font-size: 16px; 
+                      background: rgba(255,255,255,0.1); 
+                      border: 2px solid #87CEEB; 
+                      border-radius: 8px; 
+                      color: white; 
+                      margin-bottom: 20px;"
+               placeholder="请输入新的观鸟者ID" 
+               value="${gameSave.playerId}"
+               maxlength="20">
+        <div style="display: flex; gap: 15px; justify-content: center;">
+            <button id="confirmEditIdBtn" 
+                    style="padding: 10px 30px; background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); 
+                           border: none; border-radius: 25px; color: #000; font-weight: bold; 
+                           cursor: pointer; font-size: 16px; flex: 1;">
+                确认修改
+            </button>
+            <button id="cancelEditIdBtn" 
+                    style="padding: 10px 30px; background: rgba(255,255,255,0.1); 
+                           border: 2px solid #87CEEB; border-radius: 25px; color: white; 
+                           cursor: pointer; font-size: 16px; flex: 1;">
+                取消
+            </button>
+        </div>
+        <div style="margin-top: 15px; text-align: center;">
+            <button id="clearIdBtn" 
+                    style="padding: 8px 20px; background: rgba(255, 69, 0, 0.2); 
+                           border: 1px solid #FF4500; border-radius: 15px; color: #FFA500; 
+                           cursor: pointer; font-size: 14px;">
+                清空ID
+            </button>
+        </div>
+    `;
+    
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    
+    const input = modal.querySelector('#editPlayerIdInput');
+    playerIdInput = input;
+    
+    input.focus();
+    input.select();
+    
+    modal.querySelector('#confirmEditIdBtn').onclick = function() {
+        const id = input.value.trim();
+        if (id) {
+            gameSave.playerId = id;
+            saveGameData();
+            
+            // 更新相册标题
+            updateAlbumTitle();
+            
+            // 如果相册是打开的，也更新相册中的成就显示
+            if (document.getElementById('albumModal').style.display === 'flex') {
+                updateAlbumStats();
+            }
+            
+            document.body.removeChild(overlay);
+            playerIdInput = null;
+            
+            // 显示修改成功提示
+            showSpecialAlert(`ID已修改为: ${id}`);
+        } else {
+            input.style.borderColor = '#FF0000';
+            setTimeout(() => {
+                input.style.borderColor = '#87CEEB';
+                input.focus();
+            }, 500);
+        }
+    };
+    
+    modal.querySelector('#cancelEditIdBtn').onclick = function() {
+        document.body.removeChild(overlay);
+        playerIdInput = null;
+    };
+    
+    modal.querySelector('#clearIdBtn').onclick = function() {
+        if (confirm("确定要清空ID吗？这将使您的截图标题恢复为默认的'观鸟记录'")) {
+            gameSave.playerId = "";
+            saveGameData();
+            
+            // 更新相册标题
+            updateAlbumTitle();
+            
+            // 如果相册是打开的，也更新相册中的成就显示
+            if (document.getElementById('albumModal').style.display === 'flex') {
+                updateAlbumStats();
+            }
+            
+            document.body.removeChild(overlay);
+            playerIdInput = null;
+            
+            // 显示提示
+            showSpecialAlert("ID已清空");
+        }
+    };
+    
+    // 按回车确认
+    input.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            modal.querySelector('#confirmEditIdBtn').click();
+        }
+    });
+}
+
+// 更新出现鸟种（不重复计数）
+function updateAppearedBird(birdName) {
+    // 确保存档中有该鸟种记录
+    if (!gameSave.appearedBirdSpecies[birdName]) {
+        gameSave.appearedBirdSpecies[birdName] = 1;
+    } else {
+        // 如果已经存在，只增加出现次数，不重复计数种类
+        gameSave.appearedBirdSpecies[birdName]++;
+    }
+    
+    // 更新成就
+    checkCollectAchievements();
+    saveGameData();
+}
+
+// 更新拍摄鸟种（不重复计数）
+function updateCapturedBird(birdName) {
+    // 确保存档中有该鸟种记录
+    if (!gameSave.capturedBirdSpecies[birdName]) {
+        gameSave.capturedBirdSpecies[birdName] = 1;
+    } else {
+        // 如果已经存在，只增加拍摄次数，不重复计数种类
+        gameSave.capturedBirdSpecies[birdName]++;
+    }
+    
+    // 检查拍摄类成就
+    checkPhotoAchievements();
+    
+    // 检查是否是稀有鸟类
+    const birdKey = Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName);
+    if (birdKey && RARE_BIRD_TYPES.includes(birdKey)) {
+        if (!gameSave.rareBirdPhotos[birdName]) {
+            gameSave.rareBirdPhotos[birdName] = true;
+            checkRareBirdAchievements();
+        }
+    }
+    
+    saveGameData();
+}
+
+// 更新累计观鸟时间
+function updateTotalBirdingTime(timeMs) {
+    gameSave.totalBirdingTime += timeMs;
+    checkTimeAchievements();
+    saveGameData();
+}
+
+// 更新兽类照片（蝙蝠）
+function updateBeastPhoto(beastName) {
+    if (!gameSave.beastPhotos[beastName]) {
+        gameSave.beastPhotos[beastName] = true;
+        checkBeastAchievements();
+        saveGameData();
+    }
+}
+
+// 更新天文照片
+function updateAstroPhoto(astroName) {
+    if (!gameSave.astroPhotos[astroName]) {
+        gameSave.astroPhotos[astroName] = true;
+        checkAstroAchievements();
+        saveGameData();
+    }
+}
+
+// 检查收集类成就
+function checkCollectAchievements() {
+    const observedCount = Object.keys(gameSave.appearedBirdSpecies).length;
+    
+    const collectAchievements = Object.keys(ACHIEVEMENTS).filter(key => 
+        ACHIEVEMENTS[key].type === 'collect'
+    );
+    
+    collectAchievements.forEach(key => {
+        if (!gameSave.achievements[key] && observedCount >= ACHIEVEMENTS[key].threshold) {
+            unlockAchievement(key);
+        }
+    });
+}
+
+// 检查拍摄类成就
+function checkPhotoAchievements() {
+    const capturedCount = Object.keys(gameSave.capturedBirdSpecies).length;
+    
+    const photoAchievements = Object.keys(ACHIEVEMENTS).filter(key => 
+        ACHIEVEMENTS[key].type === 'photo'
+    );
+    
+    photoAchievements.forEach(key => {
+        if (!gameSave.achievements[key] && capturedCount >= ACHIEVEMENTS[key].threshold) {
+            unlockAchievement(key);
+        }
+    });
+}
+
+// 检查时间类成就
+function checkTimeAchievements() {
+    const timeAchievements = Object.keys(ACHIEVEMENTS).filter(key => 
+        ACHIEVEMENTS[key].type === 'time'
+    );
+    
+    timeAchievements.forEach(key => {
+        if (!gameSave.achievements[key] && gameSave.totalBirdingTime >= ACHIEVEMENTS[key].threshold) {
+            unlockAchievement(key);
+        }
+    });
+}
+
+// 检查单次观鸟成就
+function checkSingleBirdingAchievement(duration) {
+    if (!gameSave.achievements.SINGLE_60MIN && duration >= ACHIEVEMENTS.SINGLE_60MIN.threshold) {
+        unlockAchievement('SINGLE_60MIN');
+    }
+}
+
+// 检查兽类成就
+function checkBeastAchievements() {
+    if (Object.keys(gameSave.beastPhotos).length > 0 && !gameSave.achievements.BEAST_BAT) {
+        unlockAchievement('BEAST_BAT');
+    }
+}
+
+// 检查天文成就
+function checkAstroAchievements() {
+    const astroTypes = Object.keys(gameSave.astroPhotos);
+    
+    if (astroTypes.includes('流星') && !gameSave.achievements.ASTRO_METEOR) {
+        unlockAchievement('ASTRO_METEOR');
+    }
+    if (astroTypes.includes('UFO') && !gameSave.achievements.ASTRO_UFO) {
+        unlockAchievement('ASTRO_UFO');
+    }
+    if (astroTypes.includes('彗星') && !gameSave.achievements.ASTRO_COMET) {
+        unlockAchievement('ASTRO_COMET');
+    }
+}
+
+// 检查稀有鸟类成就
+function checkRareBirdAchievements() {
+    const rareCount = Object.keys(gameSave.rareBirdPhotos).length;
+    
+    const rareAchievements = Object.keys(ACHIEVEMENTS).filter(key => 
+        ACHIEVEMENTS[key].type === 'rare'
+    );
+    
+    rareAchievements.forEach(key => {
+        if (!gameSave.achievements[key] && rareCount >= ACHIEVEMENTS[key].threshold) {
+            unlockAchievement(key);
+        }
+    });
+}
+
+// 解锁成就时，检查是否已经有更高级的成就
+function unlockAchievement(achievementId) {
+    const achievement = ACHIEVEMENTS[achievementId];
+    if (!achievement) return;
+    
+    // 检查是否已经解锁了同一系列更高级的成就
+    const sameSeries = Object.keys(gameSave.achievements)
+        .filter(key => ACHIEVEMENTS[key] && ACHIEVEMENTS[key].series === achievement.series)
+        .map(key => ({id: key, level: ACHIEVEMENTS[key].level}))
+        .sort((a, b) => b.level - a.level);
+    
+    // 如果已有更高级成就，仍然解锁当前成就，但不删除低级成就
+    // 这样存档中会保留所有解锁的成就
+    
+    // 解锁新成就
+    gameSave.achievements[achievementId] = {
+        achieved: true,
+        timestamp: Date.now(),
+        title: achievement.name
+    };
+    
+    gameSave.lastAchievementTime = Date.now();
+    
+    // 显示成就解锁提示
+    showAchievementAlert(achievement.name);
+    
+    saveGameData();
+    updateAlbumStats();
+}
+
+// 显示成就解锁提示（简化版）
+function showAchievementAlert(title, description) {
+    const alert = document.createElement('div');
+    alert.style.cssText = `
+        position: fixed;
+        top: 20%;
+        left: 50%;
+        transform: translateX(-50%);
+        background: linear-gradient(135deg, #8B4513 0%, #A0522D 100%);
+        color: #FFD700;
+        padding: 12px 20px;
+        border-radius: 8px;
+        border: 2px solid #FFD700;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        z-index: 9999;
+        font-family: 'SimSun', sans-serif;
+        text-align: center;
+        animation: slideDown 0.5s ease-out;
+    `;
+    
+    alert.innerHTML = `
+        <div style="font-size: 18px; font-weight: bold;">🏆 ${title}</div>
+    `;
+    
+    document.body.appendChild(alert);
+    
+    setTimeout(() => {
+        alert.style.animation = 'slideUp 0.5s ease-in forwards';
+        setTimeout(() => document.body.removeChild(alert), 500);
+    }, 2000);
+}
 
     // 营地相关变量
     let isCampfireExtinguished = false; // 篝火是否已熄灭
@@ -2058,7 +2790,7 @@ const NIGHT_OBJECTS = {
     probability: 0.02,
     duration: 2000,
     size: 0.1,
-    speed: 5.0,
+    speed: 0.5,
     color: "#FFFFFF",
     trailLength: 100,
     trailColor: "rgba(255, 255, 200, 0.7)",
@@ -2850,7 +3582,7 @@ let mouseX = GAME_WIDTH / 2, mouseY = GAME_HEIGHT / 2;
 let viewfinderVisible = false;
 let viewfinderWidth = 90, viewfinderHeight = 60;
 let lastBirdTime = 0;
-let birdInterval = 15000;
+let birdInterval = 15001;
 let birdIntervalVariation = 500;
 let gameTime = 0;
 let treePositions = [];
@@ -2908,9 +3640,9 @@ let normalModeTimeState = { isDaytime: true, dayNightTimer: 0, moonPhaseTimer: 0
 let dayModeTimeState = 0;
 let nightModeTimeState = 0;
 let nightModeMoonPhaseTimer = 0;
-
 let isGoldenFilterActive = false;
 
+let playerIdInput = null;
 let birdingRecords = [];
 let lastBirdingRecordTime = 0;
 let currentBirdingRecord = null;
@@ -3967,146 +4699,171 @@ function loadCreatorInfo() {
 
 
 function init() {
-  canvas = document.getElementById('gameCanvas');
-  ctx = canvas.getContext('2d');
-  poopCanvas = document.getElementById('poopCanvas');
-  poopCtx = poopCanvas.getContext('2d');
-  
-  loadCreatorInfo();
-  
-  screenshotCanvas = document.getElementById('screenshotCanvas');
-  screenshotCtx = screenshotCanvas.getContext('2d');
-  screenshotCanvas.style.position = 'absolute';
-  screenshotCanvas.style.left = '-9999px';
-  screenshotCanvas.style.top = '-9999px';
-  screenshotCanvas.style.width = '300px';
-  screenshotCanvas.style.height = '450px';
-  
-  resizeCanvas();
-  window.addEventListener('resize', resizeCanvas);
-  
-  initFullscreenTouch();
-  initStars();
-  initTrees();
-  initReeds();
-  initFixedLeaves();
-  initTextStats();
-  initFruits();
-  initWallAndHole();
-  initModeToggleButtons();
-  initLensToggleButtons();
-  initGyro();
-  
-  window.addEventListener('orientationchange', function() {
-    setTimeout(updateCampsiteVisibility, 100);
-  });
-  
-  const campsite = document.getElementById('campsite');
-  if (campsite) {
-    campsite.style.pointerEvents = 'none';
-    campsite.style.position = 'absolute';
-    campsite.style.top = 'auto';
-    campsite.style.bottom = 'auto';
-    campsite.style.left = 'auto';
-    campsite.style.transform = 'none';
-    campsite.style.display = 'none';
-    console.log("营地初始化完成，指针事件已禁用");
-  }
-  
-  const flame = document.getElementById('campfire-flame');
-  if (flame) {
-    flame.onclick = function(e) {
-      e.stopPropagation();
-      extinguishCampfire();
-    };
-    flame.style.cursor = 'pointer';
-    console.log("篝火点击事件绑定完成");
-  }
-  
-  updateCampsiteVisibility();
-  
-  const birdingModeButton = document.getElementById('birdingModeToggle');
-  birdingModeButton.addEventListener('click', toggleBirdingMode);
-  
-  const helpButton = document.getElementById('helpButton');
-  if (helpButton) {
-    helpButton.addEventListener('click', openHelpModal);
-  }
-  
-  lastRareBirdTime = gameTime;
-  
-  canvas.addEventListener('mousemove', handleMouseMove);
-  canvas.addEventListener('mousedown', handleMouseClick);
-  document.addEventListener('keydown', handleKeyDown);
-  
-  lastFrameTime = performance.now();
-  
-  const goldenFilter = document.getElementById('goldenFilter');
-  if (!gyroModeActive) {
-    goldenFilter.style.backgroundColor = 'rgba(255, 215, 0, 0.1)';
-  }
-  
-  addToggleAreaClickListeners();
-  updateTimeIndicator();
-  initBirdingRecords();
-  updateBirdingModeButton();
-  updateBirdingRecordIcons();
-  
-  requestAnimationFrame(gameLoop);
-  
-  const screenshotButton = document.getElementById('screenshotButton');
-  if (screenshotButton) {
-    const newScreenshotButton = screenshotButton.cloneNode(true);
-    screenshotButton.parentNode.replaceChild(newScreenshotButton, screenshotButton);
-    const updatedScreenshotButton = document.getElementById('screenshotButton');
-    updatedScreenshotButton.onclick = function(e) {
-      e.stopPropagation();
-      captureBirdingRecord();
-    };
-  }
-  
-  window.addEventListener('orientationchange', function() {
-    setTimeout(function() {
-      if (gameMode === 'normal' && !isDaytime) {
-        updateCampfirePosition();
-        const flame = document.getElementById('campfire-flame');
-        if (flame && !isCampfireExtinguished) {
-          flame.onclick = function(e) {
-            e.stopPropagation();
-            extinguishCampfire();
-          };
-          flame.style.pointerEvents = 'auto';
-          flame.style.cursor = 'pointer';
-        }
-      }
-    }, 300);
-  });
-  
-  window.addEventListener('resize', function() {
-    clearTimeout(window.campfireResizeTimer);
-    window.campfireResizeTimer = setTimeout(function() {
-      if (gameMode === 'normal' && !isDaytime) {
-        updateCampfirePosition();
-      }
-    }, 250);
-  });
-  
-  setTimeout(() => {
-    updateUIForOrientation();
-    const cameraButton = document.getElementById('cameraButton');
-    if (!gyroModeActive && cameraButton) {
-      cameraButton.style.display = 'none';
-    }
-    if (gameMode === 'normal' && !isDaytime) {
-      updateCampfirePosition();
+    canvas = document.getElementById('gameCanvas');
+    ctx = canvas.getContext('2d');
+    poopCanvas = document.getElementById('poopCanvas');
+    poopCtx = poopCanvas.getContext('2d');
+    
+    // 加载创作者信息
+    loadCreatorInfo();
+    
+    // 初始化截图画布
+    screenshotCanvas = document.getElementById('screenshotCanvas');
+    screenshotCtx = screenshotCanvas.getContext('2d');
+    screenshotCanvas.style.position = 'absolute';
+    screenshotCanvas.style.left = '-9999px';
+    screenshotCanvas.style.top = '-9999px';
+    screenshotCanvas.style.width = '300px';
+    screenshotCanvas.style.height = '450px';
+    
+    // 加载存档（使用整合后的版本）
+    initSaveData();
+    
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    
+    initFullscreenTouch();
+    initStars();
+    initTrees();
+    initReeds();
+    initFixedLeaves();
+    initFruits();
+    initWallAndHole();
+    initModeToggleButtons();
+    initLensToggleButtons();
+    initGyro();
+    
+    window.addEventListener('orientationchange', function() {
+        setTimeout(updateCampsiteVisibility, 100);
+    });
+    
+    // 营地初始化
+    const campsite = document.getElementById('campsite');
+    if (campsite) {
+        campsite.style.pointerEvents = 'none';
+        campsite.style.position = 'absolute';
+        campsite.style.top = 'auto';
+        campsite.style.bottom = 'auto';
+        campsite.style.left = 'auto';
+        campsite.style.transform = 'none';
+        campsite.style.display = 'none';
     }
     
-    // 确保枯树已经初始化
-    if (!isDeadTreeInitialized) {
-      console.log("确保枯树初始化...");
-      initDeadTree();
+    const flame = document.getElementById('campfire-flame');
+    if (flame) {
+        flame.onclick = function(e) {
+            e.stopPropagation();
+            extinguishCampfire();
+        };
+        flame.style.cursor = 'pointer';
     }
-  }, 500);
+    
+    updateCampsiteVisibility();
+    
+    // 观鸟模式按钮
+    const birdingModeButton = document.getElementById('birdingModeToggle');
+    birdingModeButton.addEventListener('click', toggleBirdingMode);
+    
+    // 帮助按钮
+    const helpButton = document.getElementById('helpButton');
+    if (helpButton) {
+        helpButton.addEventListener('click', openHelpModal);
+    }
+    
+    lastRareBirdTime = gameTime;
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mousedown', handleMouseClick);
+    document.addEventListener('keydown', handleKeyDown);
+    lastFrameTime = performance.now();
+    
+    const goldenFilter = document.getElementById('goldenFilter');
+    if (!gyroModeActive) {
+        goldenFilter.style.backgroundColor = 'rgba(255, 215, 0, 0.1)';
+    }
+    
+    addToggleAreaClickListeners();
+    
+    // 初始化文本统计（使用存档数据）
+    initTextStats();
+    
+    updateTimeIndicator();
+    initBirdingRecords();
+    updateBirdingModeButton();
+    updateBirdingRecordIcons();
+    
+    requestAnimationFrame(gameLoop);
+    
+    // 截图按钮事件
+    const screenshotButton = document.getElementById('screenshotButton');
+    if (screenshotButton) {
+        screenshotButton.onclick = function(e) {
+            e.stopPropagation();
+            captureBirdingRecord();
+        };
+    }
+    
+    // 屏幕方向改变时的处理
+    window.addEventListener('orientationchange', function() {
+        setTimeout(function() {
+            if (gameMode === 'normal' && !isDaytime) {
+                updateCampfirePosition();
+                const flame = document.getElementById('campfire-flame');
+                if (flame && !isCampfireExtinguished) {
+                    flame.onclick = function(e) {
+                        e.stopPropagation();
+                        extinguishCampfire();
+                    };
+                    flame.style.pointerEvents = 'auto';
+                    flame.style.cursor = 'pointer';
+                }
+            }
+        }, 300);
+    });
+    
+    window.addEventListener('resize', function() {
+        clearTimeout(window.campfireResizeTimer);
+        window.campfireResizeTimer = setTimeout(function() {
+            if (gameMode === 'normal' && !isDaytime) {
+                updateCampfirePosition();
+            }
+        }, 250);
+    });
+    
+    // 延迟初始化
+    setTimeout(() => {
+        updateUIForOrientation();
+        const cameraButton = document.getElementById('cameraButton');
+        if (!gyroModeActive && cameraButton) {
+            cameraButton.style.display = 'none';
+        }
+        if (gameMode === 'normal' && !isDaytime) {
+            updateCampfirePosition();
+        }
+        if (!isDeadTreeInitialized) {
+            initDeadTree();
+        }
+        
+        // 更新相册标题
+        updateAlbumTitle();
+        
+        // 为编辑按钮添加点击事件
+        const editBtn = document.getElementById('editAlbumIdBtn');
+        if (editBtn) {
+            editBtn.addEventListener('click', function(e) {
+                e.stopPropagation(); // 防止触发标题点击事件
+                editAlbumId();
+            });
+        }
+        
+        // 为相册标题添加点击事件
+        const albumTitle = document.getElementById('albumTitle');
+        if (albumTitle) {
+            albumTitle.addEventListener('click', handleAlbumTitleClick);
+        }
+    }, 500);
+    
+    // 每30秒自动保存
+    setInterval(saveGameData, 30000);
 }
 
 // 如果需要重新生成枯树（例如在游戏重新开始时）
@@ -4750,7 +5507,12 @@ function toggleBirdingMode() {
         const recordDuration = birdingRecordRealDuration || (birdingModeEndTime - birdingModeStartTime);
         const record = createBirdingRecord(recordDuration);
         updateBirdingModeButton();
+                // 更新累计观鸟时间
+        updateTotalBirdingTime(recordDuration);
         
+        // 检查单次观鸟成就
+        checkSingleBirdingAchievement(recordDuration);
+
         if (record) {
             const elapsedMinutes = Math.floor(record.birdingModeDuration / 60000);
             const elapsedSeconds = Math.floor((record.birdingModeDuration % 60000) / 1000);
@@ -5094,6 +5856,12 @@ let timeText = `${isDaytime ? "白天" : "黑夜"} ${remainingMinutes.toString()
 function captureBirdingRecord() {
     console.log("开始截图记录...");
     
+    // 检查是否已设置玩家ID，如果没有则先提示输入
+    if (!gameSave.playerId) {
+        promptPlayerId();
+        return;
+    }
+    
     if (!currentBirdingRecord) {
         console.warn("没有当前观鸟记录");
         showSpecialAlert("请先打开观鸟记录！");
@@ -5105,55 +5873,60 @@ function captureBirdingRecord() {
     screenshotButton.style.opacity = '0.5';
     screenshotButton.textContent = "生成中...";
     
-// 临时禁用滑动功能
-  const originalNavigating = isNavigatingRecords;
-  isNavigatingRecords = true;
-  
-  try {
-    if (!gamePaused) {
-      pauseGame();
-    }
+    const originalNavigating = isNavigatingRecords;
+    isNavigatingRecords = true;
+    
+    try {
+        if (!gamePaused) {
+            pauseGame();
+        }
         
         const SCREENSHOT_WIDTH = 300;
         const lineHeight = 22;
         const record = currentBirdingRecord;
         const speciesCount = record.observedSpecies.length;
         
-        // 精确计算所需高度
+        // 计算高度
         const titleHeight = 50;
         const recordInfoHeight = 5 * lineHeight;
         const headerMargin = 35;
         const footerHeight = 30;
-        const speciesListHeight = speciesCount * lineHeight;
+        const achievementAreaHeight = 60;
+        const bottomMargin = 20;
+        const playerIdHeight = 0; // 不再单独显示一行
         
-        // 动态计算总高度（支持多列布局）
-        const baseHeight = titleHeight + recordInfoHeight + headerMargin + footerHeight + 20;
-        const dynamicHeight = baseHeight + Math.min(speciesListHeight, 800); // 限制列表部分高度
+        // 计算物种列表所需高度
+        const itemsPerColumn = 20;
+        const columnCount = Math.ceil(speciesCount / itemsPerColumn);
+        const maxColumns = 3;
+        const actualColumnCount = Math.min(columnCount, maxColumns);
+        const speciesListHeight = Math.min(speciesCount, itemsPerColumn * actualColumnCount) * lineHeight;
         
-        // 设置合理的最大最小高度
+        const baseHeight = titleHeight + recordInfoHeight + headerMargin + footerHeight + 
+                          achievementAreaHeight + bottomMargin + playerIdHeight;
+        const dynamicHeight = baseHeight + speciesListHeight;
+        
+        const MIN_SCREENSHOT_HEIGHT = 1000;
         const MAX_SCREENSHOT_HEIGHT = 2000;
-        const MIN_SCREENSHOT_HEIGHT = 650;
-        
-        const SCREENSHOT_HEIGHT = Math.max(MIN_SCREENSHOT_HEIGHT, 
-                                          Math.min(MAX_SCREENSHOT_HEIGHT, dynamicHeight));
+        const SCREENSHOT_HEIGHT = Math.max(MIN_SCREENSHOT_HEIGHT, Math.min(MAX_SCREENSHOT_HEIGHT, dynamicHeight));
         
         screenshotCanvas.width = SCREENSHOT_WIDTH;
         screenshotCanvas.height = SCREENSHOT_HEIGHT;
-        
         screenshotCtx.clearRect(0, 0, SCREENSHOT_WIDTH, SCREENSHOT_HEIGHT);
         
-        // 绘制背景
+        // 背景渐变
         const gradient = screenshotCtx.createLinearGradient(0, 0, 0, SCREENSHOT_HEIGHT);
         gradient.addColorStop(0, '#16213e');
         gradient.addColorStop(1, '#0f3460');
         screenshotCtx.fillStyle = gradient;
         screenshotCtx.fillRect(0, 0, SCREENSHOT_WIDTH, SCREENSHOT_HEIGHT);
         
-        // 绘制标题
+        // 标题 - 改为"ID的观鸟记录"
         screenshotCtx.fillStyle = '#FFD700';
         screenshotCtx.font = 'bold 24px "AlimamaShuHeiTi-Bold.ttf", Arial, sans-serif';
         screenshotCtx.textAlign = 'center';
-        screenshotCtx.fillText('观鸟记录', SCREENSHOT_WIDTH / 2, 40);
+        const titleText = gameSave.playerId ? `${gameSave.playerId}的观鸟记录` : '观鸟记录';
+        screenshotCtx.fillText(titleText, SCREENSHOT_WIDTH / 2, 40);
         
         screenshotCtx.strokeStyle = '#87CEEB';
         screenshotCtx.lineWidth = 2;
@@ -5162,141 +5935,308 @@ function captureBirdingRecord() {
         screenshotCtx.lineTo(SCREENSHOT_WIDTH - 50, 55);
         screenshotCtx.stroke();
         
-        // 绘制内容
         const startY = 85;
         const availableHeight = SCREENSHOT_HEIGHT - startY - footerHeight - 10;
-        drawRecordInfoSingleColumn(record, startY, lineHeight, SCREENSHOT_WIDTH - 40, availableHeight);
         
-        // 绘制页脚
+        // 绘制记录信息和鸟类列表，传递截图宽度和高度作为参数
+        let contentBottom = drawRecordInfoSingleColumn(
+            record, 
+            startY, 
+            lineHeight, 
+            SCREENSHOT_WIDTH - 40, 
+            availableHeight, 
+            SCREENSHOT_WIDTH, 
+            SCREENSHOT_HEIGHT
+        );
+        
+        // 获取最近成就（同一系列只显示最高级）
+        const recentAchievements = getRecentAchievementsForScreenshot(3);
+        
+        // 在底部绘制成就（红褐色字体）
+        if (recentAchievements.length > 0) {
+            const achievementY = SCREENSHOT_HEIGHT - footerHeight - 25;
+            
+            screenshotCtx.fillStyle = '#8B4513'; // 红褐色
+            screenshotCtx.font = 'bold 16px "AlimamaShuHeiTi-Bold.ttf", Arial, sans-serif';
+            screenshotCtx.textAlign = 'center';
+            
+            // 绘制成就，从下往上排列
+            let currentY = achievementY;
+            for (let i = 0; i < Math.min(recentAchievements.length, 3); i++) {
+                const achievement = recentAchievements[i];
+                screenshotCtx.fillText(achievement.name, SCREENSHOT_WIDTH / 2, currentY);
+                currentY -= lineHeight * 1.2;
+            }
+        }
+        
+        // 底部网址
         screenshotCtx.fillStyle = '#FFD700';
         screenshotCtx.font = 'bold 14px "AlimamaShuHeiTi-Bold.ttf", Arial, sans-serif';
         screenshotCtx.textAlign = 'center';
-        const bottomText = 'https://goseplover.github.io/12000h';
+        const bottomText = 'https://goseplover.github.io/12000h/';
         screenshotCtx.fillText(bottomText, SCREENSHOT_WIDTH / 2, SCREENSHOT_HEIGHT - 15);
         
         currentScreenshotDataURL = screenshotCanvas.toDataURL('image/png');
-    console.log("截图生成完成，数据URL长度:", currentScreenshotDataURL.length);
-    
-    setTimeout(() => {
-      showScreenshotPreview();
-      screenshotButton.disabled = false;
-      screenshotButton.style.opacity = '1';
-      screenshotButton.textContent = "📸 截图记录";
-      isNavigatingRecords = originalNavigating; // 恢复滑动功能
-    }, 100);
-    
-  } catch (error) {
-    console.error("截图绘制过程中出错:", error);
-    showSpecialAlert("截图绘制失败");
-    screenshotButton.disabled = false;
-    screenshotButton.style.opacity = '1';
-    screenshotButton.textContent = "📸 截图记录";
-    isNavigatingRecords = originalNavigating; // 恢复滑动功能
-    resumeGame();
-  }
+        console.log("截图生成完成，数据URL长度:", currentScreenshotDataURL.length);
+        
+        setTimeout(() => {
+            showScreenshotPreview();
+            screenshotButton.disabled = false;
+            screenshotButton.style.opacity = '1';
+            screenshotButton.textContent = "📸 截图记录";
+            isNavigatingRecords = originalNavigating;
+        }, 100);
+        
+    } catch (error) {
+        console.error("截图绘制过程中出错:", error);
+        showSpecialAlert("截图绘制失败");
+        screenshotButton.disabled = false;
+        screenshotButton.style.opacity = '1';
+        screenshotButton.textContent = "📸 截图记录";
+        isNavigatingRecords = originalNavigating;
+        resumeGame();
+    }
 }
 
-function drawRecordInfoSingleColumn(record, startY, lineHeight, columnWidth, maxHeight) {
-  let y = startY;
-  const x = 20;
-  const speciesListStartY = y;
-  
-  screenshotCtx.fillStyle = '#FFFFFF';
-  screenshotCtx.font = '16px "AlimamaShuHeiTi-Bold.ttf", Arial, sans-serif';
-  screenshotCtx.textAlign = 'left';
-  
-  screenshotCtx.fillText(`记录编号: #${record.id}`, x, y);
-  y += lineHeight;
-  
-  const durationText = `观鸟时长: ${Math.floor(record.birdingModeDuration / 60000)}分${Math.floor((record.birdingModeDuration % 60000) / 1000)}秒`;
-  screenshotCtx.fillText(durationText, x, y);
-  y += lineHeight;
-  
-  screenshotCtx.fillText(`时间: ${record.startedAtDaytime ? "白天" : "黑夜"} → ${record.endedAtDaytime ? "白天" : "黑夜"}`, x, y);
-  y += lineHeight;
-  
-  screenshotCtx.fillText(`观察鸟种: ${record.totalObservedSpecies} 种`, x, y);
-  y += lineHeight;
-
-  screenshotCtx.fillText(`拍摄鸟种: ${record.capturedInSession || 0} 种`, x, y);
-  y += lineHeight;
-  
-  if (record.rarestBird) {
-    screenshotCtx.fillStyle = '#FFD700';
-    screenshotCtx.fillText(`最稀有: ${record.rarestBird}`, x, y);
-    screenshotCtx.fillStyle = '#FFFFFF';
-    y += lineHeight;
-  }
-  
-  y += lineHeight;
-  
-  screenshotCtx.fillStyle = '#87CEEB';
-  screenshotCtx.fillText('观察到的鸟种:', x, y);
-  y += lineHeight;
-  
-  screenshotCtx.strokeStyle = '#87CEEB';
-  screenshotCtx.lineWidth = 1;
-  screenshotCtx.beginPath();
-  screenshotCtx.moveTo(x, y - 5);
-  screenshotCtx.lineTo(x + 120, y - 5);
-  screenshotCtx.stroke();
-  
-  y += 5;
-  
-  const sortedSpecies = [...record.observedSpecies].sort();
-  
-  // 每列显示15个鸟种
-  const itemsPerColumn = 15;
-  const columnCount = Math.ceil(sortedSpecies.length / itemsPerColumn);
-  
-  // 计算列宽（假设有3列空间，实际根据列数调整）
-  const maxColumns = 3; // 最大3列
-  const actualColumnCount = Math.min(columnCount, maxColumns);
-  const actualColumnWidth = (screenshotCanvas.width - 40) / actualColumnCount;
-  
-  // 按列优先排列（先竖排，填满一列后再换下一列）
-  for (let col = 0; col < actualColumnCount; col++) {
-    const columnX = x + col * actualColumnWidth;
-    let columnY = y;
+function promptPlayerId() {
+    if (playerIdInput) return;
     
-    for (let row = 0; row < itemsPerColumn; row++) {
-      const index = col * itemsPerColumn + row; // 列优先索引
-      
-      if (index >= sortedSpecies.length) {
-        break;
-      }
-      
-      const birdName = sortedSpecies[index];
-      const birdKey = Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName);
-      const isRare = birdKey && BIRD_TYPES[birdKey].probability < 0.02;
-      const isRarest = birdName === record.rarestBird;
-      
-      if (isRarest) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.8);
+        z-index: 10000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    `;
+    
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        padding: 30px;
+        border-radius: 15px;
+        border: 3px solid #FFD700;
+        width: 400px;
+        max-width: 90%;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    `;
+    
+    modal.innerHTML = `
+        <div style="color: #FFD700; font-size: 24px; font-weight: bold; text-align: center; margin-bottom: 20px;">
+            请输入观鸟者ID
+        </div>
+        <div style="color: #87CEEB; font-size: 14px; text-align: center; margin-bottom: 20px;">
+            此ID将显示在您的观鸟记录截图中<br>
+            （标题将显示为"ID的观鸟记录"）
+        </div>
+        <input type="text" id="playerIdInput" 
+               style="width: 100%; padding: 12px; font-size: 16px; 
+                      background: rgba(255,255,255,0.1); 
+                      border: 2px solid #87CEEB; 
+                      border-radius: 8px; 
+                      color: white; 
+                      margin-bottom: 20px;"
+               placeholder="请输入您的观鸟者ID（将显示在截图标题中）" maxlength="20">
+        <div style="display: flex; gap: 15px; justify-content: center;">
+            <button id="confirmIdBtn" 
+                    style="padding: 10px 30px; background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); 
+                           border: none; border-radius: 25px; color: #000; font-weight: bold; 
+                           cursor: pointer; font-size: 16px;">
+                确认
+            </button>
+            <button id="cancelIdBtn" 
+                    style="padding: 10px 30px; background: rgba(255,255,255,0.1); 
+                           border: 2px solid #87CEEB; border-radius: 25px; color: white; 
+                           cursor: pointer; font-size: 16px;">
+                取消
+            </button>
+        </div>
+    `;
+    
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
+    
+    const input = modal.querySelector('#playerIdInput');
+    playerIdInput = input;
+    
+    input.focus();
+    
+    modal.querySelector('#confirmIdBtn').onclick = function() {
+        const id = input.value.trim();
+        if (id) {
+            gameSave.playerId = id;
+            saveGameData();
+            document.body.removeChild(overlay);
+            playerIdInput = null;
+            // 重新开始截图流程
+            setTimeout(() => captureBirdingRecord(), 100);
+        } else {
+            input.style.borderColor = '#FF0000';
+            setTimeout(() => {
+                input.style.borderColor = '#87CEEB';
+                input.focus();
+            }, 500);
+        }
+    };
+    
+    modal.querySelector('#cancelIdBtn').onclick = function() {
+        document.body.removeChild(overlay);
+        playerIdInput = null;
+    };
+    
+    // 按回车确认
+    input.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            modal.querySelector('#confirmIdBtn').click();
+        }
+    });
+}
+
+function drawRecordInfoSingleColumn(record, startY, lineHeight, columnWidth, maxHeight, screenshotWidth, screenshotHeight) {
+    let y = startY;
+    const x = 20;
+    
+    // 删除之前的"观鸟者: ID"行
+    
+    // 记录基本信息
+    screenshotCtx.fillStyle = '#FFFFFF';
+    screenshotCtx.font = '16px "AlimamaShuHeiTi-Bold.ttf", Arial, sans-serif';
+    screenshotCtx.textAlign = 'left';
+    
+    screenshotCtx.fillText(`记录编号: #${record.id}`, x, y);
+    y += lineHeight;
+    
+    const durationText = `观鸟时长: ${Math.floor(record.birdingModeDuration / 60000)}分${Math.floor((record.birdingModeDuration % 60000) / 1000)}秒`;
+    screenshotCtx.fillText(durationText, x, y);
+    y += lineHeight;
+    
+    screenshotCtx.fillText(`时间: ${record.startedAtDaytime ? "白天" : "黑夜"} → ${record.endedAtDaytime ? "白天" : "黑夜"}`, x, y);
+    y += lineHeight;
+    
+    screenshotCtx.fillText(`观察鸟种: ${record.totalObservedSpecies} 种`, x, y);
+    y += lineHeight;
+    
+    screenshotCtx.fillText(`拍摄鸟种: ${record.capturedInSession || 0} 种`, x, y);
+    y += lineHeight;
+    
+    if (record.rarestBird) {
         screenshotCtx.fillStyle = '#FFD700';
-        screenshotCtx.font = 'bold 14px "AlimamaShuHeiTi-Bold.ttf"';
-        screenshotCtx.fillText(`${index + 1}. ${birdName} ★`, columnX, columnY);
-        screenshotCtx.font = '14px "AlimamaShuHeiTi-Bold.ttf"';
-      } else if (isRare) {
-        screenshotCtx.fillStyle = '#FFA500';
-        screenshotCtx.fillText(`${index + 1}. ${birdName} (稀有)`, columnX, columnY);
-      } else {
+        screenshotCtx.fillText(`最稀有: ${record.rarestBird}`, x, y);
         screenshotCtx.fillStyle = '#FFFFFF';
-        screenshotCtx.fillText(`${index + 1}. ${birdName}`, columnX, columnY);
-      }
-      
-      columnY += lineHeight;
+        y += lineHeight;
     }
-  }
-  
-  // 如果鸟种太多，超过显示空间，添加提示
-  if (sortedSpecies.length > itemsPerColumn * actualColumnCount) {
-    const remainingCount = sortedSpecies.length - (itemsPerColumn * actualColumnCount);
-    screenshotCtx.fillStyle = '#FFA500';
-    screenshotCtx.font = '12px "AlimamaShuHeiTi-Bold.ttf"';
-    screenshotCtx.fillText(`... 还有 ${remainingCount} 种未显示`, x, y + itemsPerColumn * lineHeight + 10);
-  }
-  
-  return y;
+    
+    y += lineHeight;
+    
+    // 观察到的鸟种标题
+    screenshotCtx.fillStyle = '#87CEEB';
+    screenshotCtx.fillText('观察到的鸟种:', x, y);
+    y += lineHeight;
+    
+    screenshotCtx.strokeStyle = '#87CEEB';
+    screenshotCtx.lineWidth = 1;
+    screenshotCtx.beginPath();
+    screenshotCtx.moveTo(x, y - 5);
+    screenshotCtx.lineTo(x + 120, y - 5);
+    screenshotCtx.stroke();
+    
+    y += 5;
+    
+    // 绘制鸟类列表，添加序号
+    const sortedSpecies = [...record.observedSpecies].sort();
+    const itemsPerColumn = 20;
+    const columnCount = Math.ceil(sortedSpecies.length / itemsPerColumn);
+    const maxColumns = 3;
+    const actualColumnCount = Math.min(columnCount, maxColumns);
+    const actualColumnWidth = (screenshotWidth - 40) / actualColumnCount;
+    
+    for (let col = 0; col < actualColumnCount; col++) {
+        const columnX = x + col * actualColumnWidth;
+        let columnY = y;
+        
+        for (let row = 0; row < itemsPerColumn; row++) {
+            const index = col * itemsPerColumn + row;
+            if (index >= sortedSpecies.length) break;
+            
+            const birdName = sortedSpecies[index];
+            const birdKey = Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName);
+            const isRare = birdKey && BIRD_TYPES[birdKey].probability < 0.02;
+            const isRarest = birdName === record.rarestBird;
+            
+            // 序号部分
+            const numberText = `${index + 1}. `;
+            const numberWidth = screenshotCtx.measureText(numberText).width;
+            
+            screenshotCtx.fillStyle = '#87CEEB'; // 序号颜色
+            screenshotCtx.font = '14px "AlimamaShuHeiTi-Bold.ttf"';
+            screenshotCtx.fillText(numberText, columnX, columnY);
+            
+            // 鸟类名称部分
+            if (isRarest) {
+                screenshotCtx.fillStyle = '#FFD700';
+                screenshotCtx.font = 'bold 14px "AlimamaShuHeiTi-Bold.ttf"';
+                screenshotCtx.fillText(`${birdName} ★`, columnX + numberWidth, columnY);
+                screenshotCtx.font = '14px "AlimamaShuHeiTi-Bold.ttf"';
+            } else if (isRare) {
+                screenshotCtx.fillStyle = '#FFA500';
+                screenshotCtx.fillText(birdName, columnX + numberWidth, columnY);
+            } else {
+                screenshotCtx.fillStyle = '#FFFFFF';
+                screenshotCtx.fillText(birdName, columnX + numberWidth, columnY);
+            }
+            columnY += lineHeight;
+        }
+    }
+    
+    return y + Math.min(sortedSpecies.length, itemsPerColumn * actualColumnCount) * lineHeight;
+}
+
+// 获取最近成就用于截图显示（同一系列只显示最高级）
+function getRecentAchievementsForScreenshot(maxCount) {
+    const now = Date.now();
+    const twelveHours = 12 * 60 * 60 * 1000;
+    
+    // 获取所有已解锁的成就，按时间倒序
+    const allAchievements = Object.keys(gameSave.achievements)
+        .filter(key => gameSave.achievements[key].achieved)
+        .map(key => ({
+            id: key,
+            ...ACHIEVEMENTS[key],
+            ...gameSave.achievements[key]
+        }))
+        .sort((a, b) => b.timestamp - a.timestamp); // 按解锁时间倒序
+    
+    if (allAchievements.length === 0) return [];
+    
+    // 按系列分组，只保留每个系列的最高级成就（用于截图显示）
+    const seriesMap = {};
+    allAchievements.forEach(achievement => {
+        const series = achievement.series;
+        if (!seriesMap[series] || seriesMap[series].level < achievement.level) {
+            seriesMap[series] = achievement;
+        }
+    });
+    
+    // 转换为数组并重新按时间排序
+    const filteredAchievements = Object.values(seriesMap)
+        .sort((a, b) => b.timestamp - a.timestamp);
+    
+    // 检查是否有12小时内的成就
+    const recentAchievements = filteredAchievements.filter(a => now - a.timestamp <= twelveHours);
+    
+    if (recentAchievements.length === 0) {
+        // 如果都没有12小时内的，随机选择几个
+        return filteredAchievements
+            .sort(() => Math.random() - 0.5)
+            .slice(0, Math.min(maxCount, filteredAchievements.length));
+    }
+    
+    return recentAchievements.slice(0, Math.min(maxCount, recentAchievements.length));
 }
 
 // 显示截图预览
@@ -6420,19 +7360,19 @@ function initTextStats() {
 
 function updateTextStats() {
     if (birdingModeActive) {
-        // 观鸟模式下显示观鸟模式相关的统计
+        // 观鸟模式下，显示当前观鸟会话的数量
         const observedCount = birdingObservedSpecies.size;
         const capturedInSession = birdingModeCapturedSpecies ? birdingModeCapturedSpecies.size : 0;
         
         document.getElementById('appearedCount').textContent = observedCount;
         document.getElementById('capturedCount').textContent = capturedInSession;
     } else {
-        // 非观鸟模式下显示全局统计
-        const appearedCount = Object.values(appearedBirds).filter(count => count > 0).length;
-        const capturedCount = Object.values(capturedBirds).filter(count => count > 0).length;
+        // 非观鸟模式下，显示历史全部数量（从存档获取）
+        const totalObservedCount = Object.keys(gameSave.appearedBirdSpecies).length;
+        const totalCapturedCount = Object.keys(gameSave.capturedBirdSpecies).length;
         
-        document.getElementById('appearedCount').textContent = appearedCount;
-        document.getElementById('capturedCount').textContent = capturedCount;
+        document.getElementById('appearedCount').textContent = totalObservedCount;
+        document.getElementById('capturedCount').textContent = totalCapturedCount;
     }
 }
 
@@ -6442,51 +7382,244 @@ function updateAlbumStats() {
     
     const capturedBirdNames = Object.keys(capturedBirds).filter(name => capturedBirds[name] > 0);
     
-    if (capturedBirdNames.length === 0) {
-        albumStats.innerHTML = '<div style="color: white; font-size: 14px;">暂无已拍摄鸟类</div>';
+    // 如果没有任何统计数据，只显示成就
+    if (capturedBirdNames.length === 0 && birdingRecords.length === 0) {
+        albumStats.innerHTML = '<div style="color: white; font-size: 14px; padding: 10px; text-align: center;">暂无统计数据</div>';
+        showAchievementsInAlbum(albumStats);
         return;
     }
-    
-    const recordInfo = document.createElement('div');
-    recordInfo.className = 'albumStatItem';
-    recordInfo.innerHTML = `
-        <span>📝 观鸟记录</span>
-        <span class="statCount">${birdingRecords.length}</span>
-    `;
-    albumStats.appendChild(recordInfo);
-    
+
+    // 添加观鸟记录统计
+    if (birdingRecords.length > 0) {
+        const recordInfo = document.createElement('div');
+        recordInfo.className = 'albumStatItem';
+        recordInfo.innerHTML = ` <span>📝 观鸟记录</span><span class="statCount">${birdingRecords.length}</span> `;
+        albumStats.appendChild(recordInfo);
+    }
+
+    // 添加观鸟模式状态
     if (birdingModeActive) {
         const birdingModeInfo = document.createElement('div');
         birdingModeInfo.className = 'albumStatItem';
-        birdingModeInfo.innerHTML = `
-            <span>🔍 观鸟模式</span>
-            <span class="statCount" style="color: #90EE90;">进行中</span>
-        `;
+        birdingModeInfo.innerHTML = ` <span>🔍 观鸟模式</span><span class="statCount" style="color: #90EE90;">进行中</span> `;
         albumStats.appendChild(birdingModeInfo);
     }
-    
-    capturedBirdNames.forEach(birdName => {
-        let birdType = null;
-        for (const key in BIRD_TYPES) {
-            if (BIRD_TYPES[key].name === birdName) {
-                birdType = BIRD_TYPES[key];
-                break;
+
+    // 添加已拍摄鸟类统计
+    if (capturedBirdNames.length > 0) {
+        capturedBirdNames.forEach(birdName => {
+            let birdType = null;
+            for (const key in BIRD_TYPES) {
+                if (BIRD_TYPES[key].name === birdName) {
+                    birdType = BIRD_TYPES[key];
+                    break;
+                }
             }
-        }
-        
-        if (!birdType || birdType.isBat) return;
-        
-        const statItem = document.createElement('div');
-        statItem.className = 'albumStatItem';
-        statItem.innerHTML = `
-            <span>
-                <span class="birdIcon" style="background-color: ${birdType.iconColor || birdType.bodyColor || '#FFFFFF'}"></span>
-                ${birdName}
-            </span>
-            <span class="statCount">${capturedBirds[birdName] || 0}</span>
+            if (!birdType || birdType.isBat) return;
+
+            const statItem = document.createElement('div');
+            statItem.className = 'albumStatItem';
+            statItem.innerHTML = ` <span><span class="birdIcon" style="background-color: ${birdType.iconColor || birdType.bodyColor || '#FFFFFF'}"></span> ${birdName} </span><span class="statCount">${capturedBirds[birdName] || 0}</span> `;
+            albumStats.appendChild(statItem);
+        });
+    }
+    
+    // 显示成就
+    showAchievementsInAlbum(albumStats);
+}
+
+function showAchievementsInAlbum(albumStats) {
+    // 成就统计概览
+    const achievementSummary = document.createElement('div');
+    achievementSummary.style.cssText = `
+        width: 100%;
+        margin-top: 20px;
+        padding: 15px;
+        background: rgba(0, 0, 0, 0.3);
+        border-radius: 10px;
+        border-left: 4px solid #FFD700;
+    `;
+
+    // 获取所有已解锁的成就
+    const unlockedAchievements = Object.keys(gameSave.achievements)
+        .filter(key => gameSave.achievements[key].achieved)
+        .map(key => ({
+            id: key,
+            ...ACHIEVEMENTS[key],
+            ...gameSave.achievements[key]
+        }));
+    
+    const unlockedCount = unlockedAchievements.length;
+    const totalCount = Object.keys(ACHIEVEMENTS).length;
+    
+    // 创建成就概览
+    achievementSummary.innerHTML = `
+        <div style="color: #FFD700; font-size: 16px; font-weight: bold; margin-bottom: 10px;">
+            🏆 成就进度: ${unlockedCount}/${totalCount}
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+            ${Object.keys(ACHIEVEMENTS).map(key => {
+                const achieved = gameSave.achievements[key]?.achieved || false;
+                const isHighestInSeries = isHighestAchievementInSeries(key);
+                const title = achieved ? 
+                    (isHighestInSeries ? '✓' : '✓') : // 最高级和低级都用✓表示
+                    '?';
+                const bgColor = achieved ? 
+                    (isHighestInSeries ? '#FFD700' : '#FFA500') : // 最高级金色，低级橙色
+                    '#555';
+                const titleText = achieved ? `${ACHIEVEMENTS[key].name} (已解锁)` : `${ACHIEVEMENTS[key].name}: ${ACHIEVEMENTS[key].desc}`;
+                
+                return `
+                    <div style="width: 24px; height: 24px; border-radius: 50%; 
+                                background: ${bgColor}; 
+                                display: flex; align-items: center; justify-content: center;
+                                cursor: help;" 
+                         title="${titleText}">
+                        ${title}
+                    </div>
+                `;
+            }).join('')}
+        </div>
+    `;
+    
+    // 如果有成就，添加详细列表
+    if (unlockedAchievements.length > 0) {
+        const detailedAchievements = document.createElement('div');
+        detailedAchievements.style.cssText = `
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(139, 69, 19, 0.1);
+            border-radius: 8px;
+            border-left: 3px solid #8B4513;
         `;
-        albumStats.appendChild(statItem);
-    });
+        
+        // 按系列分组成就
+        const achievementsBySeries = {};
+        unlockedAchievements.forEach(achievement => {
+            if (!achievementsBySeries[achievement.series]) {
+                achievementsBySeries[achievement.series] = [];
+            }
+            achievementsBySeries[achievement.series].push(achievement);
+        });
+        
+        let achievementsHTML = '';
+        
+        Object.keys(achievementsBySeries).forEach(seriesKey => {
+            const seriesAchievements = achievementsBySeries[seriesKey];
+            // 按等级排序
+            seriesAchievements.sort((a, b) => a.level - b.level);
+            
+            // 找到最高级成就
+            const highestLevel = Math.max(...seriesAchievements.map(a => a.level));
+            
+            achievementsHTML += `
+                <div style="margin-bottom: 8px;">
+                    <div style="font-weight: bold; color: #8B4513; margin-bottom: 4px;">
+                        ${getSeriesName(seriesKey)}:
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                        ${seriesAchievements.map(achievement => {
+                            const isHighest = achievement.level === highestLevel;
+                            const borderColor = isHighest ? '#FFD700' : '#8B4513';
+                            const bgColor = isHighest ? 'rgba(255, 215, 0, 0.2)' : 'rgba(139, 69, 19, 0.2)';
+                            const textColor = isHighest ? '#FFD700' : '#8B4513';
+                            
+                            return `
+                                <div style="background: ${bgColor}; 
+                                            color: ${textColor}; 
+                                            padding: 4px 8px; 
+                                            border-radius: 12px; 
+                                            border: 1px solid ${borderColor};
+                                            font-size: 12px;
+                                            cursor: help;"
+                                     title="${achievement.desc} (${achievement.level}级)">
+                                    ${achievement.name}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        });
+        
+        detailedAchievements.innerHTML = `
+            <div style="color: #8B4513; font-weight: bold; margin-bottom: 8px;">
+                已解锁成就：
+            </div>
+            ${achievementsHTML}
+        `;
+        
+        achievementSummary.appendChild(detailedAchievements);
+    }
+
+    albumStats.appendChild(achievementSummary);
+}
+
+// 检查是否是同系列中的最高级成就
+function isHighestAchievementInSeries(achievementId) {
+    const achievement = ACHIEVEMENTS[achievementId];
+    if (!achievement) return false;
+    
+    // 获取同系列的所有成就
+    const seriesAchievements = Object.keys(ACHIEVEMENTS)
+        .filter(key => ACHIEVEMENTS[key].series === achievement.series)
+        .map(key => ({
+            id: key,
+            level: ACHIEVEMENTS[key].level,
+            achieved: gameSave.achievements[key]?.achieved || false
+        }));
+    
+    // 找到已解锁的最高级成就
+    const highestUnlocked = seriesAchievements
+        .filter(a => a.achieved)
+        .sort((a, b) => b.level - a.level)[0];
+    
+    return highestUnlocked && highestUnlocked.id === achievementId;
+}
+
+// 获取系列名称
+function getSeriesName(seriesKey) {
+    const seriesNames = {
+        'bird_collect': '鸟类收集',
+        'bird_photo': '鸟类拍摄',
+        'total_time': '观鸟时间',
+        'single_time': '单次观鸟',
+        'beast': '兽类',
+        'astro_meteor': '天文-流星',
+        'astro_ufo': '天文-UFO',
+        'astro_comet': '天文-彗星',
+        'rare_bird': '稀有鸟类'
+    };
+    return seriesNames[seriesKey] || seriesKey;
+}
+
+// 辅助函数：十六进制颜色转RGB
+function hexToRgb(hex) {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? 
+        `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : 
+        '255, 215, 0';
+}
+
+// 获取成就图标
+function getAchievementIcon(achievementId) {
+    const achievement = ACHIEVEMENTS[achievementId];
+    if (!achievement) return '🏆';
+    
+    switch(achievement.type) {
+        case 'collect': return '🐦';
+        case 'photo': return '📷';
+        case 'time': return '⏱️';
+        case 'single': return '🎯';
+        case 'beast': return '🦇';
+        case 'astro': 
+            if (achievementId.includes('METEOR')) return '☄️';
+            if (achievementId.includes('UFO')) return '🛸';
+            if (achievementId.includes('COMET')) return '🌠';
+            return '⭐';
+        case 'rare': return '🌟';
+        default: return '🏆';
+    }
 }
 
 function handleMouseClick() {
@@ -6675,10 +7808,10 @@ function showAllBirdsAlert() {
 }
 
 function createPhoto(x, y, width, height, capturedBird, capturedNightObject) {
-  const tempCanvas = document.createElement('canvas');
-  tempCanvas.width = width;
-  tempCanvas.height = height;
-  const tempCtx = tempCanvas.getContext('2d');
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = width;
+    tempCanvas.height = height;
+    const tempCtx = tempCanvas.getContext('2d');
     
     let sourceX = Math.max(0, Math.min(x, GAME_WIDTH));
     let sourceY = Math.max(0, Math.min(y, GAME_HEIGHT));
@@ -6736,20 +7869,34 @@ function createPhoto(x, y, width, height, capturedBird, capturedNightObject) {
     finalCtx.lineWidth = 2;
     finalCtx.strokeRect(0, 0, viewfinderBaseWidth, viewfinderBaseHeight);
     
-if (capturedBird) {
-    if (!capturedBird.type.isSpecial && !capturedBird.isBat && capturedBirds[capturedBird.name] !== undefined && !capturedBird.noStats) {
-        capturedBirds[capturedBird.name]++;
-        
-        // 观鸟模式下更新拍摄鸟种统计
-        if (birdingModeActive && birdingModeCapturedSpecies) {
-            birdingModeCapturedSpecies.add(capturedBird.name);
-            // 更新观鸟模式下的拍摄鸟种统计显示
-            const capturedCountElement = document.getElementById('capturedCount');
-            if (capturedCountElement) {
-                capturedCountElement.textContent = birdingModeCapturedSpecies.size;
+    // 拍摄到鸟类
+    if (capturedBird) {
+        // 正常鸟类（不是特殊鸟类、不是蝙蝠、不是无统计鸟类）
+        if (!capturedBird.type.isSpecial && !capturedBird.isBat && 
+            capturedBirds[capturedBird.name] !== undefined && !capturedBird.noStats) {
+            capturedBirds[capturedBird.name]++;
+            
+// 保存到存档（不重复计数）
+            if (!capturedBird.noStats) {
+                updateCapturedBird(capturedBird.name);
+            }
+            
+            // 如果是蝙蝠，记录为兽类
+            if (capturedBird.isBat) {
+                updateBeastPhoto(capturedBird.name);
+                console.log("记录兽类（蝙蝠）照片:", capturedBird.name);
+            }
+            
+            // 观鸟模式下更新拍摄鸟种统计
+            if (birdingModeActive && birdingModeCapturedSpecies) {
+                birdingModeCapturedSpecies.add(capturedBird.name);
+                // 更新观鸟模式下的拍摄鸟种统计显示
+                const capturedCountElement = document.getElementById('capturedCount');
+                if (capturedCountElement) {
+                    capturedCountElement.textContent = birdingModeCapturedSpecies.size;
+                }
             }
         }
-    }
         
         const highlightColor = 'rgba(255, 255, 255, 0.1)';
         finalCtx.fillStyle = highlightColor;
@@ -6759,7 +7906,13 @@ if (capturedBird) {
         finalCtx.font = '12px Arial';
         finalCtx.textAlign = 'left';
         finalCtx.fillText(capturedBird.name, 5, viewfinderBaseHeight - 5);
-    } else if (capturedNightObject) {
+    } 
+    // 拍摄到夜间物体（天文对象）
+    else if (capturedNightObject) {
+        // 记录天文照片
+        updateAstroPhoto(capturedNightObject.name);
+        console.log("记录天文照片:", capturedNightObject.name);
+        
         const highlightColor = 'rgba(173, 216, 230, 0.1)';
         finalCtx.fillStyle = highlightColor;
         finalCtx.fillRect(0, 0, viewfinderBaseWidth, viewfinderBaseHeight);
@@ -6770,41 +7923,54 @@ if (capturedBird) {
         finalCtx.fillText(capturedNightObject.name, 5, viewfinderBaseHeight - 5);
     }
     
-  const hasCollectedAllBirds = checkIfAllBirdsCollected();
-  if (hasCollectedAllBirds && !hasShownAllBirdsAlert) {
-    showAllBirdsAlert();
-    hasShownAllBirdsAlert = true;
-  }
-  
-  const photo = {
-    id: photos.length,
-    x: x,
-    y: y,
-    width: width,
-    height: height,
-    lens: currentLens,
-    time: gameTime,
-    bird: capturedBird ? capturedBird.name : null,
-    birdType: capturedBird ? capturedBird.type : null,
-    nightObject: capturedNightObject ? capturedNightObject.name : null,
-    nightObjectType: capturedNightObject ? capturedNightObject.type : null,
-    imageData: finalCanvas.toDataURL('image/png')
-  };
-  
-  photos.push(photo);
-  
-  // 如果拍摄到鸟，并且处于观鸟模式，记录到本次观鸟的拍摄统计中
-  if (capturedBird && !capturedBird.type.isSpecial && !capturedBird.isBat && 
-      capturedBirds[capturedBird.name] !== undefined && !capturedBird.noStats) {
-    capturedBirds[capturedBird.name]++;
-    
-    // 记录到本次观鸟的拍摄统计
-    if (birdingModeActive && birdingModeCapturedSpecies) {
-      birdingModeCapturedSpecies.add(capturedBird.name);
+    // 检查是否已收集所有鸟类（用于触发特殊提示）
+    const hasCollectedAllBirds = checkIfAllBirdsCollected();
+    if (hasCollectedAllBirds && !hasShownAllBirdsAlert) {
+        showAllBirdsAlert();
+        hasShownAllBirdsAlert = true;
     }
-  }
-  
-  updatePhotoPreview();
+    
+    // 创建照片对象
+    const photo = {
+        id: photos.length,
+        x: x,
+        y: y,
+        width: width,
+        height: height,
+        lens: currentLens,
+        time: gameTime,
+        bird: capturedBird ? capturedBird.name : null,
+        birdType: capturedBird ? capturedBird.type : null,
+        nightObject: capturedNightObject ? capturedNightObject.name : null,
+        nightObjectType: capturedNightObject ? capturedNightObject.type : null,
+        imageData: finalCanvas.toDataURL('image/png'),
+        // 新增存档相关字段
+        isBeast: capturedBird ? capturedBird.isBat : false,
+        isAstro: capturedNightObject ? true : false,
+        timestamp: Date.now()
+    };
+    
+    // 添加到照片数组
+    photos.push(photo);
+    
+    // 如果拍摄到鸟，更新游戏统计（双重确认，确保统计准确）
+    if (capturedBird && !capturedBird.type.isSpecial && !capturedBird.isBat && 
+        capturedBirds[capturedBird.name] !== undefined && !capturedBird.noStats) {
+        capturedBirds[capturedBird.name]++;
+        
+        // 观鸟模式下记录本次观鸟的拍摄统计
+        if (birdingModeActive && birdingModeCapturedSpecies) {
+            birdingModeCapturedSpecies.add(capturedBird.name);
+        }
+    }
+    
+    // 更新相册预览
+    updatePhotoPreview();
+    
+    // 自动保存游戏数据（增量保存）
+    setTimeout(() => {
+        saveGameData();
+    }, 100);
 }
 
 function updatePhotoPreview() {
@@ -6884,30 +8050,31 @@ function openAlbum() {
     
     const albumModal = document.getElementById('albumModal');
     const albumPhotos = document.getElementById('albumPhotos');
+    
+    // 更新相册标题
+    updateAlbumTitle();
+    
     albumPhotos.innerHTML = '';
     
     if (photos.length === 0) {
         albumPhotos.innerHTML = '<div style="color: white; font-size: 18px;">暂无照片，快去拍照吧！</div>';
     } else {
         const photosPerRow = Math.ceil(photos.length / 3);
-        
         for (let row = 0; row < 3; row++) {
             const rowStart = row * photosPerRow;
             const rowEnd = Math.min((row + 1) * photosPerRow, photos.length);
-            
             if (rowStart < photos.length) {
                 for (let i = rowStart; i < rowEnd; i++) {
                     const photo = photos[i];
                     const photoDiv = document.createElement('div');
                     photoDiv.className = 'albumPhoto';
-                    
                     const lensText = photo.lens ? ` (${LENS_SETTINGS[photo.lens].name})` : '';
-                    
-                    photoDiv.innerHTML = `
+                    photoDiv.innerHTML = ` 
                         <img src="${photo.imageData}" alt="照片">
-                        <div class="photoInfo">${i + 1}${photo.bird ? ` - ${photo.bird}${lensText}` : photo.nightObject ? ` - ${photo.nightObject}${lensText}` : lensText}</div>
+                        <div class="photoInfo">
+                            ${i + 1}${photo.bird ? ` - ${photo.bird}${lensText}` : photo.nightObject ? ` - ${photo.nightObject}${lensText}` : lensText}
+                        </div>
                     `;
-                    
                     albumPhotos.appendChild(photoDiv);
                 }
             }
@@ -6916,11 +8083,30 @@ function openAlbum() {
     
     updateAlbumStats();
     albumModal.style.display = 'flex';
+    
+    // 为相册标题添加点击事件
+    const albumTitle = document.getElementById('albumTitle');
+    if (albumTitle) {
+        // 移除之前的事件监听器（避免重复绑定）
+        albumTitle.removeEventListener('click', handleAlbumTitleClick);
+        albumTitle.addEventListener('click', handleAlbumTitleClick);
+    }
+}
+
+function handleAlbumTitleClick() {
+    editAlbumId();
 }
 
 function closeAlbum() {
     resumeGame();
-    document.getElementById('albumModal').style.display = 'none';
+    const albumModal = document.getElementById('albumModal');
+    albumModal.style.display = 'none';
+    
+    // 清理事件监听器
+    const albumTitle = document.getElementById('albumTitle');
+    if (albumTitle) {
+        albumTitle.removeEventListener('click', handleAlbumTitleClick);
+    }
 }
 
 function pauseGame() {
@@ -6985,15 +8171,16 @@ function generateBird() {
     
     if (birdingModeActive) {
         // 观鸟模式：15~25秒
-        currentInterval = 30000;  // 30秒基础
+        currentInterval = 30001;  // 30秒基础
         currentVariation = 5000;  // ±5秒变化
     }
     // 使用实际时间计算间隔
-        let actualTimePassed = now - lastBirdTime;
-        
-        if (actualTimePassed < currentInterval + (Math.random() - 0.5) * currentVariation) {
-            return;
-        }
+    let actualTimePassed = now - lastBirdTime;
+    
+    if (actualTimePassed < currentInterval + (Math.random() - 0.5) * currentVariation) {
+        return;
+    }
+    
     lastBirdTime = now;
     
     const isNightMode = gameMode === 'night' || (gameMode === 'normal' && !isDaytime);
@@ -7056,6 +8243,10 @@ function generateBird() {
                 const batType = BIRD_TYPES.BAT;
                 const bat = createBat(batType);
                 birds.push(bat);
+                
+                // 更新成就系统：蝙蝠出现
+                updateAppearedBird(batType.name);
+                
                 return;
             }
         }
@@ -7149,7 +8340,13 @@ function generateBird() {
             }
         }
         
+        // 更新当前会话的计数器
         appearedBirds[selectedBirdType.name]++;
+        
+        // 保存到存档（不重复计数）
+        updateAppearedBird(selectedBirdType.name);
+        
+        // 更新界面显示
         updateTextStats();
         
         if (selectedBirdType.isOwl || selectedBirdType.name === "小鸮") {
@@ -7248,24 +8445,24 @@ function generateBird() {
         return;
     }
     
-  // 翠鸟检查（新增）
-  if (gameMode !== 'night') {
-    const kingfisherChance = Math.random();
-    // 使用配置中的概率
-    const kingfisherProb = BIRD_TYPES.KINGFISHER.probability || 0.023;
-    if (kingfisherChance < kingfisherProb) {
-      generateKingfisher(true);
-      return;
+    // 翠鸟检查（新增）
+    if (gameMode !== 'night') {
+        const kingfisherChance = Math.random();
+        // 使用配置中的概率
+        const kingfisherProb = BIRD_TYPES.KINGFISHER.probability || 0.023;
+        if (kingfisherChance < kingfisherProb) {
+            generateKingfisher(true);
+            return;
+        }
+        // 添加蓝翡翠的随机生成
+        const blueFisherChance = Math.random();
+        const blueFisherProb = BIRD_TYPES.BLUEFISHER.probability || 0.006;
+        if (blueFisherChance < blueFisherProb && deadTree) {
+            generateBlueKingfisher(true);
+            return;
+        }
     }
-  // 添加蓝翡翠的随机生成
-  const blueFisherChance = Math.random();
-  const blueFisherProb = BIRD_TYPES.BLUEFISHER.probability || 0.006;
-  if (blueFisherChance < blueFisherProb && deadTree) {
-    generateBlueKingfisher(true);
-    return;
-  }
-  }
-
+    
     const rand = Math.random();
     let cumulativeProbability = 0;
     let selectedBirdType = null;
@@ -7291,6 +8488,9 @@ function generateBird() {
     appearedBirds[selectedBirdType.name]++;
     updateTextStats();
     
+    // 更新成就系统：鸟类出现
+    updateAppearedBird(selectedBirdType.name);
+    
     const fromLeft = Math.random() > 0.5;
     const birdCount = getRandomGroupSize(selectedBirdType);
     const groupId = nextGroupId++;
@@ -7302,38 +8502,39 @@ function generateBird() {
         let stayTime = selectedBirdType.stayTime || 10;
         
         // 修改：白头鹎有30%概率停留在树上15秒
-if (selectedBirdType.name === "白头鹎") {
-    if (Math.random() < 0.3) {
-        behavior = "landOnTree";
-        stayTime = 15;
-    }
-}
-
-    if (selectedBirdType && selectedBirdType.name === "乌鹟") {
-        generateFlycatcher(true);
-        return;
-    }
-
-// 修改麻雀行为：30%概率飞向芦苇区并停留，70%概率保持原有行为
-if (selectedBirdType.name === "麻雀") {
-    if (Math.random() < 0.3) {
-        behavior = "flyToReedsAndStay";
-    } else {
-        behavior = "flyThrough";
-    }
-}
-
-    // 新鸟类：长尾雀、蜡嘴雀、燕雀、罗宾的树顶部/底部停留行为
-    if (selectedBirdType.name === "长尾雀" || selectedBirdType.name === "蜡嘴雀" || selectedBirdType.name === "燕雀") {
-      behavior = "landOnTreeTop";
-      stayTime = 10;
-    } else if (selectedBirdType.name === "罗宾") {
-      behavior = "landOnTreeBottom";
-      stayTime = 5;
-    }
+        if (selectedBirdType.name === "白头鹎") {
+            if (Math.random() < 0.3) {
+                behavior = "landOnTree";
+                stayTime = 15;
+            }
+        }
+        
+        if (selectedBirdType && selectedBirdType.name === "乌鹟") {
+            generateFlycatcher(true);
+            return;
+        }
+        
+        // 修改麻雀行为：30%概率飞向芦苇区并停留，70%概率保持原有行为
+        if (selectedBirdType.name === "麻雀") {
+            if (Math.random() < 0.3) {
+                behavior = "flyToReedsAndStay";
+            } else {
+                behavior = "flyThrough";
+            }
+        }
+        
+        // 新鸟类：长尾雀、蜡嘴雀、燕雀、罗宾的树顶部/底部停留行为
+        if (selectedBirdType.name === "长尾雀" || selectedBirdType.name === "蜡嘴雀" || selectedBirdType.name === "燕雀") {
+            behavior = "landOnTreeTop";
+            stayTime = 10;
+        } else if (selectedBirdType.name === "罗宾") {
+            behavior = "landOnTreeBottom";
+            stayTime = 5;
+        }
         
         if ((selectedBirdType.name === "金眶鸻" || selectedBirdType.name === "12000鸻") && Math.random() < selectedBirdType.landOnReedsChance) {
-                   }
+            // 这里可以添加具体的着陆芦苇行为
+        }
         
         if (selectedBirdType.behavior === 'circleThenHuntBird' || selectedBirdType.behavior === 'circleThenHunt') {
             startX = GAME_WIDTH * 0.5 + (Math.random() - 0.5) * 200;
@@ -7358,20 +8559,20 @@ if (selectedBirdType.name === "麻雀") {
         const finalSpeed = baseSpeed * speedMultiplier;
         
         const bird = createCommonBird(selectedBirdType, startX, startY, fromLeft, behavior, stayTime, finalSpeed, groupId);
-
-// 针对新鸟类的特殊设置
-    if (selectedBirdType.name === "长尾雀" || selectedBirdType.name === "蜡嘴雀" || selectedBirdType.name === "燕雀" || selectedBirdType.name === "罗宾") {
-      bird.isVulnerableToRaptors = true;
-    }
         
-// 设置吃水果的鸟类
-    if (selectedBirdType.name === "蜡嘴雀" || selectedBirdType.name === "燕雀") {
-      bird.eatFruits = true;
-      bird.eatProbability = 0.1;
-      bird.eatDuration = 2000;
-      bird.originalSize = selectedBirdType.size;
-    }
-
+        // 针对新鸟类的特殊设置
+        if (selectedBirdType.name === "长尾雀" || selectedBirdType.name === "蜡嘴雀" || selectedBirdType.name === "燕雀" || selectedBirdType.name === "罗宾") {
+            bird.isVulnerableToRaptors = true;
+        }
+        
+        // 设置吃水果的鸟类
+        if (selectedBirdType.name === "蜡嘴雀" || selectedBirdType.name === "燕雀") {
+            bird.eatFruits = true;
+            bird.eatProbability = 0.1;
+            bird.eatDuration = 2000;
+            bird.originalSize = selectedBirdType.size;
+        }
+        
         if (selectedBirdType.behavior === 'appearOnTree' && bird.targetTree) {
             if (bird.name === "小北" || bird.name === "戴菊" || bird.name === "某种柳莺") {
                 bird.x = bird.targetTree.x + bird.targetTree.width * 0.4 + Math.random() * bird.targetTree.width * 0.2;
@@ -9755,49 +10956,52 @@ function drawBird(bird) {
     return;
   }
 
-  // 添加蓝翡翠的特殊绘制逻辑（可以在绘制翠鸟的代码后面添加）
-  if (bird.name === "蓝翡翠" || bird.isBlueKingfisher) {
+ // 添加蓝翡翠的特殊绘制逻辑（可以在绘制翠鸟的代码后面添加）
+if (bird.name === "蓝翡翠" || bird.isBlueKingfisher) {
+    // 使用固定的 baseSize 值，因为原 baseSize 可能未初始化
+    const blueFisherBaseSize = 20; // 代替 baseSize
+    
     // 绘制蓝翡翠的身体
     ctx.fillStyle = bird.type.bodyColor || "#3399FF";
     ctx.beginPath();
-    ctx.ellipse(bird.x, bird.y, baseSize * bird.size, baseSize * bird.size * 0.7, 0, 0, Math.PI * 2);
+    ctx.ellipse(bird.x, bird.y, blueFisherBaseSize * bird.size, blueFisherBaseSize * bird.size * 0.7, 0, 0, Math.PI * 2);
     ctx.fill();
     
     // 绘制头部
-    const headOffsetX = bird.direction * baseSize * bird.size * 0.8;
+    const headOffsetX = bird.direction * blueFisherBaseSize * bird.size * 0.8;
     const headX = bird.x + headOffsetX;
-    const headY = bird.y - baseSize * bird.size * 0.1;
+    const headY = bird.y - blueFisherBaseSize * bird.size * 0.1;
     ctx.fillStyle = bird.type.headColor || "#000000";
     ctx.beginPath();
-    ctx.arc(headX, headY, baseSize * bird.size * 0.6, 0, Math.PI * 2);
+    ctx.arc(headX, headY, blueFisherBaseSize * bird.size * 0.6, 0, Math.PI * 2);
     ctx.fill();
     
     // 绘制红嘴
     ctx.fillStyle = bird.type.beakColor || "#FF0000";
-    const beakLength = baseSize * bird.size * bird.type.beakLengthMultiplier * 0.5;
+    const beakLength = blueFisherBaseSize * bird.size * bird.type.beakLengthMultiplier * 0.5;
     ctx.beginPath();
-    ctx.moveTo(headX + bird.direction * baseSize * bird.size * 0.3, headY);
+    ctx.moveTo(headX + bird.direction * blueFisherBaseSize * bird.size * 0.3, headY);
     ctx.lineTo(headX + bird.direction * beakLength, headY);
-    ctx.lineTo(headX + bird.direction * baseSize * bird.size * 0.3, headY + baseSize * bird.size * 0.2);
+    ctx.lineTo(headX + bird.direction * blueFisherBaseSize * bird.size * 0.3, headY + blueFisherBaseSize * bird.size * 0.2);
     ctx.closePath();
     ctx.fill();
     
     // 绘制眼睛
     ctx.fillStyle = bird.type.eyeColor || "#000000";
     ctx.beginPath();
-    ctx.arc(headX + bird.direction * baseSize * bird.size * 0.3, headY - baseSize * bird.size * 0.1, baseSize * bird.size * 0.15, 0, Math.PI * 2);
+    ctx.arc(headX + bird.direction * blueFisherBaseSize * bird.size * 0.3, headY - blueFisherBaseSize * bird.size * 0.1, blueFisherBaseSize * bird.size * 0.15, 0, Math.PI * 2);
     ctx.fill();
     
     // 绘制眼环
     if (bird.type.eyeRingColor) {
-      ctx.fillStyle = bird.type.eyeRingColorr || "#FFFFFF";
-      ctx.beginPath();
-      ctx.arc(headX + bird.direction * baseSize * bird.size * 0.3, headY - baseSize * bird.size * 0.1, baseSize * bird.size * 0.1, 0, Math.PI * 2);
-      ctx.fill();
+        ctx.fillStyle = bird.type.eyeRingColor || "#FFFFFF";
+        ctx.beginPath();
+        ctx.arc(headX + bird.direction * blueFisherBaseSize * bird.size * 0.3, headY - blueFisherBaseSize * bird.size * 0.1, blueFisherBaseSize * bird.size * 0.1, 0, Math.PI * 2);
+        ctx.fill();
     }
     
     return;
-  }
+}
     if ((bird.name === "红隼" || bird.name === "黑翅鸢") && bird.caughtMouse) {
         drawMouseInClaws(bird);
     }
