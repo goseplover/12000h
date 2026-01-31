@@ -2799,7 +2799,7 @@ const NIGHT_OBJECTS = {
   COMET: {
     name: "彗星",
     type: "comet",
-    probability: 0.001,
+    probability: 0.005,
     duration: 1800000,
     size: 0.5,
     speed: 0.01,
@@ -2831,7 +2831,7 @@ const BIRD_TYPES = {
     wingColor: "#3333FF",
     tailColor: "#3333FF",
     groupSize: [2, 5],
-    probability: 0.037,
+    probability: 0.0345,
     size: 1.8,
     behavior: "landOnTree",
     stayTime: 100,
@@ -2851,7 +2851,7 @@ const BIRD_TYPES = {
     wingColor: "#000000",
     tailColor: "#000000",
     groupSize: [1, 3],
-    probability: 0.031,
+    probability: 0.034,
     size: 1.8,
     behavior: "landOnTree",
     stayTime: 50,
@@ -2867,7 +2867,7 @@ const BIRD_TYPES = {
         wingColor: "#D3D3D3", 
         tailColor: "#D3D3D3",
         groupSize: [2, 5],
-        probability: 0.013, // 生成率0.013
+        probability: 0.019, 
         size: 1.5, // 1.5倍麻雀大小
         behavior: "waveFlight", // 波浪式飞行
         whiteEyeRing: true, // 白眼圈
@@ -2884,7 +2884,7 @@ const BIRD_TYPES = {
     wingColor: "#000000",
     tailColor: "#000000",
     groupSize: [5, 10],
-    probability: 0.05,
+    probability: 0.033,
     size: 1.2,
     behavior: "flyThrough",
     whiteEyeRing: true,
@@ -2903,7 +2903,7 @@ const BIRD_TYPES = {
     wingColor: "#000000",
     tailColor: "#000000",
     groupSize: 1,
-    probability: 0.025,
+    probability: 0.024,
     size: 1.3,
     behavior: "waveFlight",
     hasCrest: true,
@@ -2921,7 +2921,7 @@ const BIRD_TYPES = {
     wingColor: "#A0522D",
     tailColor: "#A0522D",
     groupSize: [1, 3],
-    probability: 0.045,
+    probability: 0.0325,
     size: 1.5,
     behavior: "flyThrough",
     whiteEyeRing: false,
@@ -2940,7 +2940,7 @@ const BIRD_TYPES = {
     wingColor: "#000000",
     tailColor: "#000000",
     groupSize: 1,
-    probability: 0.044,
+    probability: 0.0335,
     size: 1.3,
     behavior: "flyThrough",
     whiteEyeRing: false,
@@ -2963,7 +2963,7 @@ const BIRD_TYPES = {
     wingColor: "#FF0000",
     tailColor: "#8B4513",
     groupSize: [5, 7],
-    probability: 0.032,
+    probability: 0.023,
     size: 2.0,
     behavior: "flyThrough",
     variant: true,
@@ -2980,7 +2980,7 @@ const BIRD_TYPES = {
     wingColor: "#000000",
     tailColor: "#000000",
     groupSize: 2,
-    probability: 0.029,
+    probability: 0.0255,
     size: 1.2,
     behavior: "waveFlight",
     whiteEyeRing: true,
@@ -2996,7 +2996,7 @@ const BIRD_TYPES = {
     wingColor: "#000000",
     tailColor: "#000000",
     groupSize: 1,
-    probability: 0.046,
+    probability: 0.032,
     size: 1.7,
     behavior: "landOnTree",
     stayTime: 10,
@@ -3014,7 +3014,7 @@ const BIRD_TYPES = {
     wingColor: "#1E90FF",
     tailColor: "#FFFFFF",
     groupSize: [1, 3],
-    probability: 0.03,
+    probability: 0.021,
     size: 3.0,
     behavior: "landOnTree",
     stayTime: 20,
@@ -3035,7 +3035,7 @@ const BIRD_TYPES = {
     wingColor: "#000000",
     tailColor: "#000000",
     groupSize: [2, 5],
-    probability: 0.04,
+    probability: 0.0315,
     size: 0.8,
     behavior: "landOnTreeThenMove",
     whiteEyeRing: true,
@@ -3054,7 +3054,7 @@ const BIRD_TYPES = {
     beakColor: "#FF8C00",  // 橙色嘴
     whiteEyeRing: true,    // 白眼圈
     groupSize: 1,          // 单只
-    probability: 0.0066,   // 生成率0.0066
+    probability: 0.015, 
     size: 0.9,             // 0.9麻雀大小
     behavior: "perchOnTreeTopAndFly",  // 特殊行为
     originalSize: 0.9,
@@ -3070,7 +3070,7 @@ const BIRD_TYPES = {
     wingColor: "#8B4513",
     tailColor: "#8B4513",
     groupSize: [5, 10],
-    probability: 0.023,
+    probability: 0.0205,
     size: 0.5,
     behavior: "flyInReedsAndStay",
     whiteEyeRing: true,
@@ -3088,7 +3088,7 @@ const BIRD_TYPES = {
     wingColor: "#339966",
     tailColor: "#339966",
     groupSize: 1,
-    probability: 0.021,
+    probability: 0.017,
     size: 0.5,
     behavior: "appearOnTree",
     stayTime: 2,
@@ -3121,7 +3121,7 @@ const BIRD_TYPES = {
     wingColor: "#FFD700",
     tailColor: "#FFD700",
     groupSize: [2, 9],
-    probability: 0.035,
+    probability: 0.0195,
     size: 1.0,
     behavior: "flyThrough",
     whiteEyeRing: true,
@@ -3141,7 +3141,7 @@ const BIRD_TYPES = {
     wingColor: "#D2B48C",
     tailColor: "#D2B48C",
     groupSize: [2, 3],
-    probability: 0.015,
+    probability: 0.0265,
     size: 1.3,
     behavior: "flyThrough",
     whiteEyeRing: false,
@@ -3156,12 +3156,12 @@ const BIRD_TYPES = {
     name: "游隼",
     color: "#FFFF00",
     eyeColor: "#000000",
-    bodyColor: "#FFFFFF",
+    bodyColor: "#F0F0F0",
     headColor: "#000000",
     wingColor: "#808080",
     tailColor: "#808080",
     groupSize: 1,
-    probability: 0.008,
+    probability: 0.0115,
     size: 2.0,
     behavior: "circleThenHuntBird",
     iconColor: "#FFFFFF",
@@ -3177,7 +3177,7 @@ const BIRD_TYPES = {
     wingColor: "#8B0000",
     tailColor: "#707070",
     groupSize: 1,
-    probability: 0.014,
+    probability: 0.0175,
     size: 2.0,
     behavior: "circleThenHunt",
     iconColor: "#8B0000",
@@ -3199,7 +3199,7 @@ const BIRD_TYPES = {
     wingColor: "#FF8C00",
     tailColor: "#FF8C00",
     groupSize: 2,
-    probability: 0.021,
+    probability: 0.0185,
     size: 3.0,
     behavior: "flyThrough",
     iconColor: "#FF8C00",
@@ -3207,6 +3207,27 @@ const BIRD_TYPES = {
     beakOnePointThree: true,
     speedMultiplier: 2.0
   },
+VINEGAR_DUCK: {
+  name: "醋鸭",
+  color: "#000000",
+  eyeColor: "#FFFF00", // 黄眼
+  bodyColor: "#FFFFFF", // 白身
+  headColor: "#000000", // 黑头
+  wingColor: "#404040", // 深灰翅膀
+  tailColor: "#404040", // 深灰尾巴
+  beakColor: "#FF8C00", // 橙嘴
+  groupSize: [2, 4],
+  probability: 0.013, // 生成率
+  size: 1.5, // 1.5倍麻雀（麻雀size为1.0）
+  behavior: "flyThrough", // 与赤麻鸭相同的行为
+  iconColor: "#404040",
+  whiteEyeRing: true,
+  beakOnePointThree: true, // 嘴短一半（相对于赤麻鸭的beakOnePointThree，可能需要调整）
+  beakLengthMultiplier: 0.65, // 嘴长倍数（赤麻鸭为1.3，这里设为一半）
+  speedMultiplier: 1.8,
+  originalSize: 2.5,
+  isVulnerableToRaptors: true // 可能被猛禽捕食
+},
   MINIVET: {
     name: "山椒鸟",
     color: "#000000",
@@ -3216,7 +3237,7 @@ const BIRD_TYPES = {
     wingColor: "#000000",
     tailColor: "#000000",
     groupSize: [8, 10],
-    probability: 0.007,
+    probability: 0.008,
     size: 1.2,
     behavior: "flyThrough",
     variant: true,
@@ -3234,7 +3255,7 @@ const BIRD_TYPES = {
     beakColor: "#000000", // 嘴黑色
     eyeRingColor: "#FFA500", // 眼圈橙色
     groupSize: 1,
-    probability: 0.023,
+    probability: 0.02,
     size: 1.2, // 1.2倍麻雀大小
     behavior: "flyToReedAndPerch",
     stayTime: [45000, 60000], // 停留45-60秒
@@ -3260,7 +3281,7 @@ BLUEFISHER: {
   beakColor: "#FF0000",  // 红嘴
   eyeRingColor: "#FFFFFF", // 白眼圈
   groupSize: 1,
-  probability: 0.006,     // 生成概率为0.006
+  probability: 0.0055,     // 生成概率为0.0055
   size: 1.5,             // 1.5倍麻雀大小
   behavior: "flyToDeadTreeAndPerch",  // 新行为：飞到枯树上停歇
   stayTime: [45000, 60000],
@@ -3284,7 +3305,7 @@ BLUEFISHER: {
     wingColor: "#00FF00",
     tailColor: "#00FF00",
     groupSize: 1,
-    probability: 0.01,
+    probability: 0.012,
     size: 0.5,
     behavior: "appearOnTree",
     stayTime: 5,
@@ -3299,7 +3320,7 @@ BLUEFISHER: {
     color: "#000000",
     bodyColor: "#8B4513",
     groupSize: 1,
-    probability: 0.011,
+    probability: 0.007,
     size: 2.5,
     behavior: "appearOnTree",
     stayTime: 15,
@@ -3317,7 +3338,7 @@ BLUEFISHER: {
     wingColor: "#000000",
     tailColor: "#000000",
     groupSize: [2, 5],
-    probability: 0.013,
+    probability: 0.0075,
     size: 0.5,
     behavior: "flyToReedsAndStay",
     stayTime: 30,
@@ -3338,7 +3359,7 @@ BLUEFISHER: {
     tailColor: "#404040",  // 深灰尾巴
     blackEyeRing: true,    // 黑眼圈
     groupSize: [5, 10],     // 5-10个一组
-    probability: 0.006,     // 概率0.006
+    probability: 0.004,     // 概率0.004
     size: 0.4,              // 小北的80%(小北size=0.5)
     behavior: "flyToReedsAndStay",  // 和小北一样的行为
     stayTime: 30,
@@ -3361,7 +3382,7 @@ BLUEFISHER: {
     wingColor: "#808080",
     tailColor: "#FFFFFF",
     groupSize: 1,
-    probability: 0.02,
+    probability: 0.014,
     size: 2.0,
     behavior: "circleThenHoverThenHuntMouse",
     iconColor: "#000000",
@@ -3397,7 +3418,7 @@ BLUEFISHER: {
     wingColor: "#D2B48C",
     tailColor: "#D2B48C",
     groupSize: 1,
-    probability: 0.014,
+    probability: 0.0135,
     size: 1.28,
     behavior: "appearInWallHole",
     stayTime: 15,
@@ -3416,7 +3437,7 @@ BLUEFISHER: {
     wingColor: "#5A422E",
     tailColor: "#5A422E",
     groupSize: 1,
-    probability: 0.03,
+    probability: 0.011,
     size: 3.2,
     behavior: "circleThenGlideToGround",
     iconColor: "#6B4F37",
@@ -3439,7 +3460,7 @@ BLUEFISHER: {
     wingColor: "#7A6D5C",
     tailColor: "#7A6D5C",
     groupSize: 1,
-    probability: 0.05,
+    probability: 0.026,
     size: 1.8,
     behavior: "circleThenGlideToGround",
     iconColor: "#8B7D6B",
@@ -3464,7 +3485,7 @@ BLUEFISHER: {
     wingColor: "#A0522D",
     tailColor: "#000000",
     groupSize: [1, 2],
-    probability: 0.012,
+    probability: 0.0065,
     size: 1.0,
     behavior: "landOnTreeTop",
     stayTime: 10,
@@ -3481,7 +3502,7 @@ BLUEFISHER: {
     wingColor: "#A0522D",
     tailColor: "#000000",
     groupSize: [1, 2],
-    probability: 0.004,
+    probability: 0.0035,
     size: 1.0,
     behavior: "landOnTreeBottom",
     stayTime: 5,
@@ -3499,7 +3520,7 @@ BLUEFISHER: {
     tailColor: "#000000",
     beakColor: "#FF8C00",
     groupSize: [2, 6],
-    probability: 0.029,
+    probability: 0.025,
     size: 1.2,
     behavior: "landOnTreeTop",
     stayTime: 15,
@@ -3523,7 +3544,7 @@ BLUEFISHER: {
     tailColor: "#000000",
     beakColor: "#FF4500",
     groupSize: [2, 8],
-    probability: 0.035,
+    probability: 0.031,
     size: 1.0,
     behavior: "flyThrough",
     stayTime: 10,
@@ -3545,7 +3566,7 @@ BLUEFISHER: {
     wingColor: "#666666",
     tailColor: "#333333",
     groupSize: [1, 2],
-    probability: 0.09,
+    probability: 0.19,
     size: 1.0,
     behavior: "circleThenLeave",
     iconColor: "#333333",
@@ -3582,7 +3603,7 @@ let mouseX = GAME_WIDTH / 2, mouseY = GAME_HEIGHT / 2;
 let viewfinderVisible = false;
 let viewfinderWidth = 90, viewfinderHeight = 60;
 let lastBirdTime = 0;
-let birdInterval = 15001;
+let birdInterval = 10001;
 let birdIntervalVariation = 500;
 let gameTime = 0;
 let treePositions = [];
@@ -3615,7 +3636,7 @@ const ALL_BIRDS = Object.values(BIRD_TYPES).filter(bird => !bird.isSpecial && !b
 let isDaytime = true;
 let dayNightTimer = 0;
 const DAY_NIGHT_CYCLE_DURATION = 15 * 60 * 1000;
-const RARE_BIRDS = ['KENTISH_PLOVER', 'MINIVET', 'GOLDCREST', 'OWL', 'LITTLEGREBE', 'LONGTAILED_FINCH', 'ROBIN', 'RED_HEADED'];
+const RARE_BIRDS = ['MINIVET', 'GOLDCREST', 'OWL', 'LITTLEGREBE', 'LONGTAILED_FINCH', 'ROBIN', 'RED_HEADED'];
 let lastRareBirdTime = 0;
 const RARE_BIRD_INTERVAL = 60 * 60 * 1000;
 let sunMoonPosition = 0;
@@ -6456,7 +6477,7 @@ function handleKeyDown(e) {
             switchBirdingRecord(1);
         }
     } else if (e.key === 't' || e.key === 'T') {
-       generateFlycatcher(false);
+       generateVinegarDuck(false);
     } else if (e.key === 'b' || e.key === 'B') {
         debugCoordinateSystem();
     } else if (e.key === 'g' || e.key === 'G') {
@@ -6535,6 +6556,74 @@ function skipToNight() {
             dayNightTimer: dayNightTimer
         }
     });
+}
+
+function generateVinegarDuck(countStats = true) {
+  const vinegarDuckType = BIRD_TYPES.VINEGAR_DUCK;
+  
+  if (countStats) {
+    // 更新统计
+    appearedBirds[vinegarDuckType.name] = (appearedBirds[vinegarDuckType.name] || 0) + 1;
+    updateTextStats();
+    updateAppearedBird(vinegarDuckType.name);
+  }
+  
+  const fromLeft = Math.random() > 0.5;
+  const birdCount = getRandomGroupSize(vinegarDuckType);
+  const groupId = nextGroupId++;
+  
+  birdGroupInfo[groupId] = {
+    direction: fromLeft ? 1 : -1,
+    birds: []
+  };
+  
+  for (let i = 0; i < birdCount; i++) {
+    const startX = fromLeft ? -50 : GAME_WIDTH + 50;
+    const startY = Math.random() * (GAME_HEIGHT * 0.6) + GAME_HEIGHT * 0.2;
+    let baseSpeed = (1.6 + Math.random() * 0.8);
+    const speedMultiplier = vinegarDuckType.speedMultiplier || 1;
+    const finalSpeed = baseSpeed * speedMultiplier;
+    
+    const bird = {
+      type: vinegarDuckType,
+      name: vinegarDuckType.name,
+      x: startX,
+      y: startY,
+      size: vinegarDuckType.size,
+      speed: finalSpeed,
+      direction: fromLeft ? 1 : -1,
+      state: 'flying',
+      stateTime: 0,
+      whiteEyeRing: true,
+      yellowEyeRing: false,
+      beakColor: "#FF8C00",
+      eyeColor: "#FFFF00",
+      wingColor: "#404040",
+      tailColor: "#404040",
+      noStats: !countStats,
+      isNight: !isDaytime,
+      groupId: groupId,
+      targetX: fromLeft ? GAME_WIDTH + 100 : -100
+    };
+    
+    birds.push(bird);
+    birdGroupInfo[groupId].birds.push(bird);
+  }
+  
+  // 观鸟模式记录
+  if (birdingModeActive && countStats) {
+    for (let i = 0; i < birdCount; i++) {
+      const birdId = `${vinegarDuckType.name}_${i}_${Date.now()}`;
+      if (!birdingModeRecordedBirds.has(birdId)) {
+        birdingModeRecordedBirds.add(birdId);
+        birdingObservedSpecies.add(vinegarDuckType.name);
+        const appearedCountElement = document.getElementById('appearedCount');
+        if (appearedCountElement) {
+          appearedCountElement.textContent = birdingObservedSpecies.size;
+        }
+      }
+    }
+  }
 }
 
 function generateFlycatcher(countStats = true) {
@@ -8171,7 +8260,7 @@ function generateBird() {
     
     if (birdingModeActive) {
         // 观鸟模式：15~25秒
-        currentInterval = 30001;  // 30秒基础
+        currentInterval = 20001;  // 20秒基础
         currentVariation = 5000;  // ±5秒变化
     }
     // 使用实际时间计算间隔
@@ -8449,14 +8538,14 @@ function generateBird() {
     if (gameMode !== 'night') {
         const kingfisherChance = Math.random();
         // 使用配置中的概率
-        const kingfisherProb = BIRD_TYPES.KINGFISHER.probability || 0.023;
+        const kingfisherProb = BIRD_TYPES.KINGFISHER.probability || 0.02;
         if (kingfisherChance < kingfisherProb) {
             generateKingfisher(true);
             return;
         }
         // 添加蓝翡翠的随机生成
         const blueFisherChance = Math.random();
-        const blueFisherProb = BIRD_TYPES.BLUEFISHER.probability || 0.006;
+        const blueFisherProb = BIRD_TYPES.BLUEFISHER.probability || 0.0055;
         if (blueFisherChance < blueFisherProb && deadTree) {
             generateBlueKingfisher(true);
             return;
@@ -11206,7 +11295,16 @@ else if (bird.name === "小红头" && bird.fifthBeak) {
         ctx.lineTo(beakStartX, beakStartY + beakHeight);
     }
     
-    if (!((bird.name === "绿头鸭" && bird.doubleBeak) || (bird.name === "赤麻鸭" && bird.beakOnePointThree))) {
+     
+    // 在绘制鸟嘴的部分，添加对醋鸭的处理
+if (bird.type.name === "醋鸭") {
+  // 绘制橙色的短嘴
+  ctx.fillStyle = "#FF8C00";
+  // 嘴长较短
+  const beakLength = 10 * 0.65; // 嘴长乘以系数
+  // ...绘制嘴的代码
+} 
+if (!((bird.name === "绿头鸭" && bird.doubleBeak) || (bird.name === "赤麻鸭" && bird.beakOnePointThree))) {
         ctx.closePath();
         ctx.fill();
     }
@@ -13173,7 +13271,8 @@ for (let i = birds.length - 1; i >= 0; i--) {
         }
         
         bird.stateTime += deltaTime;
-    
+
+
     // 添加乌鹟的特殊行为处理
   if (bird.isFlycatcher && bird.name === "乌鹟") {
     bird.stateTime += deltaTime;
@@ -13351,7 +13450,7 @@ case 'flyingBack':
     
     continue; // 跳过其他处理逻辑
 }
-    
+  
         if (bird.name === "小鸮") {
             if (bird.state === 'appearing') {
                 bird.state = 'perching';
