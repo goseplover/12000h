@@ -4811,9 +4811,7 @@ function init() {
     initBirdingRecords();
     updateBirdingModeButton();
     updateBirdingRecordIcons();
-    
-    requestAnimationFrame(gameLoop);
-    
+       
     // 截图按钮事件
     const screenshotButton = document.getElementById('screenshotButton');
     if (screenshotButton) {
@@ -4885,7 +4883,46 @@ function init() {
     
     // 每30秒自动保存
     setInterval(saveGameData, 30000);
+// ========== 双计时器启动（优化版） ==========
+let logicInterval = null;
+let animationFrameId = null;
+
+// 逻辑更新循环（始终运行）
+logicInterval = setInterval(() => {
+    const now = performance.now();
+    if (lastFrameTime === 0) lastFrameTime = now;
+    let deltaTime = now - lastFrameTime;
+    if (deltaTime > 100) deltaTime = 100; // 限制最大步长
+    lastFrameTime = now;
+
+    // 暂停检查：手动暂停 或 (非观鸟模式且页面隐藏)
+    if (gamePaused) return;
+    if (document.hidden && !birdingModeActive) return;
+
+    updateGame(deltaTime);
+}, 16); // 约 60 FPS
 }
+// 绘制循环：使用 requestAnimationFrame 延迟第一次绘制，确保画布就绪
+function frame() {
+    drawGame();
+    animationFrameId = requestAnimationFrame(frame);
+}
+animationFrameId = requestAnimationFrame(frame); // 延迟到下一帧开始绘制
+
+// 处理页面可见性
+document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+    } else {
+        if (!animationFrameId) {
+            animationFrameId = requestAnimationFrame(frame);
+        }
+    }
+});
+// ========== 双计时器结束 ==========
 
 // 如果需要重新生成枯树（例如在游戏重新开始时）
 function resetDeadTree() {
@@ -5004,44 +5041,86 @@ function updateUIForOrientation() {
     }
 }
 
+// 新增：页面可见性变化处理函数
 function handleVisibilityChange() {
     if (document.hidden) {
-        // 页面不可见时，可以适当降低游戏循环频率或暂停非必要更新
-        console.log('页面失去焦点');
+        // 页面隐藏：仅在非观鸟模式下暂停游戏
+        if (!birdingModeActive) {
+            pauseGame();
+        }
+        // 观鸟模式下保持 gamePaused = false，但 requestAnimationFrame 会被浏览器暂停，
+        // 画面不更新，但 setInterval 继续运行，观鸟记录正常累积。
     } else {
-        // 页面重新可见时，重置 lastFrameTime 避免时间跳跃
-        lastFrameTime = performance.now();
-        console.log('页面重新获得焦点');
+        // 页面重新可见：如果游戏处于暂停状态，恢复游戏
+        if (gamePaused) {
+            resumeGame();
+        }
     }
 }
 
-function gameLoop(timestamp) {
-    if (gamePaused) {
-        requestAnimationFrame(gameLoop);
-        return;
-    }
-    
-    // 限制最大 deltaTime，避免失去焦点后时间差过大
-    let deltaTime = timestamp - lastFrameTime;
-    lastFrameTime = timestamp;
-    
-    // 限制最大 deltaTime 为 30ms
-    if (deltaTime > 30) {
-        deltaTime = 30;
-    }
-    
+// 逻辑更新函数（所有不涉及绘制的状态更新）
+function updateGame(deltaTime) {
+    if (gamePaused) return;
+    if (document.hidden && !birdingModeActive) return; // 非观鸟模式且页面隐藏时停止更新
+
     updateDayNight(deltaTime);
     updateBirds(deltaTime);
     updateNightObjects(deltaTime);
-    generateBird();
-    
+    generateBird(); // 内部已检查时间间隔
+    updatePoops(deltaTime);
+    updateGroundObjects(deltaTime);
+    updateFruits(deltaTime);
+    // 如有其他每帧更新函数，请在此添加
+}
+
+// 绘制函数（所有绘制相关代码）
+function drawGame() {
+    // 防御性检查：确保画布上下文存在，若不存在则尝试重新获取
+    if (!ctx || !poopCtx) {
+        if (canvas) ctx = canvas.getContext('2d');
+        if (poopCanvas) poopCtx = poopCanvas.getContext('2d');
+        if (!ctx || !poopCtx) {
+            console.warn('Canvas context not ready, skipping draw');
+            return; // 安全跳过本次绘制
+        }
+    }
+
+    ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+    poopCtx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
+
+    // 所有绘制函数
+    drawBackground();
+    drawSunMoon();
+    drawStars();
+    drawClouds();
+    nightObjects.forEach(obj => drawNightObject(obj));
+    drawMountains();
+    drawTrees();
+    drawWallAndHole();
+    drawReeds();
+    drawDeadTree();
+    drawGroundObjects();
+    birds.forEach(bird => drawBird(bird));
+    drawPoops();
+
+    // 更新取景框
     if (gyroModeActive) {
         updateViewfinderFromGyro();
     }
-    
-    requestAnimationFrame(gameLoop);
-}
+    drawViewfinder();
 
+    // 更新观鸟模式状态指示器（UI 更新放在绘制中）
+    if (birdingModeActive) {
+        const birdingDuration = gameTime - birdingModeStartTime;
+        const birdingMinutes = Math.floor(birdingDuration / 60000);
+        const birdingSeconds = Math.floor((birdingDuration % 60000) / 1000);
+        const indicator = document.getElementById('birdingStatusIndicator');
+        if (indicator) {
+            indicator.textContent = `进行中 ${birdingMinutes}:${birdingSeconds.toString().padStart(2, '0')}`;
+        }
+    }
+}
+  
 function initBirdingRecords() {
   lastBirdingRecordTime = gameTime;
   birdingModeBirdTracker = {};
@@ -15890,67 +15969,6 @@ function drawViewfinder() {
         actualViewfinderHeight
     );
     ctx.setLineDash([]);
-}
-
-// 修改gameLoop函数，在陀螺仪模式下更新取景框
-function gameLoop(timestamp) {
-  if (gamePaused) {
-    requestAnimationFrame(gameLoop);
-    return;
-  }
-    const deltaTime = timestamp - lastFrameTime;
-    lastFrameTime = timestamp;
-    
-    updateDayNight(deltaTime);
-    
-    ctx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-    poopCtx.clearRect(0, 0, GAME_WIDTH, GAME_HEIGHT);
-// 更新观鸟模式状态指示器
-if (birdingModeActive) {
-    const birdingStatusIndicator = document.getElementById('birdingStatusIndicator');
-    const birdingDuration = gameTime - birdingModeStartTime;
-    const birdingMinutes = Math.floor(birdingDuration / 60000);
-    const birdingSeconds = Math.floor((birdingDuration % 60000) / 1000);
-    
-    // 只显示观鸟已进行的时间，不显示倒计时
-    birdingStatusIndicator.textContent = `进行中 ${birdingMinutes}:${birdingSeconds.toString().padStart(2, '0')}`;
- }
-    if (gameMode === 'normal' && isDaytime) {
-        updateGoldenFilter();
-    }
-    
-    drawBackground();
-    drawSunMoon();
-    drawStars();
-    drawClouds();
-    
-    updateNightObjects(deltaTime);
-    
-    drawMountains();
-    nightObjects.forEach(obj => drawNightObject(obj));
-    
-    drawTrees();
-    drawWallAndHole();
-    drawReeds();
-    drawDeadTree();
-    drawGroundObjects();
-
-    generateBird();
-    
-    updateBirds(deltaTime);
-    updatePoops(deltaTime);
-    updateGroundObjects(deltaTime);
-    updateFruits(deltaTime);
-      // 在陀螺仪模式下，我们需要持续更新取景框位置
-  if (gyroModeActive) {
-    updateViewfinderFromGyro();
-  }
-    birds.forEach(bird => drawBird(bird));
-    drawPoops();
-    
-    drawViewfinder();
-    
-    requestAnimationFrame(gameLoop);
 }
 
 // ==================== 文本浏览器功能 ====================
