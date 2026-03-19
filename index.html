@@ -2882,6 +2882,28 @@ const BIRD_TYPES = {
     isVulnerableToRaptors: true,
     iconColor: "#D3D3D3"
   },
+  BLUETHROAT: {
+    name: "蓝歌鸲",
+    color: "#000000",
+    eyeColor: "#000000",
+    bodyColor: "#FFFFFF",
+    headColor: "#0000FF",
+    wingColor: "#0000FF",
+    tailColor: "#404040",
+    beakColor: "#000000",
+    groupSize: 1,
+    probability: 0.0145,
+    size: 1.0,
+    behavior: "enterReedsWalkAndExit",  // 自定义行为
+    stayTime: 5,                        // 定住 5 秒
+    whiteEyeRing: false,
+    isVulnerableToRaptors: true,
+    iconColor: "#0000FF",
+    // 行走参数（将在生成时动态设置）
+    walkCount: 0,
+    maxWalkCount: [5, 9],
+    walkDistance: [5, 7]                // 移动身位倍数
+},
     DAURIAN_REDSTART: {
     name: "北红尾鸲",
     color: "#000000",
@@ -6729,8 +6751,8 @@ function handleKeyDown(e) {
             e.preventDefault();
             switchBirdingRecord(1);
         }
-     } else if (e.key === 't' || e.key === 'T') {
-        generateVinegarDuck(true);
+    } else if (e.key === 't' || e.key === 'T') {
+        generateBluethroat(true); // 手动生成蓝歌鸲
     } else if (e.key === 'b' || e.key === 'B') {
         debugCoordinateSystem();
     } else if (e.key === 'g' || e.key === 'G') {
@@ -7089,6 +7111,50 @@ function generatePipit(countStats = true) {
     }
 }
 
+  function generateBluethroat(manual = false) {
+    const birdType = BIRD_TYPES.BLUETHROAT;
+    if (!manual) {
+        appearedBirds[birdType.name] = (appearedBirds[birdType.name] || 0) + 1;
+        updateTextStats();
+        updateAppearedBird(birdType.name);
+    }
+    if (!reedZone) return;
+
+    // 从左侧或右侧地面进入
+    const fromLeft = Math.random() > 0.5;
+    const startX = fromLeft ? -30 : GAME_WIDTH + 30;
+    const startY = reedZone.y + reedZone.height - 5; // 贴近地面
+
+    const bird = {
+        type: birdType,
+        name: birdType.name,
+        x: startX,
+        y: startY,
+        size: birdType.size,
+        speed: 1.5,
+        direction: fromLeft ? 1 : -1,
+        state: 'walkingToCenter',          // 初始状态：走向中心
+        stateTime: 0,
+        walkCount: 0,
+        maxWalks: birdType.maxWalkCount[0] + Math.floor(Math.random() * (birdType.maxWalkCount[1] - birdType.maxWalkCount[0] + 1)),
+        targetX: 0, targetY: 0,
+        whiteEyeRing: true,
+        noStats: manual,
+        isNight: !isDaytime,
+        isVulnerableToRaptors: true,
+        enterDirection: fromLeft ? 1 : -1,
+    };
+
+    // 设置中心目标（芦苇区中部偏右/左一点）
+    const centerX = reedZone.x + reedZone.width * 0.5 + (Math.random() * 40 - 20);
+    bird.targetX = centerX;
+    bird.targetY = reedZone.y + reedZone.height - 5;
+
+    birds.push(bird);
+    if (manual) showSpecialAlert("手动生成蓝歌鸲");
+    return bird;
+}
+  
 function generateBlackbird(countStats = false) {
     const blackbirdType = BIRD_TYPES.BLACKBIRD;
     if (countStats) {
@@ -11335,6 +11401,10 @@ function drawBird(bird) {
     drawLongtailedFinch(bird);
     ctx.restore();
     return;
+      } else if (bird.name === "蓝歌鸲") {
+    drawBluethroat(bird);
+    ctx.restore();
+    return;
   } else if (bird.name === "蜡嘴雀") {
     drawHawfinch(bird);
     ctx.restore();
@@ -15406,7 +15476,96 @@ if ((bird.name === "麻雀" || bird.name === "小北" || bird.name === "小红�
         continue;
     }
 }
-        
+    // ===== 蓝歌鸲地面行走逻辑 =====
+    if (bird.name === "蓝歌鸲" && bird.type.behavior === "enterReedsWalkAndExit") {
+        if (!bird.reedZone) bird.reedZone = reedZone; // 保存引用
+        const groundY = reedZone.y + reedZone.height - 5;
+        const centerX = reedZone.x + reedZone.width * 0.5;
+        const bodyLength = 20 * bird.size; // 一个身位
+
+        switch (bird.state) {
+            case 'walkingToCenter':
+                {
+                    const dx = bird.targetX - bird.x;
+                    const dy = bird.targetY - bird.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 2) {
+                        bird.x = bird.targetX;
+                        bird.y = bird.targetY;
+                        bird.state = 'perchingInReeds';
+                        bird.stateTime = 0;
+                        bird.perchDuration = bird.type.stayTime * 1000;
+                    } else {
+                        bird.x += (dx / dist) * bird.speed;
+                        bird.y += (dy / dist) * bird.speed;
+                        bird.direction = dx > 0 ? 1 : -1;
+                    }
+                }
+                break;
+
+            case 'perchingInReeds':
+                bird.stateTime += deltaTime;
+                if (bird.stateTime >= bird.perchDuration) {
+                    bird.walkCount++;
+                    if (bird.walkCount < bird.maxWalks) {
+                        // 随机移动 5~7 个身位
+                        const distance = (bird.type.walkDistance[0] + Math.random() * (bird.type.walkDistance[1] - bird.type.walkDistance[0])) * bodyLength;
+                        const angle = (Math.random() * Math.PI * 2);
+                        let newX = bird.x + Math.cos(angle) * distance;
+                        let newY = bird.y + Math.sin(angle) * distance;
+                        // 限制在芦苇区内
+                        newX = Math.max(reedZone.x + 20, Math.min(reedZone.x + reedZone.width - 20, newX));
+                        newY = Math.max(reedZone.y + 20, Math.min(reedZone.y + reedZone.height - 20, groundY));
+                        bird.targetX = newX;
+                        bird.targetY = newY;
+                        bird.state = 'walkingToNextSpot';
+                        bird.stateTime = 0;
+                    } else {
+                        // 走向出口
+                        bird.state = 'walkingToExit';
+                        bird.targetX = bird.enterDirection > 0 ? reedZone.x + reedZone.width + 50 : reedZone.x - 50;
+                        bird.targetY = groundY;
+                    }
+                }
+                break;
+
+            case 'walkingToNextSpot':
+                {
+                    const dx = bird.targetX - bird.x;
+                    const dy = bird.targetY - bird.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 2) {
+                        bird.x = bird.targetX;
+                        bird.y = bird.targetY;
+                        bird.state = 'perchingInReeds';
+                        bird.stateTime = 0;
+                        bird.perchDuration = bird.type.stayTime * 1000;
+                    } else {
+                        bird.x += (dx / dist) * bird.speed;
+                        bird.y += (dy / dist) * bird.speed;
+                        bird.direction = dx > 0 ? 1 : -1;
+                    }
+                }
+                break;
+
+            case 'walkingToExit':
+                {
+                    const dx = bird.targetX - bird.x;
+                    const dy = bird.targetY - bird.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < 10 || bird.x < -100 || bird.x > GAME_WIDTH + 100) {
+                        birds.splice(i, 1);
+                        continue;
+                    } else {
+                        bird.x += (dx / dist) * bird.speed;
+                        bird.y += (dy / dist) * bird.speed;
+                        bird.direction = dx > 0 ? 1 : -1;
+                    }
+                }
+                break;
+        }
+        continue; // 跳过后续通用更新
+    }        
         // 修改其他鸟类在芦苇区的行为，使其适应新的芦苇区宽度
         if ((bird.name === "金眶鸻" || bird.name === "12000鸻") && bird.isLandingOnReeds) {
             switch (bird.state) {
@@ -16925,7 +17084,75 @@ function updateBlueKingfisher(bird, deltaTime) {
     bird.bodyFlipped = (bird.facingDirection === -1);
   }
 }
+function drawBluethroat(bird) {
+    const baseSize = 20;
+    const birdSize = baseSize * bird.size;
+    const headSize = birdSize * 0.5;
+    const bodySize = birdSize;
 
+    ctx.save();
+
+    // 身体白色
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.arc(bird.x, bird.y, bodySize/2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 头部蓝色
+    ctx.fillStyle = "#0000FF";
+    ctx.beginPath();
+    ctx.arc(
+        bird.x + bodySize/2 - headSize/2,
+        bird.y - bodySize/2 + headSize/2,
+        headSize/2, 0, Math.PI * 2
+    );
+    ctx.fill();
+
+    // 嘴黑色
+    ctx.fillStyle = "#000000";
+    const beakLength = 4;
+    const beakHeight = 3;
+    const beakStartX = bird.x + bodySize/2 - headSize/2 + headSize/2;
+    const beakStartY = bird.y - bodySize/2 + headSize/2;
+    ctx.beginPath();
+    ctx.moveTo(beakStartX, beakStartY);
+    ctx.lineTo(beakStartX + beakLength, beakStartY);
+    ctx.lineTo(beakStartX, beakStartY + beakHeight);
+    ctx.closePath();
+    ctx.fill();
+
+    // 眼睛（无眼圈，眼珠半径1）
+    const eyeX = bird.x + bodySize/2 - headSize/2 + headSize/4;
+    const eyeY = bird.y - bodySize/2 + headSize/3;
+    ctx.fillStyle = "#000000";
+    ctx.beginPath();
+    ctx.arc(eyeX, eyeY, 1, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 翅膀蓝色
+    ctx.fillStyle = "#0000FF";
+    ctx.fillRect(
+        bird.x - bodySize/4 - headSize/2,
+        bird.y - bodySize/2,
+        bodySize/2,
+        bodySize/3
+    );
+
+    // 尾巴深灰色
+    ctx.fillStyle = "#404040";
+    const tailStartX = bird.x - bodySize/2;
+    const tailStartY = bird.y - bodySize/8;
+    const tailHeight = bodySize/4;
+    ctx.beginPath();
+    ctx.moveTo(tailStartX, tailStartY);
+    ctx.lineTo(tailStartX - 8, tailStartY - tailHeight/2);
+    ctx.lineTo(tailStartX - 8, tailStartY + tailHeight/2);
+    ctx.lineTo(tailStartX, tailStartY);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+}
 // 蓝翡翠绘制函数，参考翠鸟但颜色不同
 function drawBlueKingfisher(bird) {
   const baseSize = 20;
