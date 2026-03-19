@@ -2834,7 +2834,7 @@ const BIRD_TYPES = {
     beakColor: "#000000",
     blackEyeRing: true,        // 黑眼圈（新属性，用于绘制）
     groupSize: 1,
-    probability: 0.005,        // 稀有
+    probability: 0.003,        // 稀有
     size: 0.9,                 // 接近麻雀大小
     behavior: "flyToReedsAndStay",  // 复用芦苇区停留行为
     stayTime: 10,              // 停留10秒（后续在更新中特殊处理直接消失）
@@ -2929,7 +2929,7 @@ const BIRD_TYPES = {
     beakColor: "#00FF00",
     whiteEyeRing: true,
     groupSize: 1,
-    probability: 0.006,
+    probability: 0.004,
     size: 1.1,
     behavior: "waveFlight",          // 改为波浪飞行
     stayTime: 0,
@@ -3192,7 +3192,7 @@ const BIRD_TYPES = {
     beakColor: "#000000",  // 黑色嘴
     whiteEyeRing: true,    // 白眼圈
     groupSize: 1,
-    probability: 0.0045,   // 稀有
+    probability: 0.0025,   // 稀有
     size: 0.9,
     behavior: "perchOnDeadTreeTopAndFly", // 在枯树上停留
     originalSize: 0.9,
@@ -3348,23 +3348,44 @@ const BIRD_TYPES = {
 VINEGAR_DUCK: {
   name: "醋鸭",
   color: "#000000",
-  eyeColor: "#FFFF00", // 黄眼
-  bodyColor: "#FFFFFF", // 白身
-  headColor: "#000000", // 黑头
-  wingColor: "#404040", // 深灰翅膀
-  tailColor: "#404040", // 深灰尾巴
-  beakColor: "#FF8C00", // 橙嘴
+  eyeColor: "#FFFF00",      // 将在绘制中覆盖为 #FF9912
+  bodyColor: "#FFFFFF",
+  headColor: "#000000",
+  wingColor: "#404040",
+  tailColor: "#404040",
+  beakColor: "#FF8C00",
   groupSize: [2, 4],
-  probability: 0.013, // 生成率
-  size: 1.5, // 1.5倍麻雀（麻雀size为1.0）
-  behavior: "flyThrough", // 与赤麻鸭相同的行为
+  probability: 0.013,
+  size: 1.5,
+  behavior: "flyThrough",
   iconColor: "#404040",
-  whiteEyeRing: true,
-  beakOnePointThree: true, // 嘴短一半（相对于赤麻鸭的beakOnePointThree，可能需要调整）
-  beakLengthMultiplier: 0.65, // 嘴长倍数（赤麻鸭为1.3，这里设为一半）
+  // whiteEyeRing: true,        // 删除或注释，改用自定义绘制
+  beakOnePointThree: true,
+  beakLengthMultiplier: 0.65,
   speedMultiplier: 1.8,
   originalSize: 2.5,
-  isVulnerableToRaptors: true // 可能被猛禽捕食
+  isVulnerableToRaptors: true
+},
+  VINEGAR_DUCK_FEMALE: {
+  name: "醋鸭♀",
+  color: "#000000",
+  eyeColor: "#FF9912",
+  bodyColor: "#FFFFFF",
+  headColor: "#8B4513",     // 深棕色头部
+  wingColor: "#404040",
+  tailColor: "#404040",
+  beakColor: "#000000",      // 黑嘴
+  groupSize: [2, 4],         // 保留组大小定义（实际生成固定一对）
+  probability: 0.013,        // 与公相同，但生成时一起出现
+  size: 1.5,
+  behavior: "flyThrough",
+  iconColor: "#404040",
+  beakOnePointThree: true,
+  beakLengthMultiplier: 0.65,
+  speedMultiplier: 1.8,
+  originalSize: 2.5,
+  isVulnerableToRaptors: true,
+  isFemale: true
 },
   MINIVET: {
     name: "山椒鸟",
@@ -3375,7 +3396,7 @@ VINEGAR_DUCK: {
     wingColor: "#000000",
     tailColor: "#000000",
     groupSize: [8, 10],
-    probability: 0.008,
+    probability: 0.006,
     size: 1.2,
     behavior: "flyThrough",
     variant: true,
@@ -3419,7 +3440,7 @@ BLUEFISHER: {
   beakColor: "#FF0000",  // 红嘴
   eyeRingColor: "#FFFFFF", // 白眼圈
   groupSize: 1,
-  probability: 0.0055,     // 生成概率为0.0055
+  probability: 0.0035,     // 生成概率为0.0035
   size: 1.5,             // 1.5倍麻雀大小
   behavior: "flyToDeadTreeAndPerch",  // 新行为：飞到枯树上停歇
   stayTime: [45000, 60000],
@@ -3458,7 +3479,7 @@ BLUEFISHER: {
     color: "#000000",
     bodyColor: "#8B4513",
     groupSize: 1,
-    probability: 0.007,
+    probability: 0.005,
     size: 2.5,
     behavior: "appearOnTree",
     stayTime: 15,
@@ -3476,7 +3497,7 @@ BLUEFISHER: {
     wingColor: "#000000",
     tailColor: "#000000",
     groupSize: [2, 5],
-    probability: 0.0075,
+    probability: 0.0055,
     size: 0.5,
     behavior: "flyToReedsAndStay",
     stayTime: 30,
@@ -3497,7 +3518,7 @@ BLUEFISHER: {
     tailColor: "#404040",  // 深灰尾巴
     blackEyeRing: true,    // 黑眼圈
     groupSize: [5, 10],     // 5-10个一组
-    probability: 0.004,     // 概率0.004
+    probability: 0.002,     // 概率0.004
     size: 0.4,              // 小北的80%(小北size=0.5)
     behavior: "flyToReedsAndStay",  // 和小北一样的行为
     stayTime: 30,
@@ -3623,7 +3644,7 @@ BLUEFISHER: {
     wingColor: "#A0522D",
     tailColor: "#000000",
     groupSize: [1, 2],
-    probability: 0.0065,
+    probability: 0.0045,
     size: 1.0,
     behavior: "landOnTreeTop",
     stayTime: 10,
@@ -3640,7 +3661,7 @@ BLUEFISHER: {
     wingColor: "#A0522D",
     tailColor: "#000000",
     groupSize: [1, 2],
-    probability: 0.0035,
+    probability: 0.0015,
     size: 1.0,
     behavior: "landOnTreeBottom",
     stayTime: 5,
@@ -6708,8 +6729,8 @@ function handleKeyDown(e) {
             e.preventDefault();
             switchBirdingRecord(1);
         }
-    } else if (e.key === 't' || e.key === 'T') {
-       generateMagnificentStream(false);
+     } else if (e.key === 't' || e.key === 'T') {
+        generateVinegarDuck(true);
     } else if (e.key === 'b' || e.key === 'B') {
         debugCoordinateSystem();
     } else if (e.key === 'g' || e.key === 'G') {
@@ -6791,71 +6812,101 @@ function skipToNight() {
 }
 
 function generateVinegarDuck(countStats = true) {
-  const vinegarDuckType = BIRD_TYPES.VINEGAR_DUCK;
-  
-  if (countStats) {
-    // 更新统计
-    appearedBirds[vinegarDuckType.name] = (appearedBirds[vinegarDuckType.name] || 0) + 1;
-    updateTextStats();
-    updateAppearedBird(vinegarDuckType.name);
-  }
-  
-  const fromLeft = Math.random() > 0.5;
-  const birdCount = getRandomGroupSize(vinegarDuckType);
-  const groupId = nextGroupId++;
-  
-  birdGroupInfo[groupId] = {
-    direction: fromLeft ? 1 : -1,
-    birds: []
-  };
-  
-  for (let i = 0; i < birdCount; i++) {
-    const startX = fromLeft ? -50 : GAME_WIDTH + 50;
-    const startY = Math.random() * (GAME_HEIGHT * 0.6) + GAME_HEIGHT * 0.2;
-    let baseSpeed = (1.6 + Math.random() * 0.8);
-    const speedMultiplier = vinegarDuckType.speedMultiplier || 1;
-    const finalSpeed = baseSpeed * speedMultiplier;
+    const maleType = BIRD_TYPES.VINEGAR_DUCK;
+    const femaleType = BIRD_TYPES.VINEGAR_DUCK_FEMALE;
     
-    const bird = {
-      type: vinegarDuckType,
-      name: vinegarDuckType.name,
-      x: startX,
-      y: startY,
-      size: vinegarDuckType.size,
-      speed: finalSpeed,
-      direction: fromLeft ? 1 : -1,
-      state: 'flying',
-      stateTime: 0,
-      whiteEyeRing: true,
-      yellowEyeRing: false,
-      beakColor: "#FF8C00",
-      eyeColor: "#FFFF00",
-      wingColor: "#404040",
-      tailColor: "#404040",
-      noStats: !countStats,
-      isNight: !isDaytime,
-      groupId: groupId,
-      targetX: fromLeft ? GAME_WIDTH + 100 : -100
+    const fromLeft = Math.random() > 0.5;
+    const groupId = nextGroupId++;
+    birdGroupInfo[groupId] = {
+        direction: fromLeft ? 1 : -1,
+        birds: []
     };
     
-    birds.push(bird);
-    birdGroupInfo[groupId].birds.push(bird);
-  }
-  
-  // 观鸟模式记录
-  if (birdingModeActive && countStats) {
-    for (let i = 0; i < birdCount; i++) {
-      const birdId = `${vinegarDuckType.name}_${i}_${Date.now()}`;
-      if (!birdingModeRecordedBirds.has(birdId)) {
-        birdingModeRecordedBirds.add(birdId);
-        birdingObservedSpecies.add(vinegarDuckType.name);
-        const appearedCountElement = document.getElementById('appearedCount');
-        if (appearedCountElement) {
-          appearedCountElement.textContent = birdingObservedSpecies.size;
-        }
-      }
+    // 生成雄性（公）
+    const maleStartX = fromLeft ? -50 : GAME_WIDTH + 50;
+    const maleStartY = Math.random() * (GAME_HEIGHT * 0.6) + GAME_HEIGHT * 0.2;
+    let maleBaseSpeed = (1.6 + Math.random() * 0.8);
+    const maleSpeedMultiplier = maleType.speedMultiplier || 1;
+    const maleFinalSpeed = maleBaseSpeed * maleSpeedMultiplier;
+    
+    const maleBird = {
+        type: maleType,
+        name: maleType.name,
+        x: maleStartX,
+        y: maleStartY,
+        size: maleType.size,
+        speed: maleFinalSpeed,
+        direction: fromLeft ? 1 : -1,
+        state: 'flying',
+        stateTime: 0,
+        whiteEyeRing: false,
+        yellowEyeRing: false,
+        beakColor: "#000000",
+        eyeColor: "#FF9912",
+        wingColor: "#404040",
+        tailColor: "#404040",
+        noStats: !countStats,
+        isNight: !isDaytime,
+        groupId: groupId,
+        targetX: fromLeft ? GAME_WIDTH + 100 : -100,
+        // 性别标记用于绘制
+        isMale: true
+    };
+    
+    // 生成雌性（母）位置稍微偏移
+    const femaleStartX = fromLeft ? -80 : GAME_WIDTH + 80; // 与雄性错开
+    const femaleStartY = maleStartY + 20; // 稍微下移一点
+    let femaleBaseSpeed = (1.6 + Math.random() * 0.8);
+    const femaleSpeedMultiplier = femaleType.speedMultiplier || 1;
+    const femaleFinalSpeed = femaleBaseSpeed * femaleSpeedMultiplier;
+    
+    const femaleBird = {
+        type: femaleType,
+        name: femaleType.name,
+        x: femaleStartX,
+        y: femaleStartY,
+        size: femaleType.size,
+        speed: femaleFinalSpeed,
+        direction: fromLeft ? 1 : -1,
+        state: 'flying',
+        stateTime: 0,
+        whiteEyeRing: false,
+        yellowEyeRing: false,
+        beakColor: "#000000",
+        eyeColor: "#FF9912",
+        wingColor: "#404040",
+        tailColor: "#404040",
+        noStats: !countStats,
+        isNight: !isDaytime,
+        groupId: groupId,
+        targetX: fromLeft ? GAME_WIDTH + 100 : -100,
+        isFemale: true
+    };
+    
+    birds.push(maleBird, femaleBird);
+    birdGroupInfo[groupId].birds.push(maleBird, femaleBird);
+    
+    if (countStats) {
+        // 分别更新出现统计
+        appearedBirds[maleType.name] = (appearedBirds[maleType.name] || 0) + 1;
+        appearedBirds[femaleType.name] = (appearedBirds[femaleType.name] || 0) + 1;
+        updateTextStats();
+        updateAppearedBird(maleType.name);
+        updateAppearedBird(femaleType.name);
     }
-  }
+    
+    // 观鸟模式记录
+    if (birdingModeActive && countStats) {
+        [maleBird, femaleBird].forEach(b => {
+            const birdId = `${b.name}_${b.x}_${b.y}_${Date.now()}`;
+            if (!birdingModeRecordedBirds.has(birdId)) {
+                birdingModeRecordedBirds.add(birdId);
+                birdingObservedSpecies.add(b.name);
+            }
+        });
+        const appearedCountElement = document.getElementById('appearedCount');
+        if (appearedCountElement) appearedCountElement.textContent = birdingObservedSpecies.size;
+    }
 }
 
 function generateFlycatcher(countStats = true) {
@@ -7698,6 +7749,11 @@ function updateTextStats() {
 }
 
 function updateAlbumStats() {
+    // 修复蝙蝠成就可能未解锁的问题
+    if (Object.keys(gameSave.beastPhotos).length > 0 && !gameSave.achievements.BEAST_BAT) {
+        unlockAchievement('BEAST_BAT');
+    }
+
     const albumStats = document.getElementById('albumStats');
     albumStats.innerHTML = '';
     
@@ -11240,6 +11296,14 @@ function drawBird(bird) {
         drawLittleOwl(bird);
         ctx.restore();
         return;
+  } else if (bird.name === "醋鸭") {
+    drawVinegarDuck(bird);
+    ctx.restore();
+    return;
+  } else if (bird.name === "醋鸭♀") {
+    drawVinegarDuckFemale(bird);
+    ctx.restore();
+    return;
     }
     
     if (bird.isBat) {
@@ -14934,6 +14998,17 @@ case 'flyingBack':
                 bird.direction = bird.flyAwayDirection;
             }
             break;
+
+// 在乌鹟的 switch 中添加一个 case
+case 'fleeingFromRaptor':
+    // 惊吓飞走：以设定速度水平移动，并轻微上升
+    bird.x += bird.direction * bird.speed;
+    bird.y -= 0.5; // 轻微上升，模拟惊慌飞离
+    // 飞出屏幕边界时移除
+    if (bird.x < -100 || bird.x > GAME_WIDTH + 100 || bird.y < -100) {
+        birds.splice(i, 1);
+    }
+    break;
             
         case 'flyingAway':
             // 飞走离开 - 修改：确保不会倒着飞
@@ -16999,6 +17074,167 @@ function drawBlueKingfisher(bird) {
   ctx.restore();
 }
 
+function drawVinegarDuck(bird) {
+    const baseSize = 20;
+    const birdSize = baseSize * bird.size;
+    const headSize = birdSize * 0.5;
+    const bodySize = birdSize;
+
+    ctx.save();
+
+    // 身体（白色）
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.arc(bird.x, bird.y, bodySize/2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 头部（黑色）
+    ctx.fillStyle = "#000000";
+    ctx.beginPath();
+    ctx.arc(
+        bird.x + bodySize/2 - headSize/2,
+        bird.y - bodySize/2 + headSize/2,
+        headSize/2, 0, Math.PI * 2
+    );
+    ctx.fill();
+
+    // 嘴（黑色）
+    ctx.fillStyle = "#000000";
+    const beakLength = 8 * 0.65;
+    const beakHeight = 4;
+    const beakStartX = bird.x + bodySize/2 - headSize/2 + headSize/2;
+    const beakStartY = bird.y - bodySize/2 + headSize/2;
+    ctx.beginPath();
+    ctx.moveTo(beakStartX, beakStartY);
+    ctx.lineTo(beakStartX + beakLength, beakStartY);
+    ctx.lineTo(beakStartX, beakStartY + beakHeight);
+    ctx.closePath();
+    ctx.fill();
+
+    // 眼睛位置
+    const eyeX = bird.x + bodySize/2 - headSize/2 + headSize/4;
+    const eyeY = bird.y - bodySize/2 + headSize/3;
+    const eyeRadius = 1;  // 缩小一半
+    const eyeRingRadius = eyeRadius + 2; // 4
+
+    // 黑眼圈（黑色大圆）
+    ctx.fillStyle = "#000000";
+    ctx.beginPath();
+    ctx.arc(eyeX, eyeY, eyeRingRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 眼珠（橙色 #FF9912）
+    ctx.fillStyle = "#FF9912";
+    ctx.beginPath();
+    ctx.arc(eyeX, eyeY, eyeRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 嘴根部白色方块（大小为眼圈直径的一半 = eyeRingRadius）
+    const dotDiameter = eyeRingRadius; // 4
+    const dotTopY = eyeY + eyeRingRadius; // 眼睛下边缘
+    const dotCenterX = eyeX;
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(dotCenterX - dotDiameter/2, dotTopY, dotDiameter, dotDiameter);
+
+    // 翅膀（深灰色）
+    ctx.fillStyle = "#404040";
+    ctx.fillRect(
+        bird.x - bodySize/4 - headSize/2,
+        bird.y - bodySize/2,
+        bodySize/2,
+        bodySize/3
+    );
+
+    // 尾巴（深灰色）
+    ctx.fillStyle = "#404040";
+    const tailStartX = bird.x - bodySize/2;
+    const tailStartY = bird.y - bodySize/8;
+    const tailHeight = bodySize/4;
+    ctx.beginPath();
+    ctx.moveTo(tailStartX, tailStartY);
+    ctx.lineTo(tailStartX - 8, tailStartY - tailHeight/2);
+    ctx.lineTo(tailStartX - 8, tailStartY + tailHeight/2);
+    ctx.lineTo(tailStartX, tailStartY);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+}
+function drawVinegarDuckFemale(bird) {
+    const baseSize = 20;
+    const birdSize = baseSize * bird.size;
+    const headSize = birdSize * 0.5;
+    const bodySize = birdSize;
+
+    ctx.save();
+
+    // 身体白色
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.arc(bird.x, bird.y, bodySize/2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 头部深棕色
+    ctx.fillStyle = "#8B4513";
+    ctx.beginPath();
+    ctx.arc(
+        bird.x + bodySize/2 - headSize/2,
+        bird.y - bodySize/2 + headSize/2,
+        headSize/2, 0, Math.PI * 2
+    );
+    ctx.fill();
+
+    // 嘴黑色
+    ctx.fillStyle = "#000000";
+    const beakLength = 8 * 0.65;
+    const beakHeight = 4;
+    const beakStartX = bird.x + bodySize/2 - headSize/2 + headSize/2;
+    const beakStartY = bird.y - bodySize/2 + headSize/2;
+    ctx.beginPath();
+    ctx.moveTo(beakStartX, beakStartY);
+    ctx.lineTo(beakStartX + beakLength, beakStartY);
+    ctx.lineTo(beakStartX, beakStartY + beakHeight);
+    ctx.closePath();
+    ctx.fill();
+
+    // 眼睛位置（与公相同）
+    const eyeX = bird.x + bodySize/2 - headSize/2 + headSize/4;
+    const eyeY = bird.y - bodySize/2 + headSize/3;
+    const eyeRadius = 1;  // 眼睛大小缩小一半
+
+    // 直接绘制橙色眼睛（无黑眼圈）
+    ctx.fillStyle = "#FF9912";
+    ctx.beginPath();
+    ctx.arc(eyeX, eyeY, eyeRadius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 无白色方块
+
+    // 翅膀深灰色
+    ctx.fillStyle = "#404040";
+    ctx.fillRect(
+        bird.x - bodySize/4 - headSize/2,
+        bird.y - bodySize/2,
+        bodySize/2,
+        bodySize/3
+    );
+
+    // 尾巴深灰色
+    ctx.fillStyle = "#404040";
+    const tailStartX = bird.x - bodySize/2;
+    const tailStartY = bird.y - bodySize/8;
+    const tailHeight = bodySize/4;
+    ctx.beginPath();
+    ctx.moveTo(tailStartX, tailStartY);
+    ctx.lineTo(tailStartX - 8, tailStartY - tailHeight/2);
+    ctx.lineTo(tailStartX - 8, tailStartY + tailHeight/2);
+    ctx.lineTo(tailStartX, tailStartY);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+}
+  
 // ===== 红胸姬鹟更新函数（与乌鹟类似，但目标为枯树）=====
 function updateRedBreastedFlycatcher(bird, deltaTime) {
   bird.stateTime += deltaTime;
