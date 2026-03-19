@@ -3378,7 +3378,7 @@ VINEGAR_DUCK: {
   beakColor: "#FF8C00",
   groupSize: [2, 4],
   probability: 0.013,
-  size: 1.5,
+  size: 1.7,
   behavior: "flyThrough",
   iconColor: "#404040",
   // whiteEyeRing: true,        // 删除或注释，改用自定义绘制
@@ -3399,7 +3399,7 @@ VINEGAR_DUCK: {
   beakColor: "#000000",      // 黑嘴
   groupSize: [2, 4],         // 保留组大小定义（实际生成固定一对）
   probability: 0.013,        // 与公相同，但生成时一起出现
-  size: 1.5,
+  size: 1.7,
   behavior: "flyThrough",
   iconColor: "#404040",
   beakOnePointThree: true,
@@ -6752,7 +6752,7 @@ function handleKeyDown(e) {
             switchBirdingRecord(1);
         }
     } else if (e.key === 't' || e.key === 'T') {
-        generateBluethroat(true); // 手动生成蓝歌鸲
+        generateVinegarDuck(false);
     } else if (e.key === 'b' || e.key === 'B') {
         debugCoordinateSystem();
     } else if (e.key === 'g' || e.key === 'G') {
@@ -7087,7 +7087,11 @@ function generatePipit(countStats = true) {
     for (let i = 0; i < birdCount; i++) {
         const startX = fromLeft ? -50 : GAME_WIDTH + 50;
         const startY = Math.random() * (GAME_HEIGHT * 0.4) + GAME_HEIGHT * 0.1; // 从天空较高位置飞过
-        
+           // 特殊处理：醋鸭应生成一对（公+母）
+    if (selectedBirdType.name === "醋鸭") {
+        generateVinegarDuck(true); // 传入 true 表示计入统计
+        return; // 直接返回，避免后续通用生成
+    } 
         const bird = createCommonBird(
             pipitType,
             startX,
@@ -17309,28 +17313,32 @@ function drawVinegarDuck(bird) {
 
     ctx.save();
 
-    // 身体（白色）
+    // 身体白色
     ctx.fillStyle = "#FFFFFF";
     ctx.beginPath();
     ctx.arc(bird.x, bird.y, bodySize/2, 0, Math.PI * 2);
     ctx.fill();
 
-    // 头部（黑色）
+    // 头部基础位置
+    const headBaseX = bird.x + bodySize/2 - headSize/2;
+    const headBaseY = bird.y - bodySize/2 + headSize/2;
+    // 头部整体向前移动 1 像素（根据方向）
+    const headOffsetX = bird.direction * 1;
+    const headCenterX = headBaseX + headOffsetX;
+    const headCenterY = headBaseY;
+
+    // 绘制头部（黑色）
     ctx.fillStyle = "#000000";
     ctx.beginPath();
-    ctx.arc(
-        bird.x + bodySize/2 - headSize/2,
-        bird.y - bodySize/2 + headSize/2,
-        headSize/2, 0, Math.PI * 2
-    );
+    ctx.arc(headCenterX, headCenterY, headSize/2, 0, Math.PI * 2);
     ctx.fill();
 
-    // 嘴（黑色）
-    ctx.fillStyle = "#000000";
+    // 嘴部
     const beakLength = 8 * 0.65;
     const beakHeight = 4;
-    const beakStartX = bird.x + bodySize/2 - headSize/2 + headSize/2;
-    const beakStartY = bird.y - bodySize/2 + headSize/2;
+    const beakStartX = headCenterX + headSize/2;
+    const beakStartY = headCenterY;
+    ctx.fillStyle = "#000000";
     ctx.beginPath();
     ctx.moveTo(beakStartX, beakStartY);
     ctx.lineTo(beakStartX + beakLength, beakStartY);
@@ -17338,33 +17346,34 @@ function drawVinegarDuck(bird) {
     ctx.closePath();
     ctx.fill();
 
-    // 眼睛位置
-    const eyeX = bird.x + bodySize/2 - headSize/2 + headSize/4;
-    const eyeY = bird.y - bodySize/2 + headSize/3;
-    const eyeRadius = 1;  // 缩小一半
-    const eyeRingRadius = eyeRadius + 2; // 4
+    // 眼睛位置（基于头部中心，不向上移动）
+    const eyeX = headCenterX + headSize/4;
+    const eyeY = headCenterY - headSize/6;   // 原始垂直位置，无额外偏移
 
-    // 黑眼圈（黑色大圆）
+    const eyeRadius = 1;
+    const eyeRingRadius = 3.75;              // 眼圈半径缩小四分之一
+
+    // 黑眼圈
     ctx.fillStyle = "#000000";
     ctx.beginPath();
     ctx.arc(eyeX, eyeY, eyeRingRadius, 0, Math.PI * 2);
     ctx.fill();
 
-    // 眼珠（橙色 #FF9912）
+    // 眼珠（橙色）
     ctx.fillStyle = "#FF9912";
     ctx.beginPath();
     ctx.arc(eyeX, eyeY, eyeRadius, 0, Math.PI * 2);
     ctx.fill();
 
-    // 嘴根部白色方块（大小为眼圈直径的一半 = eyeRingRadius）
-    const dotDiameter = eyeRingRadius; // 4
-    const dotTopY = eyeY + eyeRingRadius; // 眼睛下边缘
+    // 白色方块（位置相对于眼睛下边缘）
+    const dotDiameter = 5;
+    const dotTopY = eyeY + eyeRingRadius;
     const dotCenterX = eyeX;
     ctx.fillStyle = "#FFFFFF";
     ctx.fillRect(dotCenterX - dotDiameter/2, dotTopY, dotDiameter, dotDiameter);
 
-    // 翅膀（深灰色）
-    ctx.fillStyle = "#404040";
+    // 翅膀黑色
+    ctx.fillStyle = "#000000";
     ctx.fillRect(
         bird.x - bodySize/4 - headSize/2,
         bird.y - bodySize/2,
@@ -17372,7 +17381,7 @@ function drawVinegarDuck(bird) {
         bodySize/3
     );
 
-    // 尾巴（深灰色）
+    // 尾巴深灰色
     ctx.fillStyle = "#404040";
     const tailStartX = bird.x - bodySize/2;
     const tailStartY = bird.y - bodySize/8;
@@ -17424,20 +17433,20 @@ function drawVinegarDuckFemale(bird) {
     ctx.closePath();
     ctx.fill();
 
-    // 眼睛位置（与公相同）
+    // 眼睛位置
     const eyeX = bird.x + bodySize/2 - headSize/2 + headSize/4;
     const eyeY = bird.y - bodySize/2 + headSize/3;
-    const eyeRadius = 1;  // 眼睛大小缩小一半
+    const eyeRadius = 1;
 
-    // 直接绘制橙色眼睛（无黑眼圈）
-    ctx.fillStyle = "#FF9912";
+    // 直接绘制白色眼睛（无黑眼圈）
+    ctx.fillStyle = "#FFFFFF";
     ctx.beginPath();
     ctx.arc(eyeX, eyeY, eyeRadius, 0, Math.PI * 2);
     ctx.fill();
 
     // 无白色方块
 
-    // 翅膀深灰色
+    // 翅膀深灰色（保持不变）
     ctx.fillStyle = "#404040";
     ctx.fillRect(
         bird.x - bodySize/4 - headSize/2,
@@ -17461,7 +17470,6 @@ function drawVinegarDuckFemale(bird) {
 
     ctx.restore();
 }
-  
 // ===== 红胸姬鹟更新函数（与乌鹟类似，但目标为枯树）=====
 function updateRedBreastedFlycatcher(bird, deltaTime) {
   bird.stateTime += deltaTime;
