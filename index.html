@@ -2188,6 +2188,11 @@ const RARE_BIRD_TYPES = ['KENTISH_PLOVER', 'MINIVET', 'GOLDCREST', 'OWL', 'LITTL
                          'BLUEFISHER', 'EAGLE_OWL', 'SHORT_EARED_OWL', 'RED_BREASTED_FLYCATCHER', 
                          'WHITE_CROWNED_PENDULINE_TIT', 'PARADISE_FLYCATCHER'];  // 添加寿带
 
+// MODIFIED: 辅助函数，用于统计时合并醋鸭♀到醋鸭
+function getMergedBirdName(originalName) {
+    return originalName === "醋鸭♀" ? "醋鸭" : originalName;
+}
+
 function initSaveData() {
     if (typeof Storage !== 'undefined') {
         const saved = localStorage.getItem('birding_simulator_save');
@@ -2258,6 +2263,16 @@ function cleanupSaveData() {
             gameSave.capturedBirdSpecies[birdName] = 1;
         }
     });
+    
+    // MODIFIED: 合并醋鸭♀的统计数据到醋鸭
+    if (gameSave.appearedBirdSpecies && gameSave.appearedBirdSpecies["醋鸭♀"]) {
+        gameSave.appearedBirdSpecies["醋鸭"] = (gameSave.appearedBirdSpecies["醋鸭"] || 0) + gameSave.appearedBirdSpecies["醋鸭♀"];
+        delete gameSave.appearedBirdSpecies["醋鸭♀"];
+    }
+    if (gameSave.capturedBirdSpecies && gameSave.capturedBirdSpecies["醋鸭♀"]) {
+        gameSave.capturedBirdSpecies["醋鸭"] = (gameSave.capturedBirdSpecies["醋鸭"] || 0) + gameSave.capturedBirdSpecies["醋鸭♀"];
+        delete gameSave.capturedBirdSpecies["醋鸭♀"];
+    }
     
     // 移除成就中的空值
     Object.keys(gameSave.achievements).forEach(key => {
@@ -2464,6 +2479,9 @@ function editAlbumId() {
 
 // 更新出现鸟种（不重复计数）
 function updateAppearedBird(birdName) {
+    // MODIFIED: 将醋鸭♀映射为醋鸭，实现统计合并
+    if (birdName === "醋鸭♀") birdName = "醋鸭";
+    
     // 确保存档中有该鸟种记录
     if (!gameSave.appearedBirdSpecies[birdName]) {
         gameSave.appearedBirdSpecies[birdName] = 1;
@@ -2479,6 +2497,9 @@ function updateAppearedBird(birdName) {
 
 // 更新拍摄鸟种（不重复计数）
 function updateCapturedBird(birdName) {
+    // MODIFIED: 将醋鸭♀映射为醋鸭，实现统计合并
+    if (birdName === "醋鸭♀") birdName = "醋鸭";
+    
     // 确保存档中有该鸟种记录
     if (!gameSave.capturedBirdSpecies[birdName]) {
         gameSave.capturedBirdSpecies[birdName] = 1;
@@ -5725,7 +5746,8 @@ function toggleBirdingMode() {
             const birdId = `${bird.name}_${bird.x}_${bird.y}_${bird.groupId || 'single'}`;
             if (!birdingModeRecordedBirds.has(birdId)) {
                 birdingModeRecordedBirds.add(birdId);
-                birdingObservedSpecies.add(bird.name);
+                // MODIFIED: 使用映射后的名称加入观鸟记录
+                birdingObservedSpecies.add(getMergedBirdName(bird.name));
             }
         });
         
@@ -5771,7 +5793,8 @@ function toggleBirdingMode() {
                     const birdId = `${bird.name}_${bird.x}_${bird.y}_${bird.groupId || 'single'}`;
                     if (!birdingModeRecordedBirds.has(birdId)) {
                         birdingModeRecordedBirds.add(birdId);
-                        birdingObservedSpecies.add(bird.name);
+                        // MODIFIED: 使用映射后的名称加入观鸟记录
+                        birdingObservedSpecies.add(getMergedBirdName(bird.name));
                         
                         // 更新观察鸟种统计
                         const appearedCountElement = document.getElementById('appearedCount');
@@ -5879,7 +5902,8 @@ birdingModeUpdateInterval = setInterval(() => {
             const birdId = `${bird.name}_${bird.x}_${bird.y}_${bird.groupId || 'single'}`;
             if (!birdingModeRecordedBirds.has(birdId)) {
                 birdingModeRecordedBirds.add(birdId);
-                birdingObservedSpecies.add(bird.name);
+                // MODIFIED: 使用映射后的名称加入观鸟记录
+                birdingObservedSpecies.add(getMergedBirdName(bird.name));
                 hasNewBird = true;
             }
         });
@@ -6923,7 +6947,8 @@ function generateVinegarDuck(countStats = true) {
             const birdId = `${b.name}_${b.x}_${b.y}_${Date.now()}`;
             if (!birdingModeRecordedBirds.has(birdId)) {
                 birdingModeRecordedBirds.add(birdId);
-                birdingObservedSpecies.add(b.name);
+                // MODIFIED: 使用映射后的名称加入观鸟记录
+                birdingObservedSpecies.add(getMergedBirdName(b.name));
             }
         });
         const appearedCountElement = document.getElementById('appearedCount');
@@ -6986,7 +7011,8 @@ function generateFlycatcher(countStats = true) {
         const birdId = `${bird.name}_${bird.x}_${bird.y}_${bird.type.name}`;
         if (!birdingModeRecordedBirds.has(birdId)) {
             birdingModeRecordedBirds.add(birdId);
-            birdingObservedSpecies.add(bird.name);
+            // MODIFIED: 使用映射后的名称加入观鸟记录
+            birdingObservedSpecies.add(getMergedBirdName(bird.name));
             
             // 更新观察鸟种统计
             const appearedCountElement = document.getElementById('appearedCount');
@@ -7899,6 +7925,9 @@ function showAchievementsInAlbum(albumStats) {
     const unlockedCount = unlockedAchievements.length;
     const totalCount = Object.keys(ACHIEVEMENTS).length;
     
+    // 夜间系成就的ID列表（未解锁时显示特殊图标）
+    const NIGHT_ACHIEVEMENTS = ['BEAST_BAT', 'ASTRO_METEOR', 'ASTRO_UFO', 'ASTRO_COMET'];
+    
     // 创建成就概览
     achievementSummary.innerHTML = `
         <div style="color: #FFD700; font-size: 16px; font-weight: bold; margin-bottom: 10px;">
@@ -7908,11 +7937,25 @@ function showAchievementsInAlbum(albumStats) {
             ${Object.keys(ACHIEVEMENTS).map(key => {
                 const achieved = gameSave.achievements[key]?.achieved || false;
                 const isHighestInSeries = isHighestAchievementInSeries(key);
+                
+                // 处理未解锁的夜间系成就
+                if (!achieved && NIGHT_ACHIEVEMENTS.includes(key)) {
+                    return `
+                        <div style="width: 24px; height: 24px; border-radius: 50%; 
+                                    background: #333; 
+                                    display: flex; align-items: center; justify-content: center;
+                                    cursor: help;"
+                             title="夜间系成就">
+                            🌙
+                        </div>
+                    `;
+                }
+                
                 const title = achieved ? 
-                    (isHighestInSeries ? '✓' : '✓') : // 最高级和低级都用✓表示
+                    (isHighestInSeries ? '✓' : '✓') : 
                     '?';
                 const bgColor = achieved ? 
-                    (isHighestInSeries ? '#FFD700' : '#FFA500') : // 最高级金色，低级橙色
+                    (isHighestInSeries ? '#FFD700' : '#FFA500') : 
                     '#555';
                 const titleText = achieved ? `${ACHIEVEMENTS[key].name} (已解锁)` : `${ACHIEVEMENTS[key].name}: ${ACHIEVEMENTS[key].desc}`;
                 
@@ -13643,7 +13686,8 @@ function generateParadiseFlycatcher(countStats = true) {
     const birdId = `${bird.name}_${bird.x}_${bird.y}_${Date.now()}`;
     if (!birdingModeRecordedBirds.has(birdId)) {
       birdingModeRecordedBirds.add(birdId);
-      birdingObservedSpecies.add(bird.name);
+      // MODIFIED: 使用映射后的名称加入观鸟记录
+      birdingObservedSpecies.add(getMergedBirdName(bird.name));
       const appearedCountElement = document.getElementById('appearedCount');
       if (appearedCountElement) appearedCountElement.textContent = birdingObservedSpecies.size;
     }
@@ -13727,7 +13771,8 @@ function generateYellowBreastedBunting(countStats = true) {
     const birdId = `${bird.name}_${bird.x}_${bird.y}_${Date.now()}`;
     if (!birdingModeRecordedBirds.has(birdId)) {
       birdingModeRecordedBirds.add(birdId);
-      birdingObservedSpecies.add(bird.name);
+      // MODIFIED: 使用映射后的名称加入观鸟记录
+      birdingObservedSpecies.add(getMergedBirdName(bird.name));
       const appearedCountElement = document.getElementById('appearedCount');
       if (appearedCountElement) appearedCountElement.textContent = birdingObservedSpecies.size;
     }
@@ -13872,7 +13917,8 @@ function generateMagnificentStream(countStats = true) {
       const birdId = `${b.name}_${b.x}_${b.y}_${Date.now()}`;
       if (!birdingModeRecordedBirds.has(birdId)) {
         birdingModeRecordedBirds.add(birdId);
-        birdingObservedSpecies.add(b.name);
+        // MODIFIED: 使用映射后的名称加入观鸟记录
+        birdingObservedSpecies.add(getMergedBirdName(b.name));
       }
     });
     const appearedCountElement = document.getElementById('appearedCount');
@@ -13940,7 +13986,8 @@ function generateWhiteCrownedPendulineTit(countStats = true) {
     const birdId = `${bird.name}_${bird.x}_${bird.y}_${Date.now()}`;
     if (!birdingModeRecordedBirds.has(birdId)) {
       birdingModeRecordedBirds.add(birdId);
-      birdingObservedSpecies.add(bird.name);
+      // MODIFIED: 使用映射后的名称加入观鸟记录
+      birdingObservedSpecies.add(getMergedBirdName(bird.name));
       const appearedCountElement = document.getElementById('appearedCount');
       if (appearedCountElement) appearedCountElement.textContent = birdingObservedSpecies.size;
     }
@@ -13999,7 +14046,17 @@ function generateDaurianRedstart(countStats = true) {
   
   birds.push(bird);
   
-  // 观鸟模式记录...
+  // 观鸟模式记录
+  if (birdingModeActive && !bird.noStats) {
+    const birdId = `${bird.name}_${bird.x}_${bird.y}_${Date.now()}`;
+    if (!birdingModeRecordedBirds.has(birdId)) {
+      birdingModeRecordedBirds.add(birdId);
+      // MODIFIED: 使用映射后的名称加入观鸟记录
+      birdingObservedSpecies.add(getMergedBirdName(bird.name));
+      const appearedCountElement = document.getElementById('appearedCount');
+      if (appearedCountElement) appearedCountElement.textContent = birdingObservedSpecies.size;
+    }
+  }
 }  
   
 // 新增：红胸姬鹟生成函数（稀有）
@@ -14059,7 +14116,8 @@ function generateRedBreastedFlycatcher(countStats = true) {
     const birdId = `${bird.name}_${bird.x}_${bird.y}_${bird.type.name}`;
     if (!birdingModeRecordedBirds.has(birdId)) {
       birdingModeRecordedBirds.add(birdId);
-      birdingObservedSpecies.add(bird.name);
+      // MODIFIED: 使用映射后的名称加入观鸟记录
+      birdingObservedSpecies.add(getMergedBirdName(bird.name));
       
       const appearedCountElement = document.getElementById('appearedCount');
       if (appearedCountElement) {
