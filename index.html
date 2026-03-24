@@ -2091,7 +2091,123 @@ function isRaptorNearby(bird, distance) {
     }
     return false;
 }
+function updateHeronReedStand(bird, deltaTime) {
+    switch (bird.state) {
+        case 'flyingToReedGround':
+            if (!reedZone) {
+                bird.state = 'flyingAway';
+                break;
+            }
+            const dx = bird.reedGroundTargetX - bird.x;
+            const dy = bird.reedGroundTargetY - bird.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 5) {
+                bird.x = bird.reedGroundTargetX;
+                bird.y = bird.reedGroundTargetY;
+                bird.state = 'standing';
+                bird.standStartTime = gameTime; // 使用全局游戏时间
+                bird.speed = 0;
+            } else {
+                const step = Math.min(bird.speed, dist);
+                bird.x += (dx / dist) * step;
+                bird.y += (dy / dist) * step;
+                bird.direction = dx > 0 ? 1 : -1;
+            }
+            break;
+        case 'standing':
+            if (gameTime - bird.standStartTime >= bird.standDuration) {
+                bird.state = 'flyingAway';
+                bird.speed = 1.5;
+                bird.direction = Math.random() > 0.5 ? 1 : -1;
+            }
+            break;
+        case 'flyingAway':
+            bird.x += bird.speed * bird.direction;
+            bird.y -= 0.3;
+            if (bird.x < -100 || bird.x > GAME_WIDTH + 100 || bird.y < -100) {
+                birds.splice(birds.indexOf(bird), 1);
+            }
+            break;
+    }
+}
+function updateHeronFishDive(bird, deltaTime) {
+    bird.stateTime += deltaTime;
 
+    switch (bird.state) {
+        case 'flyingToReedTop':
+            if (!reedZone) {
+                bird.state = 'flyingAway';
+                break;
+            }
+            const dx = bird.targetX - bird.x;
+            const dy = bird.targetY - bird.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < 10) {
+                bird.x = bird.targetX;
+                bird.y = bird.targetY;
+                bird.state = 'perchingOnReed';
+                bird.stateTime = 0;
+                bird.speed = 0;
+                bird.headAngle = Math.PI / 4; // 头向下
+            } else {
+                const step = Math.min(bird.speed, dist);
+                bird.x += (dx / dist) * step;
+                bird.y += (dy / dist) * step;
+            }
+            break;
+        case 'perchingOnReed':
+            if (bird.stateTime >= bird.perchDuration) {
+                bird.state = 'divingForFish';
+                bird.stateTime = 0;
+                bird.diveTargetX = bird.x + (bird.facingDirection > 0 ? 80 : -80);
+                bird.diveTargetY = reedZone.y + reedZone.height - 10;
+                bird.speed = 3.0;
+            }
+            break;
+        case 'divingForFish':
+            if (!reedZone) {
+                bird.state = 'flyingAway';
+                break;
+            }
+            const dxDiv = bird.diveTargetX - bird.x;
+            const dyDiv = bird.diveTargetY - bird.y;
+            const distDiv = Math.sqrt(dxDiv * dxDiv + dyDiv * dyDiv);
+            if (distDiv < 15 || bird.stateTime > 2000) {
+                bird.hasCaughtFish = true;
+                bird.caughtFish = { size: 8, color: "#3399FF" };
+                bird.state = 'flyingWithFish';
+                bird.stateTime = 0;
+                bird.speed = 2.0;
+                bird.facingDirection = bird.direction; // 记录方向
+            } else {
+                const angle = Math.atan2(dyDiv, dxDiv);
+                const step = Math.min(bird.speed, distDiv);
+                bird.x += Math.cos(angle) * step;
+                bird.y += Math.sin(angle) * step;
+                bird.headAngle = angle;
+            }
+            break;
+        case 'flyingWithFish':
+            if (bird.direction !== bird.facingDirection) {
+                bird.direction = bird.facingDirection;
+            }
+            bird.x += bird.speed * bird.direction;
+            bird.y -= 0.5;
+            bird.headAngle = 0;
+            bird.bodyFlipped = (bird.direction === -1);
+            if (bird.x < -100 || bird.x > GAME_WIDTH + 100 || bird.y < -100) {
+                birds.splice(birds.indexOf(bird), 1);
+            }
+            break;
+        case 'flyingAway':
+            bird.x += bird.speed * bird.direction;
+            bird.y -= 0.3;
+            if (bird.x < -100 || bird.x > GAME_WIDTH + 100 || bird.y < -100) {
+                birds.splice(birds.indexOf(bird), 1);
+            }
+            break;
+    }
+}
 // 游禽组更新（含移动、转向、猛禽惊吓）
 function updateWaterfowlPatrol(deltaTime) {
     for (let i = 0; i < waterfowlPatrolGroups.length; i++) {
@@ -2101,8 +2217,234 @@ function updateWaterfowlPatrol(deltaTime) {
             i--;
             continue;
         }
-        
-        // 检查是否有猛禽惊吓整组
+
+        // ========== 小pt下潜逻辑（必须在组移动前处理） ==========
+        for (let b of group.birds) {
+            if (b.name === "小pt" && b.state === 'patrolWalk') {
+                // 初始化下潜属性
+                if (b.diveCooldown === undefined) {
+                    b.diveCooldown = 0;
+                    b.isDiving = false;
+                    b.diving = false;
+                }
+
+                // 冷却递减
+                if (b.diveCooldown > 0) {
+                    b.diveCooldown -= deltaTime;
+                    if (b.diveCooldown < 0) b.diveCooldown = 0;
+                }
+
+                // 未下潜且冷却结束，随机触发
+                if (!b.isDiving && b.diveCooldown <= 0) {
+                    if (Math.random() < 0.5) { // 50%概率下潜
+                        b.isDiving = true;
+                        b.diving = true;
+                        b.diveStartTime = gameTime;
+                        b.diveDuration = 5000;
+                        b.diveOriginalX = b.x;
+                        b.diveOriginalY = b.y;
+                    }
+                }
+
+                // 下潜中，检查是否结束
+                if (b.isDiving) {
+                    if (gameTime - b.diveStartTime >= b.diveDuration) {
+                        // 上浮
+                        b.isDiving = false;
+                        b.diving = false;
+
+                        // 计算新位置（距离原位置50~150）
+                        let angle = Math.random() * Math.PI * 2;
+                        let distance = 50 + Math.random() * 100;
+                        let newX = b.diveOriginalX + Math.cos(angle) * distance;
+                        let newY = b.diveOriginalY + Math.sin(angle) * distance;
+
+                        // 边界限制（石头区或芦苇区）
+                        if (stones.length) {
+                            const minX = Math.min(...stones.map(s => s.x - s.width/2)) + 10;
+                            const maxX = Math.max(...stones.map(s => s.x + s.width/2)) - 10;
+                            const minY = (reedZone.y + reedZone.height) - VISIBLE_HEIGHT + 5;
+                            const maxY = (reedZone.y + reedZone.height) - 5;
+                            newX = Math.max(minX, Math.min(maxX, newX));
+                            newY = Math.max(minY, Math.min(maxY, newY));
+                        } else {
+                            newX = Math.max(reedZone.x + 20, Math.min(reedZone.x + reedZone.width - 20, newX));
+                            newY = Math.max(reedZone.y + 10, Math.min(reedZone.y + reedZone.height - 10, newY));
+                        }
+
+                        b.x = newX;
+                        b.y = newY;
+
+                        // 设置冷却，避免立即再次下潜
+                        b.diveCooldown = 5000;
+                    } else {
+                        // 下潜中，不参与任何移动，跳过后续所有组内逻辑
+                        continue;
+                    }
+                }
+            }
+        }
+
+        // ========== 胖虎与鸳鸯互动逻辑（保持不变，但需注意跳过下潜中的小pt） ==========
+        let panghu = null;
+        let mandarin = null;
+        for (let b of group.birds) {
+            if (b.name === "胖虎") panghu = b;
+            if (b.name === "鸳鸯♂") mandarin = b;
+        }
+
+        if (panghu && mandarin && panghu.state === 'patrolWalk' && mandarin.state === 'patrolWalk') {
+            const dx = panghu.x - mandarin.x;
+            const dy = panghu.y - mandarin.y;
+            const distance = Math.hypot(dx, dy);
+            const now = gameTime;
+
+            // 初始化状态
+            if (panghu.interactionState === undefined) panghu.interactionState = 'random';
+            if (mandarin.interactionState === undefined) mandarin.interactionState = 'random';
+
+            // 追逐冷却标志
+            if (panghu.chaseCooldownUntil === undefined) panghu.chaseCooldownUntil = 0;
+            if (mandarin.chaseCooldownUntil === undefined) mandarin.chaseCooldownUntil = 0;
+
+            const inCooldown = now < panghu.chaseCooldownUntil || now < mandarin.chaseCooldownUntil;
+
+            if (distance <= 300 && !inCooldown) {
+                if (panghu.interactionState !== 'chase') {
+                    panghu.interactionState = 'chase';
+                    mandarin.interactionState = 'chase';
+
+                    panghu.chaseStartTime = now;
+                    mandarin.chaseStartTime = now;
+
+                    const angleToMandarin = Math.atan2(mandarin.y - panghu.y, mandarin.x - panghu.x);
+                    panghu.targetAngle = angleToMandarin;
+                    mandarin.targetAngle = angleToMandarin + Math.PI;
+                    panghu.lastDirectionChangeTime = now;
+                    mandarin.lastDirectionChangeTime = now;
+
+                    mandarin.directionChangeCount = 0;
+                    mandarin.exhausted = false;
+
+                    panghu.randomChangeTimer = 0;
+                    mandarin.randomChangeTimer = 0;
+                }
+            } else if (distance >= 500) {
+                if (panghu.interactionState !== 'random') {
+                    panghu.interactionState = 'random';
+                    mandarin.interactionState = 'random';
+                    panghu.chaseCooldownUntil = 0;
+                    mandarin.chaseCooldownUntil = 0;
+                    if (mandarin.directionChangeCount) mandarin.directionChangeCount = 0;
+                    if (mandarin.exhausted) mandarin.exhausted = false;
+                }
+            }
+
+            let chaseTimeout = false;
+            if (panghu.interactionState === 'chase' && panghu.chaseStartTime) {
+                if (now - panghu.chaseStartTime > 15000) {
+                    chaseTimeout = true;
+                }
+            }
+
+            const step = deltaTime / 16;
+
+            if (chaseTimeout && panghu.interactionState === 'chase') {
+                panghu.interactionState = 'random';
+                mandarin.interactionState = 'random';
+                panghu.chaseCooldownUntil = now + 10000;
+                mandarin.chaseCooldownUntil = now + 10000;
+                mandarin.directionChangeCount = 0;
+                mandarin.exhausted = false;
+                panghu.x += (panghu.x > mandarin.x ? 20 : -20);
+                mandarin.x += (mandarin.x > panghu.x ? 20 : -20);
+            }
+
+            if (panghu.interactionState === 'chase' && !mandarin.exhausted) {
+                if (now - panghu.lastDirectionChangeTime > 500) {
+                    const angleToMandarin = Math.atan2(mandarin.y - panghu.y, mandarin.x - panghu.x);
+                    panghu.targetAngle = angleToMandarin;
+                    panghu.lastDirectionChangeTime = now;
+                }
+                const panghuSpeed = 0.8 * step;
+                panghu.x += Math.cos(panghu.targetAngle) * panghuSpeed;
+                panghu.y += Math.sin(panghu.targetAngle) * panghuSpeed;
+                panghu.direction = Math.cos(panghu.targetAngle) > 0 ? 1 : -1;
+
+                if (now - mandarin.lastDirectionChangeTime > 2500) {
+                    const angleToMandarin = Math.atan2(mandarin.y - panghu.y, mandarin.x - panghu.x);
+                    mandarin.targetAngle = angleToMandarin + Math.PI;
+                    mandarin.lastDirectionChangeTime = now;
+                    mandarin.directionChangeCount = (mandarin.directionChangeCount || 0) + 1;
+
+                    if (mandarin.directionChangeCount >= 5) {
+                        mandarin.exhausted = true;
+                        panghu.interactionState = 'random';
+                        mandarin.interactionState = 'random';
+                        panghu.chaseCooldownUntil = now + 10000;
+                        mandarin.chaseCooldownUntil = now + 10000;
+                        panghu.x += (panghu.x > mandarin.x ? 20 : -20);
+                        mandarin.x += (mandarin.x > panghu.x ? 20 : -20);
+                        mandarin.directionChangeCount = 0;
+                        mandarin.lastDirectionChangeTime = 0;
+                        panghu.lastDirectionChangeTime = 0;
+                    }
+                }
+
+                let speedMultiplier = 2.3;
+                if (distance <= 10) {
+                    speedMultiplier = 5.0;
+                }
+                const mandarinSpeed = 0.4 * speedMultiplier * step;
+                mandarin.x += Math.cos(mandarin.targetAngle) * mandarinSpeed;
+                mandarin.y += Math.sin(mandarin.targetAngle) * mandarinSpeed;
+                mandarin.direction = Math.cos(mandarin.targetAngle) > 0 ? 1 : -1;
+            } else if (panghu.interactionState === 'random') {
+                if (panghu.randomChangeTimer === undefined) panghu.randomChangeTimer = 0;
+                if (mandarin.randomChangeTimer === undefined) mandarin.randomChangeTimer = 0;
+
+                if (now - panghu.randomChangeTimer > 500) {
+                    panghu.randomAngle = Math.random() * Math.PI * 2;
+                    panghu.randomChangeTimer = now;
+                }
+                if (now - mandarin.randomChangeTimer > 500) {
+                    mandarin.randomAngle = Math.random() * Math.PI * 2;
+                    mandarin.randomChangeTimer = now;
+                }
+
+                const speed = 0.4 * step;
+                panghu.x += Math.cos(panghu.randomAngle) * speed;
+                panghu.y += Math.sin(panghu.randomAngle) * speed;
+                panghu.direction = Math.cos(panghu.randomAngle) > 0 ? 1 : -1;
+
+                mandarin.x += Math.cos(mandarin.randomAngle) * speed;
+                mandarin.y += Math.sin(mandarin.randomAngle) * speed;
+                mandarin.direction = Math.cos(mandarin.randomAngle) > 0 ? 1 : -1;
+            }
+
+            // 边界限制
+            if (stones.length) {
+                const minX = Math.min(...stones.map(s => s.x - s.width/2)) + 10;
+                const maxX = Math.max(...stones.map(s => s.x + s.width/2)) - 10;
+                const minY = (reedZone.y + reedZone.height) - VISIBLE_HEIGHT + 5;
+                const maxY = (reedZone.y + reedZone.height) - 5;
+                panghu.x = Math.max(minX, Math.min(maxX, panghu.x));
+                panghu.y = Math.max(minY, Math.min(maxY, panghu.y));
+                mandarin.x = Math.max(minX, Math.min(maxX, mandarin.x));
+                mandarin.y = Math.max(minY, Math.min(maxY, mandarin.y));
+            } else {
+                panghu.x = Math.max(reedZone.x + 20, Math.min(reedZone.x + reedZone.width - 20, panghu.x));
+                panghu.y = Math.max(reedZone.y + 10, Math.min(reedZone.y + reedZone.height - 10, panghu.y));
+                mandarin.x = Math.max(reedZone.x + 20, Math.min(reedZone.x + reedZone.width - 20, mandarin.x));
+                mandarin.y = Math.max(reedZone.y + 10, Math.min(reedZone.y + reedZone.height - 10, mandarin.y));
+            }
+
+            group.skipBirds = [panghu, mandarin];
+        } else {
+            group.skipBirds = [];
+        }
+
+        // ========== 猛禽惊吓检测（提前处理小pt下潜） ==========
         let alarmed = false;
         for (let b of group.birds) {
             if (isRaptorNearby(b, RAPTOR_ALARM_DIST)) {
@@ -2113,9 +2455,13 @@ function updateWaterfowlPatrol(deltaTime) {
         if (alarmed) {
             console.log(`[游禽] 组 ${group.groupId} 受到猛禽惊吓，立即飞走`);
             for (let b of group.birds) {
+                // 如果小pt正在下潜，立即结束下潜
+                if (b.name === "小pt" && b.diving) {
+                    b.isDiving = false;
+                    b.diving = false;
+                }
                 b.state = 'fleeingFromRaptor';
                 b.speed = 3.5;
-                // 飞离方向：远离最近的猛禽
                 let nearestDist = Infinity, dir = 1;
                 for (let other of birds) {
                     if (other.name === "游隼" || other.name === "红隼" || other.name === "黑翅鸢") {
@@ -2134,18 +2480,48 @@ function updateWaterfowlPatrol(deltaTime) {
             i--;
             continue;
         }
-        
-        // 正常移动
+
+        // ========== 停留阶段（如果有） ==========
+        if (group.stayTimer !== undefined && group.stayTimer > 0) {
+            group.stayTimer -= deltaTime;
+            if (group.stayTimer <= 0) {
+                group.isMoving = true;
+                group.direction = group.sideFrom === 'left' ? 1 : -1;
+                group.moveRemaining = group.moveDistance;
+                delete group.stayTimer;
+                console.log(`[游禽] 组 ${group.groupId} 停留结束，开始移动`);
+            }
+            continue; // 停留期间不执行移动逻辑
+        }
+
+        // ========== 正常小组移动（跳过下潜中的小pt和互动中的胖虎鸳鸯） ==========
         const step = WATERFOWL_MOVE_SPEED * (deltaTime / 16);
+        let anyMoved = false;
         for (let b of group.birds) {
+            // 跳过已被互动逻辑处理的鸟
+            if (group.skipBirds && group.skipBirds.includes(b)) {
+                continue;
+            }
+            // 跳过下潜中的小pt
+            if (b.name === "小pt" && b.diving) {
+                continue;
+            }
             if (group.moveRemaining > 0) {
                 const move = Math.min(step, group.moveRemaining);
                 b.x += group.direction * move;
                 group.moveRemaining -= move;
-                // 同步方向
                 b.direction = group.direction;
+                anyMoved = true;
             }
         }
+
+        // 如果所有鸟都被跳过了，仍然消耗移动剩余量，防止阶段计数卡死
+        if (!anyMoved && group.moveRemaining > 0) {
+            group.moveRemaining -= step;
+            if (group.moveRemaining < 0) group.moveRemaining = 0;
+        }
+
+        // 移动结束，处理阶段计数
         if (group.moveRemaining <= 0) {
             group.phaseCounter++;
             if (group.phaseCounter >= 5) {
@@ -2162,14 +2538,18 @@ function updateWaterfowlPatrol(deltaTime) {
                 group.direction *= -1;
                 group.moveDistance = WATERFOWL_MOVE_DIST_MIN + Math.random() * (WATERFOWL_MOVE_DIST_MAX - WATERFOWL_MOVE_DIST_MIN);
                 group.moveRemaining = group.moveDistance;
-                // 所有鸟转向
-                for (let b of group.birds) b.direction = group.direction;
+                for (let b of group.birds) {
+                    if (!group.skipBirds || !group.skipBirds.includes(b)) {
+                        // 跳过下潜中的小pt，不改变方向
+                        if (b.name === "小pt" && b.diving) continue;
+                        b.direction = group.direction;
+                    }
+                }
                 console.log(`[游禽] 组 ${group.groupId} 第 ${group.phaseCounter} 次掉头，新移动距离 ${group.moveDistance.toFixed(0)}px`);
             }
         }
     }
 }
-
 // 尝试让一组鸭子进入游禽模式（改进版：独立目标点，间隔至少一只麻雀）
 function tryEnterWaterfowlPatrolForGroup(groupId, fromLeft, customChance = null) {
     const group = birdGroupInfo[groupId];
@@ -2888,50 +3268,76 @@ function editAlbumId() {
 
 // 更新出现鸟种（不重复计数）
 function updateAppearedBird(birdName) {
-    // MODIFIED: 将醋鸭♀映射为醋鸭，实现统计合并
-    if (birdName === "醋鸭♀") birdName = "醋鸭";
-    
-    // 确保存档中有该鸟种记录
+    birdName = getMergedBirdName(birdName);
+    // 更新全局记录（保留，但不用于成就）
     if (!gameSave.appearedBirdSpecies[birdName]) {
         gameSave.appearedBirdSpecies[birdName] = 1;
     } else {
-        // 如果已经存在，只增加出现次数，不重复计数种类
         gameSave.appearedBirdSpecies[birdName]++;
     }
-    
-    // 更新成就
-    checkCollectAchievements();
+
+    // 观鸟模式会话记录
+    if (birdingModeActive) {
+        birdingSessionObserved.add(birdName);
+        // 触发成就检查（基于会话）
+        checkSessionAchievements();
+    }
+
     saveGameData();
 }
 
-// 更新拍摄鸟种（不重复计数）
 function updateCapturedBird(birdName) {
-    // MODIFIED: 将醋鸭♀映射为醋鸭，实现统计合并
-    if (birdName === "醋鸭♀") birdName = "醋鸭";
-    
-    // 确保存档中有该鸟种记录
+    birdName = getMergedBirdName(birdName);
+    // 更新全局记录
     if (!gameSave.capturedBirdSpecies[birdName]) {
         gameSave.capturedBirdSpecies[birdName] = 1;
     } else {
-        // 如果已经存在，只增加拍摄次数，不重复计数种类
         gameSave.capturedBirdSpecies[birdName]++;
     }
-    
-    // 检查拍摄类成就
-    checkPhotoAchievements();
-    
-    // 检查是否是稀有鸟类
-    const birdKey = Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName);
-    if (birdKey && RARE_BIRD_TYPES.includes(birdKey)) {
-        if (!gameSave.rareBirdPhotos[birdName]) {
-            gameSave.rareBirdPhotos[birdName] = true;
-            checkRareBirdAchievements();
+
+    // 观鸟模式会话记录
+    if (birdingModeActive) {
+        birdingSessionCaptured.add(birdName);
+        checkSessionAchievements();
+
+        // 如果是稀有鸟类，同样记录到会话稀有鸟类（如果需要）
+        const birdKey = Object.keys(BIRD_TYPES).find(key => BIRD_TYPES[key].name === birdName);
+        if (birdKey && RARE_BIRD_TYPES.includes(birdKey)) {
+            if (!window.birdingSessionRare) window.birdingSessionRare = new Set();
+            window.birdingSessionRare.add(birdName);
         }
     }
-    
+
     saveGameData();
 }
+function checkSessionAchievements() {
+    if (!birdingModeActive) return;
 
+    const observedCount = birdingSessionObserved.size;
+    const capturedCount = birdingSessionCaptured.size;
+    const rareCount = window.birdingSessionRare ? window.birdingSessionRare.size : 0;
+
+    // 收集类成就
+    if (observedCount >= 10 && !gameSave.achievements.BIRD_COLLECT_10) unlockAchievement('BIRD_COLLECT_10');
+    if (observedCount >= 20 && !gameSave.achievements.BIRD_COLLECT_20) unlockAchievement('BIRD_COLLECT_20');
+    if (observedCount >= 30 && !gameSave.achievements.BIRD_COLLECT_30) unlockAchievement('BIRD_COLLECT_30');
+    if (observedCount >= 40 && !gameSave.achievements.BIRD_COLLECT_40) unlockAchievement('BIRD_COLLECT_40');
+    if (observedCount >= 50 && !gameSave.achievements.BIRD_COLLECT_50) unlockAchievement('BIRD_COLLECT_50');
+
+    // 拍摄类成就
+    if (capturedCount >= 10 && !gameSave.achievements.BIRD_PHOTO_10) unlockAchievement('BIRD_PHOTO_10');
+    if (capturedCount >= 20 && !gameSave.achievements.BIRD_PHOTO_20) unlockAchievement('BIRD_PHOTO_20');
+    if (capturedCount >= 30 && !gameSave.achievements.BIRD_PHOTO_30) unlockAchievement('BIRD_PHOTO_30');
+    if (capturedCount >= 40 && !gameSave.achievements.BIRD_PHOTO_40) unlockAchievement('BIRD_PHOTO_40');
+    if (capturedCount >= 50 && !gameSave.achievements.BIRD_PHOTO_50) unlockAchievement('BIRD_PHOTO_50');
+
+    // 稀有鸟类成就
+    if (rareCount >= 1 && !gameSave.achievements.RARE_BIRD_1) unlockAchievement('RARE_BIRD_1');
+    if (rareCount >= 5 && !gameSave.achievements.RARE_BIRD_5) unlockAchievement('RARE_BIRD_5');
+    if (rareCount >= 10 && !gameSave.achievements.RARE_BIRD_10) unlockAchievement('RARE_BIRD_10');
+
+    // 注意：时间类成就（TIME_1H, TIME_5H, TIME_10H, SINGLE_60MIN）需要基于观鸟模式时长，将在观鸟模式结束时检查
+}
 // 更新累计观鸟时间
 function updateTotalBirdingTime(timeMs) {
     gameSave.totalBirdingTime += timeMs;
@@ -3299,7 +3705,7 @@ const BIRD_TYPES = {
     headColor: "#FFFFFF",      // 白色头部
     wingColor: "#A0A0A0",      // 灰色翅膀
     tailColor: "#000000",      // 黑色尾巴
-    beakColor: "#FF0000",      // 红嘴
+    beakColor: "#8B4513",  // 褐色嘴
     whiteEyeRing: false,       // 无眼圈
     groupSize: 1,
     probability: 0.0225,       // 白天概率
@@ -3709,24 +4115,24 @@ const BIRD_TYPES = {
     stayTimePerTree: 2000,
     speedMultiplier: 1.5
   },
-  FLYCATCHER: {
+ FLYCATCHER: {
     name: "乌鹟",
     color: "#000000",
-    eyeColor: "#000000",  // 黑眼
-    bodyColor: "#696969",  // 深灰色身体
-    headColor: "#696969",  // 深灰色头
-    wingColor: "#404040",  // 更深灰色翅膀
-    tailColor: "#404040",  // 更深灰色尾巴
-    beakColor: "#FF8C00",  // 橙色嘴
-    whiteEyeRing: true,    // 白眼圈
-    groupSize: 1,          // 单只
-    probability: 0.015, 
-    size: 0.9,             // 0.9麻雀大小
-    behavior: "perchOnTreeTopAndFly",  // 特殊行为
+    eyeColor: "#000000",
+    bodyColor: "#696969",
+    headColor: "#696969",
+    wingColor: "#404040",
+    tailColor: "#404040",
+    beakColor: "#000000",          // ← 新增这一行
+    whiteEyeRing: true,
+    groupSize: 1,
+    probability: 0.015,
+    size: 0.9,
+    behavior: "perchOnTreeTopAndFly",
     originalSize: 0.9,
     isVulnerableToRaptors: true,
     iconColor: "#696969"
-  },
+},
   // ===== 新增：红胸姬鹟 =====
   RED_BREASTED_FLYCATCHER: {
     name: "红胸姬鹟",
@@ -4634,27 +5040,59 @@ function displayDefaultHelp() {
         
         <div class="help-section">
             <h3>基本操作</h3>
-            <p>1. 移动鼠标或倾斜设备（陀螺仪模式）来瞄准</p>
-            <p>2. 点击鼠标或相机按钮进行拍摄</p>
-            <p>3. 使用不同的镜头（600mm, 800mm, 1200mm）观察鸟类</p>
-            <p>4. 切换日间/夜间/普通模式观察不同习性的鸟类</p>
+            <p>• 移动鼠标或倾斜设备（陀螺仪模式）来瞄准</p>
+            <p>• 点击鼠标、相机按钮或按 <span class="help-key">Space</span> 键进行拍摄</p>
+            <p>• 使用不同的镜头（600mm, 800mm, 1200mm）观察鸟类</p>
+            <p>• 切换日间/夜间/普通模式观察不同习性的鸟类</p>
         </div>
         
         <div class="help-section">
             <h3>观鸟模式</h3>
-            <p>• 点击"观鸟模式"按钮开始记录您的观鸟活动</p>
+            <p>• 按 <span class="help-key">6</span> 或点击"观鸟模式"按钮开始/结束记录</p>
             <p>• 观鸟模式下会记录您观察到的所有鸟种</p>
-            <p>• 结束观鸟模式后，系统会生成观鸟记录</p>
-            <p>• 您可以在观鸟记录中截图保存您的成果</p>
+            <p>• 结束观鸟模式后自动生成记录，可按 <span class="help-key">9</span> 查看</p>
+            <p>• 在记录界面按 <span class="help-key">7</span> 可截图保存当前记录</p>
+            <p>• 按 <span class="help-key">8</span> 可手动创建观鸟记录（不计时）</p>
         </div>
         
         <div class="help-section">
             <h3>键盘快捷键</h3>
-            <p><span class="help-key">鼠标点击</span> / <span class="help-key">相机按钮</span>: 拍摄照片</p>
-            <p><span class="help-key">M</span>: 切换观鸟模式</p>
-            <p><span class="help-key">V</span>: 查看观鸟记录</p>
-            <p><span class="help-key">P</span>: 截图当前记录</p>
-            <p><span class="help-key">ESC</span>: 关闭当前窗口</p>
+            <p><strong>数字键：</strong></p>
+            <ul>
+                <li><span class="help-key">1</span> - 生成 12000鸻</li>
+                <li><span class="help-key">2</span> - 生成 UFO</li>
+                <li><span class="help-key">3</span> - 生成彗星</li>
+                <li><span class="help-key">4</span> - 调试坐标系</li>
+                <li><span class="help-key">5</span> - 调试蓝翡翠状态</li>
+                <li><span class="help-key">6</span> - 切换观鸟模式</li>
+                <li><span class="help-key">7</span> - 截图当前观鸟记录</li>
+                <li><span class="help-key">8</span> - 手动创建观鸟记录（不计时长）</li>
+                <li><span class="help-key">9</span> - 打开最近观鸟记录</li>
+                <li><span class="help-key">0</span> - 生成随机稀有鸟类</li>
+            </ul>
+            <p><strong>字母键（A-Z，大小写均可）：</strong> 随机生成对应两种鸟类之一（不计入统计，仅供娱乐）</p>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin: 10px 0;">
+                <div>A → 小pt / 燕雀</div><div>B → 山雀 / 啄木鸟</div>
+                <div>C → 斑鸠 / 白头鹎</div><div>D → 乌鸫 / 乌鸦</div>
+                <div>E → 喜鹊 / 麻雀</div><div>F → 红腹灰雀 / 雕鸮</div>
+                <div>G → 游隼 / 戴菊</div><div>H → 黄胸鹀 / 醋鸭</div>
+                <div>I → 丘鹬 / 黑翅鸢</div><div>J → 蓝歌鸲 / 乌鹟</div>
+                <div>K → 伯劳 / 胖虎</div><div>L → 柳莺 / 红隼</div>
+                <div>M → 白尾鹞 / 赤麻鸭</div><div>N → 某种鹨 / 金翅雀</div>
+                <div>O → 翠鸟 / 棕头鸦雀</div><div>P → 夜鹭 / 八哥</div>
+                <div>Q → 宏伟水渠 / 丝瓜椋鸟</div><div>R → 绿头鸭 / 北红尾鸲</div>
+                <div>S → 戴胜 / 鸳鸯</div><div>T → 蜡嘴雀 / 白鹡鸰</div>
+                <div>U → 短耳鸮 / 金眶鸻</div><div>V → 罗宾 / 小红头</div>
+                <div>W → 红胸姬鹟 / 白冠攀雀</div><div>X → 蓝翡翠 / 白寿带</div>
+                <div>Y → 长尾雀 / 长耳鸮</div><div>Z → 小北 / 山椒鸟</div>
+            </div>
+            <p><strong>其他：</strong></p>
+            <ul>
+                <li><span class="help-key">Space</span> - 切换文本浏览器（可加载本地文本文件）</li>
+                <li><span class="help-key">ESC</span> - 关闭当前打开的面板（相册、观鸟记录、帮助）</li>
+                <li><span class="help-key">←</span> / <span class="help-key">↑</span> - 观鸟记录中切换到上一条记录</li>
+                <li><span class="help-key">→</span> / <span class="help-key">↓</span> - 观鸟记录中切换到下一条记录</li>
+            </ul>
         </div>
         
         <div class="help-section">
@@ -4667,21 +5105,14 @@ function displayDefaultHelp() {
         
         <div class="help-section">
             <h3>鸟类图鉴</h3>
-            <p>游戏中共有超过30种不同的鸟类，包括:</p>
-            <ul>
-                <li>常见鸟类: 喜鹊、乌鸦、麻雀、白头鹎等</li>
-                <li>稀有鸟类: 金眶鸻、戴菊、长耳鸮等</li>
-                <li>猛禽: 游隼、红隼、黑翅鸢等</li>
-                <li>夜间鸟类: 雕鸮、短耳鸮等</li>
-            </ul>
-            <p>尝试集齐所有鸟类完成图鉴！</p>
+            <p>游戏中共有超过50种不同的鸟类，包括常见鸟类、稀有鸟类、猛禽、夜间鸟类等。尝试集齐所有鸟类完成图鉴！</p>
         </div>
         
         <div class="help-section">
             <h3>相册功能</h3>
             <p>• 点击左上角的照片预览打开相册</p>
-            <p>• 相册中会显示您拍摄的所有照片</p>
-            <p>• 相册底部会显示已拍摄的鸟类统计</p>
+            <p>• 相册中会显示您拍摄的所有照片，并统计已拍摄的鸟类种类</p>
+            <p>• 点击相册标题旁的"点击修改ID"可设置您的观鸟者ID，该ID将显示在截图标题中</p>
         </div>
         
         <div style="text-align: center; margin-top: 30px; color: #FFD700; font-size: 16px;">
@@ -5537,6 +5968,8 @@ setInterval(function() {
         checkSummonPanghuByMandarin();
     }
 }, 1000);
+  // 启动胖虎与鸳鸯组融合的定时器
+setInterval(mergePanghuIntoMandarinGroup, 5000);
     // 初始化文本统计（使用存档数据）
     initTextStats();
     
@@ -5694,15 +6127,17 @@ function updateUIForOrientation() {
             stayTime: 10, speedMultiplier: 1.2, isVulnerableToRaptors: true,
             iconColor: "#8B4513", isWaterfowlCandidate: true, waterfowlChance: 1.0
         },
-        MANDARIN_DUCK_MALE: {
-            name: "鸳鸯♂",
-            color: "#000000", eyeColor: "#000000", bodyColor: "#D3D3D3",
-            headColor: "#FF4500", wingColor: "#FFA500", tailColor: "#228B22", beakColor: "#FF0000",
-            whiteEyeRing: true, whiteEyeRingThick: 2,
-            groupSize: 1, probability: 0.0245, size: 1.6,
-            behavior: "flyThrough", stayTime: 12, speedMultiplier: 1.1, isVulnerableToRaptors: true,
-            iconColor: "#FF4500", isWaterfowlCandidate: true, waterfowlChance: 0.8, isMandarinMale: true
-        },
+MANDARIN_DUCK_MALE: {
+    name: "鸳鸯♂",
+    color: "#000000", eyeColor: "#000000", bodyColor: "#D3D3D3",
+    headColor: "#CC3300",      // 改为橙红色
+    wingColor: "#FFA500", tailColor: "#228B22",
+    beakColor: "#CC3300",      // 改为橙红色
+    whiteEyeRing: true, whiteEyeRingThick: 2,
+    groupSize: 1, probability: 0.0245, size: 1.6,
+    behavior: "flyThrough", stayTime: 12, speedMultiplier: 1.1, isVulnerableToRaptors: true,
+    iconColor: "#FF4500", isWaterfowlCandidate: true, waterfowlChance: 0.8, isMandarinMale: true
+},
         MANDARIN_DUCK_FEMALE: {
             name: "鸳鸯♀",
             color: "#000000", eyeColor: "#000000", bodyColor: "#FFFFFF",
@@ -6291,6 +6726,9 @@ function closeBirdingRecord() {
 }
 
 function toggleBirdingMode() {
+  // 重置会话计数器
+window.birdingSessionObserved = new Set();   // 观察到的鸟种
+window.birdingSessionCaptured = new Set();   // 拍摄到的鸟种
     if (gamePaused) return;
     
     if (!birdingModeActive) {
@@ -6448,6 +6886,11 @@ function toggleBirdingMode() {
             clearInterval(birdingModeUpdateInterval);
             birdingModeUpdateInterval = null;
         }
+      // 检查时间成就
+if (realDuration >= 3600000 && !gameSave.achievements.TIME_1H) unlockAchievement('TIME_1H');
+if (realDuration >= 18000000 && !gameSave.achievements.TIME_5H) unlockAchievement('TIME_5H');
+if (realDuration >= 36000000 && !gameSave.achievements.TIME_10H) unlockAchievement('TIME_10H');
+if (realDuration >= 3600000 && !gameSave.achievements.SINGLE_60MIN) unlockAchievement('SINGLE_60MIN');
     }
 }
 function updateBirdingModeButton() {
@@ -7293,55 +7736,142 @@ function restoreCampfireState() {
     updateCampsiteVisibility();
 }
 
-// 修改 handleKeyDown 函数，添加键盘导航支持
 function handleKeyDown(e) {
-    console.log("按键按下:", e.key);   // 添加这一行
-    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    
+    // 空格键：切换文本浏览器
+    if (e.key === ' ' || e.key === 'Spacebar') {
+        e.preventDefault();
+        toggleTextBrowser();
+        return false;
+    }
+    
+    // 数字键：特殊功能与冲突功能（全部不计入统计）
+    if (e.key === '1') {
+        generateTwelveThousandPlover(false);
         return;
-    }else if (e.key === ' ' || e.key === 'Spacebar') {
-    // 防止空格键滚动页面
-    e.preventDefault();
+    } else if (e.key === '2') {
+        generateUFO(false);
+        return;
+    } else if (e.key === '3') {
+        generateComet(false);
+        return;
+    } else if (e.key === '4') {
+        debugCoordinateSystem();
+        return;
+    } else if (e.key === '5') {
+        debugBlueKingfisherStatus();
+        return;
+    } else if (e.key === '6') {
+        toggleBirdingMode();            // 原 M 键功能
+        return;
+    } else if (e.key === '7') {
+        if (currentBirdingRecord) captureBirdingRecord(); // 原 P 键功能
+        return;
+    } else if (e.key === '8') {
+        createBirdingRecord();           // 原 R 键功能
+        return;
+    } else if (e.key === '9') {
+        if (birdingRecords.length > 0) openBirdingRecord(birdingRecords.length - 1); // 原 V 键功能
+        return;
+    } else if (e.key === '0') {
+        generateRareBird();              // 原稀有鸟类生成（内部已处理统计）
+        return;
+    }
     
-    // 切换文本浏览器显示/隐藏
-    toggleTextBrowser();
+    // 字母键：每种字母随机生成两种鸟类之一，全部不计入统计（传入 false）
+    const pairMap = {
+        // A: 小pt / 燕雀
+        'a': () => { if (Math.random() < 0.5) generateLittlePt(false); else generateBramblingManual(false); },
+        'A': () => { if (Math.random() < 0.5) generateLittlePt(false); else generateBramblingManual(false); },
+        // B: 山雀 / 啄木鸟
+        'b': () => { if (Math.random() < 0.5) generateTit(false); else generateWoodpecker(false); },
+        'B': () => { if (Math.random() < 0.5) generateTit(false); else generateWoodpecker(false); },
+        // C: 斑鸠 / 白头鹎
+        'c': () => { if (Math.random() < 0.5) generateDove(false); else generateBulbul(false); },
+        'C': () => { if (Math.random() < 0.5) generateDove(false); else generateBulbul(false); },
+        // D: 乌鸫 / 乌鸦
+        'd': () => { if (Math.random() < 0.5) generateBlackbird(false); else generateCrow(false); },
+        'D': () => { if (Math.random() < 0.5) generateBlackbird(false); else generateCrow(false); },
+        // E: 喜鹊 / 麻雀
+        'e': () => { if (Math.random() < 0.5) generateMagpie(false); else generateSparrow(false); },
+        'E': () => { if (Math.random() < 0.5) generateMagpie(false); else generateSparrow(false); },
+        // F: 红腹灰雀 / 雕鸮
+        'f': () => { if (Math.random() < 0.5) generateBullfinch(false); else generateEagleOwl(false); },
+        'F': () => { if (Math.random() < 0.5) generateBullfinch(false); else generateEagleOwl(false); },
+        // G: 游隼 / 戴菊
+        'g': () => { if (Math.random() < 0.5) generatePeregrine(false); else generateGoldcrest(false); },
+        'G': () => { if (Math.random() < 0.5) generatePeregrine(false); else generateGoldcrest(false); },
+        // H: 黄胸鹀 / 醋鸭
+        'h': () => { if (Math.random() < 0.5) generateYellowBreastedBunting(false); else generateVinegarDuck(false); },
+        'H': () => { if (Math.random() < 0.5) generateYellowBreastedBunting(false); else generateVinegarDuck(false); },
+        // I: 丘鹬 / 黑翅鸢
+        'i': () => { if (Math.random() < 0.5) generateWoodcock(false); else generateBlackWingedKite(false); },
+        'I': () => { if (Math.random() < 0.5) generateWoodcock(false); else generateBlackWingedKite(false); },
+        // J: 蓝歌鸲 / 乌鹟
+        'j': () => { if (Math.random() < 0.5) generateBluethroat(false); else generateFlycatcher(false); },
+        'J': () => { if (Math.random() < 0.5) generateBluethroat(false); else generateFlycatcher(false); },
+        // K: 伯劳 / 胖虎
+        'k': () => { if (Math.random() < 0.5) generateShrike(false); else generatePanghu(false); },
+        'K': () => { if (Math.random() < 0.5) generateShrike(false); else generatePanghu(false); },
+        // L: 柳莺 / 红隼
+        'l': () => { if (Math.random() < 0.5) generateWarbler(false); else generateKestrel(false); },
+        'L': () => { if (Math.random() < 0.5) generateWarbler(false); else generateKestrel(false); },
+        // M: 白尾鹞 / 赤麻鸭
+        'm': () => { if (Math.random() < 0.5) generateWhiteHarrier(false); else generateRuddyShelduck(false); },
+        'M': () => { if (Math.random() < 0.5) generateWhiteHarrier(false); else generateRuddyShelduck(false); },
+        // N: 某种鹨 / 金翅雀
+        'n': () => { if (Math.random() < 0.5) generatePipit(false); else generateGoldfinch(false); },
+        'N': () => { if (Math.random() < 0.5) generatePipit(false); else generateGoldfinch(false); },
+        // O: 翠鸟 / 棕头鸦雀
+        'o': () => { if (Math.random() < 0.5) generateKingfisher(false); else generateParrotbill(false); },
+        'O': () => { if (Math.random() < 0.5) generateKingfisher(false); else generateParrotbill(false); },
+        // P: 夜鹭 / 八哥
+        'p': () => { if (Math.random() < 0.5) generateHeron(false); else generateMyna(false); },
+        'P': () => { if (Math.random() < 0.5) generateHeron(false); else generateMyna(false); },
+        // Q: 宏伟水渠 / 丝瓜椋鸟
+        'q': () => { if (Math.random() < 0.5) generateMagnificentStream(false); else generateSilkyStarling(false); },
+        'Q': () => { if (Math.random() < 0.5) generateMagnificentStream(false); else generateSilkyStarling(false); },
+        // R: 绿头鸭 / 北红尾鸲
+        'r': () => { if (Math.random() < 0.5) generateDuck(false); else generateDaurianRedstart(false); },
+        'R': () => { if (Math.random() < 0.5) generateDuck(false); else generateDaurianRedstart(false); },
+        // S: 戴胜 / 鸳鸯
+        's': () => { if (Math.random() < 0.5) generateHoopoe(false); else generateMandarinDuckPair(false); },
+        'S': () => { if (Math.random() < 0.5) generateHoopoe(false); else generateMandarinDuckPair(false); },
+        // T: 蜡嘴雀 / 白鹡鸰
+        't': () => { if (Math.random() < 0.5) generateHawfinchManual(false); else generateWagtail(false); },
+        'T': () => { if (Math.random() < 0.5) generateHawfinchManual(false); else generateWagtail(false); },
+        // U: 短耳鸮 / 金眶鸻
+        'u': () => { if (Math.random() < 0.5) generateShortEaredOwl(false); else generateKentishPlover(false); },
+        'U': () => { if (Math.random() < 0.5) generateShortEaredOwl(false); else generateKentishPlover(false); },
+        // V: 罗宾 / 小红头
+        'v': () => { if (Math.random() < 0.5) generateRobinRare(false); else generateRedHeaded(false); },
+        'V': () => { if (Math.random() < 0.5) generateRobinRare(false); else generateRedHeaded(false); },
+        // W: 红胸姬鹟 / 白冠攀雀
+        'w': () => { if (Math.random() < 0.5) generateRedBreastedFlycatcher(false); else generateWhiteCrownedPendulineTit(false); },
+        'W': () => { if (Math.random() < 0.5) generateRedBreastedFlycatcher(false); else generateWhiteCrownedPendulineTit(false); },
+        // X: 蓝翡翠 / 白寿带
+        'x': () => { if (Math.random() < 0.5) generateBlueKingfisher(false); else generateParadiseFlycatcher(false); },
+        'X': () => { if (Math.random() < 0.5) generateBlueKingfisher(false); else generateParadiseFlycatcher(false); },
+        // Y: 长尾雀 / 长耳鸮
+        'y': () => { if (Math.random() < 0.5) generateLongtailedFinchRare(false); else generateOwlRare(false); },
+        'Y': () => { if (Math.random() < 0.5) generateLongtailedFinchRare(false); else generateOwlRare(false); },
+        // Z: 小北 / 山椒鸟
+        'z': () => { if (Math.random() < 0.5) generateLittleGrebe(false); else generateMinivetRare(false); },
+        'Z': () => { if (Math.random() < 0.5) generateLittleGrebe(false); else generateMinivetRare(false); },
+    };
     
-    // 返回false防止事件冒泡
-    return false;
-}
+    const func = pairMap[e.key];
+    if (func) {
+        func();
+        return;
+    }
+    
+    // 剩余功能键
     if (e.key === 'Escape') {
         closeAlbum();
         closeBirdingRecord();
         closeHelpModal();
-    } else if (e.key === 'c' || e.key === 'C') {
-        generateBlackWingedKite(false);
-    } else if (e.key === 'x' || e.key === 'X') {
-        generateComet(false);
-    } else if (e.key === 'd' || e.key === 'D') {
-        generateGoldcrest(false);
-    } else if (e.key === '1') {
-        generateTwelveThousandPlover(false);
-    } else if (e.key === 'l' || e.key === 'L') {
-        generateMeteor(false);
-    } else if (e.key === 'u' || e.key === 'U') {
-        generateUFO(false);
-    } else if (e.key === 'q' || e.key === 'Q') {
-        generateMagpie(false);
-    } else if (e.key === 'k' || e.key === 'K') {
-        generateKingfisher(false);
-    } else if (e.key === 'r' || e.key === 'R') {
-        createBirdingRecord();
-    } else if (e.key === 'v' || e.key === 'V') {
-        if (birdingRecords.length > 0) {
-            openBirdingRecord(birdingRecords.length - 1);
-        }
-    } else if (e.key === 'm' || e.key === 'M') {
-        toggleBirdingMode();
-    } else if (e.key === '0') {
-        generateRareBird();
-    } else if (e.key === 'p' || e.key === 'P') {
-        if (currentBirdingRecord) {
-            captureBirdingRecord();
-        }
     } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
         const modal = document.getElementById('birdingRecordModal');
         if (modal.style.display === 'block') {
@@ -7354,14 +7884,9 @@ function handleKeyDown(e) {
             e.preventDefault();
             switchBirdingRecord(1);
         }
-    } else if (e.key === 't' || e.key === 'T') {
-    generateShrike(false);
-}else if (e.key === 'b' || e.key === 'B') {
-        debugCoordinateSystem();
-    } else if (e.key === 'g' || e.key === 'G') {
-        debugBlueKingfisherStatus();
     }
 }
+    
 function skipToNight() {
     // 只有在普通模式且是白天时才有效
     if (gameMode !== 'normal' || !isDaytime) {
@@ -7671,7 +8196,571 @@ function generateRedHeaded(countStats = true) {
         birdGroupInfo[groupId].birds.push(bird);
     }
 }
+// 小pt（群组飞过）
+function generateLittlePt(countStats = true) {
+    const type = BIRD_TYPES.LITTLE_PT;
+    if (countStats) {
+        appearedBirds[type.name] = (appearedBirds[type.name] || 0) + 1;
+        updateTextStats();
+        updateAppearedBird(type.name);
+    }
+    const fromLeft = Math.random() > 0.5;
+    const birdCount = getRandomGroupSize(type);
+    const groupId = nextGroupId++;
+    birdGroupInfo[groupId] = { direction: fromLeft ? 1 : -1, birds: [] };
+    for (let i = 0; i < birdCount; i++) {
+        const startX = fromLeft ? -50 : GAME_WIDTH + 50;
+        const startY = Math.random() * (GAME_HEIGHT * 0.6) + GAME_HEIGHT * 0.2;
+        const bird = createCommonBird(type, startX, startY, fromLeft, "flyThrough", 10, (1.6 + Math.random() * 0.8) * (type.speedMultiplier || 1), groupId);
+        bird.noStats = !countStats;
+        bird.isNight = !isDaytime;
+        birds.push(bird);
+        birdGroupInfo[groupId].birds.push(bird);
+    }
+    // 尝试进入游禽模式（如果有石头）
+    tryEnterWaterfowlPatrolForGroup(groupId, fromLeft, type.waterfowlChance);
+}
 
+// 山雀（停在树上并移动）
+function generateTit(countStats = true) {
+    const type = BIRD_TYPES.TIT;
+    if (countStats) {
+        appearedBirds[type.name] = (appearedBirds[type.name] || 0) + 1;
+        updateTextStats();
+        updateAppearedBird(type.name);
+    }
+    const fromLeft = Math.random() > 0.5;
+    const birdCount = getRandomGroupSize(type);
+    const groupId = nextGroupId++;
+    birdGroupInfo[groupId] = { direction: fromLeft ? 1 : -1, birds: [] };
+    for (let i = 0; i < birdCount; i++) {
+        const startX = fromLeft ? -50 : GAME_WIDTH + 50;
+        const startY = Math.random() * (GAME_HEIGHT * 0.6) + GAME_HEIGHT * 0.2;
+        const bird = createCommonBird(type, startX, startY, fromLeft, "landOnTreeThenMove", type.stayTime, (1.6 + Math.random() * 0.8) * (type.speedMultiplier || 1), groupId);
+        bird.halfBeak = true;
+        bird.whiteEyeRing = true;
+        bird.noStats = !countStats;
+        bird.isNight = !isDaytime;
+        birds.push(bird);
+        birdGroupInfo[groupId].birds.push(bird);
+    }
+}
+
+// 啄木鸟（停在树上）
+function generateWoodpecker(countStats = true) {
+    const type = BIRD_TYPES.WOODPECKER;
+    if (countStats) {
+        appearedBirds[type.name] = (appearedBirds[type.name] || 0) + 1;
+        updateTextStats();
+        updateAppearedBird(type.name);
+    }
+    const fromLeft = Math.random() > 0.5;
+    const startX = fromLeft ? -50 : GAME_WIDTH + 50;
+    const startY = Math.random() * (GAME_HEIGHT * 0.6) + GAME_HEIGHT * 0.2;
+    const bird = createCommonBird(type, startX, startY, fromLeft, "landOnTree", type.stayTime, (1.6 + Math.random() * 0.8) * (type.speedMultiplier || 1), null);
+    bird.doubleBeak = true;
+    bird.whiteEyeRing = true;
+    bird.noStats = !countStats;
+    bird.isNight = !isDaytime;
+    birds.push(bird);
+}
+
+// 斑鸠（群组飞过）
+function generateDove(countStats = true) {
+    const type = BIRD_TYPES.DOVE;
+    if (countStats) {
+        appearedBirds[type.name] = (appearedBirds[type.name] || 0) + 1;
+        updateTextStats();
+        updateAppearedBird(type.name);
+    }
+    const fromLeft = Math.random() > 0.5;
+    const birdCount = getRandomGroupSize(type);
+    const groupId = nextGroupId++;
+    birdGroupInfo[groupId] = { direction: fromLeft ? 1 : -1, birds: [] };
+    for (let i = 0; i < birdCount; i++) {
+        const startX = fromLeft ? -50 : GAME_WIDTH + 50;
+        const startY = Math.random() * (GAME_HEIGHT * 0.6) + GAME_HEIGHT * 0.2;
+        const bird = createCommonBird(type, startX, startY, fromLeft, "flyThrough", type.stayTime, (1.6 + Math.random() * 0.8) * (type.speedMultiplier || 1), groupId);
+        bird.brownEyeRing = true;
+        bird.eatFruits = true;
+        bird.eatProbability = 0.08;
+        bird.eatDuration = 1800;
+        bird.originalSize = type.size;
+        bird.noStats = !countStats;
+        bird.isNight = !isDaytime;
+        birds.push(bird);
+        birdGroupInfo[groupId].birds.push(bird);
+    }
+}
+
+// 白头鹎（群组飞过，可停在树上）
+function generateBulbul(countStats = true) {
+    const type = BIRD_TYPES.BULBUL;
+    if (countStats) {
+        appearedBirds[type.name] = (appearedBirds[type.name] || 0) + 1;
+        updateTextStats();
+        updateAppearedBird(type.name);
+    }
+    const fromLeft = Math.random() > 0.5;
+    const birdCount = getRandomGroupSize(type);
+    const groupId = nextGroupId++;
+    birdGroupInfo[groupId] = { direction: fromLeft ? 1 : -1, birds: [] };
+    for (let i = 0; i < birdCount; i++) {
+        let behavior = "flyThrough";
+        let stayTime = type.stayTime;
+        if (Math.random() < 0.3) {
+            behavior = "landOnTree";
+            stayTime = 15;
+        }
+        const startX = fromLeft ? -50 : GAME_WIDTH + 50;
+        const startY = Math.random() * (GAME_HEIGHT * 0.6) + GAME_HEIGHT * 0.2;
+        const bird = createCommonBird(type, startX, startY, fromLeft, behavior, stayTime, (1.6 + Math.random() * 0.8) * (type.speedMultiplier || 1), groupId);
+        bird.whiteEyeRing = true;
+        bird.eatFruits = true;
+        bird.eatProbability = 0.15;
+        bird.eatDuration = 1500;
+        bird.originalSize = type.size;
+        bird.noStats = !countStats;
+        bird.isNight = !isDaytime;
+        birds.push(bird);
+        birdGroupInfo[groupId].birds.push(bird);
+    }
+}
+
+// 乌鸦（群组停在树上）
+function generateCrow(countStats = true) {
+    const type = BIRD_TYPES.CROW;
+    if (countStats) {
+        appearedBirds[type.name] = (appearedBirds[type.name] || 0) + 1;
+        updateTextStats();
+        updateAppearedBird(type.name);
+    }
+    const fromLeft = Math.random() > 0.5;
+    const birdCount = getRandomGroupSize(type);
+    const groupId = nextGroupId++;
+    birdGroupInfo[groupId] = { direction: fromLeft ? 1 : -1, birds: [] };
+    for (let i = 0; i < birdCount; i++) {
+        const startX = fromLeft ? -50 : GAME_WIDTH + 50;
+        const startY = Math.random() * (GAME_HEIGHT * 0.6) + GAME_HEIGHT * 0.2;
+        const bird = createCommonBird(type, startX, startY, fromLeft, "landOnTree", type.stayTime, (1.6 + Math.random() * 0.8) * (type.speedMultiplier || 1), groupId);
+        bird.whiteEyeRing = true;
+        bird.noStats = !countStats;
+        bird.isNight = !isDaytime;
+        birds.push(bird);
+        birdGroupInfo[groupId].birds.push(bird);
+    }
+}
+
+// 麻雀（群组飞过，可飞向芦苇区）
+function generateSparrow(countStats = true) {
+    const type = BIRD_TYPES.SPARROW;
+    if (countStats) {
+        appearedBirds[type.name] = (appearedBirds[type.name] || 0) + 1;
+        updateTextStats();
+        updateAppearedBird(type.name);
+    }
+    const fromLeft = Math.random() > 0.5;
+    const birdCount = getRandomGroupSize(type);
+    const groupId = nextGroupId++;
+    birdGroupInfo[groupId] = { direction: fromLeft ? 1 : -1, birds: [] };
+    for (let i = 0; i < birdCount; i++) {
+        let behavior = "flyThrough";
+        let stayTime = type.stayTime;
+        if (Math.random() < 0.3) {
+            behavior = "flyToReedsAndStay";
+            stayTime = 15;
+        }
+        const startX = fromLeft ? -50 : GAME_WIDTH + 50;
+        const startY = Math.random() * (GAME_HEIGHT * 0.6) + GAME_HEIGHT * 0.2;
+        const bird = createCommonBird(type, startX, startY, fromLeft, behavior, stayTime, (1.6 + Math.random() * 0.8) * (type.speedMultiplier || 1), groupId);
+        bird.halfBeak = true;
+        bird.whiteEyeRing = true;
+        bird.noStats = !countStats;
+        bird.isNight = !isDaytime;
+        birds.push(bird);
+        birdGroupInfo[groupId].birds.push(bird);
+    }
+}
+
+// 雕鸮（盘旋后捕猎）
+function generateEagleOwl(countStats = true) {
+    const type = BIRD_TYPES.EAGLE_OWL;
+    if (countStats) {
+        appearedBirds[type.name] = (appearedBirds[type.name] || 0) + 1;
+        updateTextStats();
+        updateAppearedBird(type.name);
+    }
+    const startX = GAME_WIDTH * 0.5 + (Math.random() - 0.5) * 200;
+    const startY = -50;
+    const bird = {
+        type: type,
+        name: type.name,
+        x: startX,
+        y: startY,
+        size: type.size,
+        speed: 1.1,
+        direction: Math.random() > 0.5 ? 1 : -1,
+        state: 'circling',
+        stateTime: 0,
+        circlingTime: 0,
+        circlingRadius: 150 + Math.random() * 50,
+        circlingAngle: Math.random() * Math.PI * 2,
+        circlingCenterX: GAME_WIDTH * 0.5,
+        circlingCenterY: GAME_HEIGHT * 0.3,
+        isOwl: true,
+        circleTime: 30000,
+        catchPreyChance: 0.3,
+        catchPreyType: "hedgehog",
+        caughtPrey: null,
+        hasGlided: false,
+        glidingStartY: 0,
+        faceDirection: -1,
+        faceChangeTimer: 0,
+        faceChangeInterval: 10000 + Math.random() * 10000,
+        wingsOpen: true,
+        isFleeing: false,
+        fleeStartTime: 0,
+        isEagleOwl: true,
+        wingOffset: -0.33,
+        noStats: !countStats,
+        isNight: true
+    };
+    birds.push(bird);
+}
+
+// 柳莺（短暂停在树上）
+function generateWarbler(countStats = true) {
+    const type = BIRD_TYPES.WARBLER;
+    if (countStats) {
+        appearedBirds[type.name] = (appearedBirds[type.name] || 0) + 1;
+        updateTextStats();
+        updateAppearedBird(type.name);
+    }
+    const targetTree = treePositions[Math.floor(Math.random() * treePositions.length)];
+    const x = targetTree.x + targetTree.width * 0.4 + Math.random() * targetTree.width * 0.2;
+    const y = targetTree.y + targetTree.height * 0.2 + Math.random() * targetTree.height * 0.3;
+    const bird = {
+        type: type,
+        name: type.name,
+        x: x,
+        y: y,
+        size: type.size,
+        speed: 0,
+        direction: targetTree.side === 'left' ? 1 : -1,
+        state: 'perching',
+        stateTime: 0,
+        stayTime: type.stayTime,
+        halfBeak: true,
+        whiteEyeRing: true,
+        noStats: !countStats,
+        isNight: !isDaytime
+    };
+    birds.push(bird);
+}
+
+// 赤麻鸭（群组飞过）
+function generateRuddyShelduck(countStats = true) {
+    const type = BIRD_TYPES.RUDDYSHELDUCK;
+    if (countStats) {
+        appearedBirds[type.name] = (appearedBirds[type.name] || 0) + 1;
+        updateTextStats();
+        updateAppearedBird(type.name);
+    }
+    const fromLeft = Math.random() > 0.5;
+    const birdCount = getRandomGroupSize(type);
+    const groupId = nextGroupId++;
+    birdGroupInfo[groupId] = { direction: fromLeft ? 1 : -1, birds: [] };
+    for (let i = 0; i < birdCount; i++) {
+        const startX = fromLeft ? -50 : GAME_WIDTH + 50;
+        const startY = Math.random() * (GAME_HEIGHT * 0.6) + GAME_HEIGHT * 0.2;
+        const bird = createCommonBird(type, startX, startY, fromLeft, "flyThrough", type.stayTime, (1.6 + Math.random() * 0.8) * (type.speedMultiplier || 1), groupId);
+        bird.whiteEyeRing = true;
+        bird.beakOnePointThree = true;
+        bird.noStats = !countStats;
+        bird.isNight = !isDaytime;
+        birds.push(bird);
+        birdGroupInfo[groupId].birds.push(bird);
+    }
+}
+
+// 金翅雀（群组飞过）
+function generateGoldfinch(countStats = true) {
+    const type = BIRD_TYPES.GOLDFINCH;
+    if (countStats) {
+        appearedBirds[type.name] = (appearedBirds[type.name] || 0) + 1;
+        updateTextStats();
+        updateAppearedBird(type.name);
+    }
+    const fromLeft = Math.random() > 0.5;
+    const birdCount = getRandomGroupSize(type);
+    const groupId = nextGroupId++;
+    birdGroupInfo[groupId] = { direction: fromLeft ? 1 : -1, birds: [] };
+    for (let i = 0; i < birdCount; i++) {
+        const startX = fromLeft ? -50 : GAME_WIDTH + 50;
+        const startY = Math.random() * (GAME_HEIGHT * 0.6) + GAME_HEIGHT * 0.2;
+        const bird = createCommonBird(type, startX, startY, fromLeft, "flyThrough", type.stayTime, (1.6 + Math.random() * 0.8) * (type.speedMultiplier || 1), groupId);
+        bird.halfBeak = true;
+        bird.whiteEyeRing = true;
+        bird.eatFruits = true;
+        bird.eatProbability = 0.2;
+        bird.eatDuration = 1200;
+        bird.originalSize = type.size;
+        bird.noStats = !countStats;
+        bird.isNight = !isDaytime;
+        birds.push(bird);
+        birdGroupInfo[groupId].birds.push(bird);
+    }
+}
+
+// 棕头鸦雀（芦苇区活动）
+function generateParrotbill(countStats = true) {
+    const type = BIRD_TYPES.PARROTBILL;
+    if (countStats) {
+        appearedBirds[type.name] = (appearedBirds[type.name] || 0) + 1;
+        updateTextStats();
+        updateAppearedBird(type.name);
+    }
+    const fromLeft = Math.random() > 0.5;
+    const birdCount = getRandomGroupSize(type);
+    const groupId = nextGroupId++;
+    birdGroupInfo[groupId] = { direction: fromLeft ? 1 : -1, birds: [] };
+    for (let i = 0; i < birdCount; i++) {
+        const startX = fromLeft ? -50 : GAME_WIDTH + 50;
+        const startY = Math.random() * (GAME_HEIGHT * 0.6) + GAME_HEIGHT * 0.2;
+        const bird = createCommonBird(type, startX, startY, fromLeft, "flyInReedsAndStay", type.stayTime, (1.6 + Math.random() * 0.8) * (type.speedMultiplier || 1), groupId);
+        bird.quarterBeak = true;
+        bird.longBrownTail = true;
+        bird.whiteEyeRing = true;
+        bird.noStats = !countStats;
+        bird.isNight = !isDaytime;
+        birds.push(bird);
+        birdGroupInfo[groupId].birds.push(bird);
+    }
+}
+function ensureReedZone() {
+    if (!reedZone) {
+        initReeds();
+        if (reedZone) {
+            console.log("芦苇区已重新初始化");
+        } else {
+            console.warn("芦苇区初始化失败");
+        }
+    }
+    // 如果 reedZone 仍然不存在，返回 false
+    return reedZone !== null;
+}
+function generateHeron(countStats = true) {
+    ensureReedZone(); // 确保芦苇区存在（函数见后）
+    const heronType = BIRD_TYPES.HERON;
+    if (countStats) {
+        appearedBirds[heronType.name] = (appearedBirds[heronType.name] || 0) + 1;
+        updateTextStats();
+        updateAppearedBird(heronType.name);
+    }
+
+    const fromLeft = Math.random() > 0.5;
+    const groupId = nextGroupId++;
+    birdGroupInfo[groupId] = { direction: fromLeft ? 1 : -1, birds: [] };
+
+    let behaviorType = 'standOnTree'; // 默认树上站立
+    if (reedZone) {
+        const r = Math.random();
+        if (r < 0.1) {
+            behaviorType = 'fishDive';
+        } else if (r < 0.3) {
+            behaviorType = 'stonePatrol';
+        } else if (r < 0.9) {
+            behaviorType = 'reedStand';
+        }
+    }
+
+    for (let i = 0; i < getRandomGroupSize(heronType); i++) {
+        const startX = fromLeft ? -50 : GAME_WIDTH + 50;
+        const startY = Math.random() * (GAME_HEIGHT * 0.6) + GAME_HEIGHT * 0.2;
+
+        const bird = createCommonBird(
+            heronType, startX, startY, fromLeft, heronType.behavior,
+            heronType.stayTime,
+            (1.6 + Math.random() * 0.8) * (heronType.speedMultiplier || 1),
+            groupId
+        );
+        bird.longBeak = true;
+        bird.beakReducedQuarter = true;
+        bird.isNight = (gameMode === 'night' || (gameMode === 'normal' && !isDaytime));
+        bird.noStats = !countStats;
+        bird.behaviorOverride = behaviorType;
+
+        // 根据行为类型初始化状态和额外属性
+        switch (behaviorType) {
+            case 'reedStand':
+                if (reedZone) {
+                    bird.state = 'flyingToReedGround';
+                    bird.reedGroundTargetX = reedZone.x + Math.random() * reedZone.width;
+                    bird.reedGroundTargetY = reedZone.y + reedZone.height - 5;
+                    bird.standDuration = 10000 + Math.random() * 10000;
+                    bird.standStartTime = 0;
+                } else {
+                    bird.state = 'flyingAway';
+                    bird.speed = 1.5;
+                    bird.direction = Math.random() > 0.5 ? 1 : -1;
+                }
+                break;
+            case 'fishDive':
+                if (reedZone) {
+                    bird.state = 'flyingToReedTop';
+                    bird.targetX = reedZone.x + Math.random() * reedZone.width;
+                    bird.targetY = reedZone.y + reedZone.height * 0.5;
+                    bird.perchDuration = 3000 + Math.random() * 2000;
+                    bird.headAngle = 0;
+                    bird.facingDirection = bird.direction;
+                    bird.bodyFlipped = (bird.facingDirection === -1);
+                    bird.hasCaughtFish = false;
+                } else {
+                    bird.state = 'flyingAway';
+                    bird.speed = 1.5;
+                    bird.direction = Math.random() > 0.5 ? 1 : -1;
+                }
+                break;
+            case 'stonePatrol':
+                bird.state = 'flyingToStone';
+                bird.speed = 1.5;
+                break;
+            default: // standOnTree
+                bird.state = 'flying';
+                break;
+        }
+
+        birds.push(bird);
+        birdGroupInfo[groupId].birds.push(bird);
+    }
+
+    if (behaviorType === 'stonePatrol') {
+        const sampleBird = birdGroupInfo[groupId].birds[0];
+        if (sampleBird) {
+            tryEnterWaterfowlPatrolForGroup(groupId, sampleBird.x < GAME_WIDTH / 2, 1);
+        }
+    }
+}
+// 绿头鸭（群组飞过）
+function generateDuck(countStats = true) {
+    const type = BIRD_TYPES.DUCK;
+    if (countStats) {
+        appearedBirds[type.name] = (appearedBirds[type.name] || 0) + 1;
+        updateTextStats();
+        updateAppearedBird(type.name);
+    }
+    const fromLeft = Math.random() > 0.5;
+    const birdCount = getRandomGroupSize(type);
+    const groupId = nextGroupId++;
+    birdGroupInfo[groupId] = { direction: fromLeft ? 1 : -1, birds: [] };
+    for (let i = 0; i < birdCount; i++) {
+        const startX = fromLeft ? -50 : GAME_WIDTH + 50;
+        const startY = Math.random() * (GAME_HEIGHT * 0.6) + GAME_HEIGHT * 0.2;
+        const bird = createCommonBird(type, startX, startY, fromLeft, "flyThrough", type.stayTime, (1.6 + Math.random() * 0.8) * (type.speedMultiplier || 1), groupId);
+        bird.variant = Math.random() > 0.5;
+        bird.whiteEyeRing = true;
+        bird.doubleBeak = true;
+        bird.beakOnePointFive = true;
+        bird.noStats = !countStats;
+        bird.isNight = !isDaytime;
+        birds.push(bird);
+        birdGroupInfo[groupId].birds.push(bird);
+    }
+}
+
+// 戴胜（波浪飞行）
+function generateHoopoe(countStats = true) {
+    const type = BIRD_TYPES.HOOPOE;
+    if (countStats) {
+        appearedBirds[type.name] = (appearedBirds[type.name] || 0) + 1;
+        updateTextStats();
+        updateAppearedBird(type.name);
+    }
+    const fromLeft = Math.random() > 0.5;
+    const startX = fromLeft ? -50 : GAME_WIDTH + 50;
+    const startY = Math.random() * (GAME_HEIGHT * 0.6) + GAME_HEIGHT * 0.2;
+    const bird = createCommonBird(type, startX, startY, fromLeft, "waveFlight", 0, (1.6 + Math.random() * 0.8) * (type.speedMultiplier || 1), null);
+    bird.hasCrest = true;
+    bird.crestColor = "#D2B48C";
+    bird.whiteEyeRing = true;
+    bird.beakOnePointFive = true;
+    bird.noStats = !countStats;
+    bird.isNight = !isDaytime;
+    birds.push(bird);
+}
+
+// 白鹡鸰（波浪飞行，两只）
+function generateWagtail(countStats = true) {
+    const type = BIRD_TYPES.WAGTAIL;
+    if (countStats) {
+        appearedBirds[type.name] = (appearedBirds[type.name] || 0) + 1;
+        updateTextStats();
+        updateAppearedBird(type.name);
+    }
+    const fromLeft = Math.random() > 0.5;
+    const birdCount = 2; // 白鹡鸰通常成对
+    const groupId = nextGroupId++;
+    birdGroupInfo[groupId] = { direction: fromLeft ? 1 : -1, birds: [] };
+    for (let i = 0; i < birdCount; i++) {
+        const startX = fromLeft ? -50 : GAME_WIDTH + 50;
+        const startY = Math.random() * (GAME_HEIGHT * 0.6) + GAME_HEIGHT * 0.2;
+        const bird = createCommonBird(type, startX, startY, fromLeft, "waveFlight", 0, (1.6 + Math.random() * 0.8) * (type.speedMultiplier || 1), groupId);
+        bird.longBlackTail = true;
+        bird.hasHeart = true;
+        bird.whiteEyeRing = true;
+        bird.noStats = !countStats;
+        bird.isNight = !isDaytime;
+        birds.push(bird);
+        birdGroupInfo[groupId].birds.push(bird);
+    }
+}
+
+// 短耳鸮（盘旋后捕猎）
+function generateShortEaredOwl(countStats = true) {
+    const type = BIRD_TYPES.SHORT_EARED_OWL;
+    if (countStats) {
+        appearedBirds[type.name] = (appearedBirds[type.name] || 0) + 1;
+        updateTextStats();
+        updateAppearedBird(type.name);
+    }
+    const startX = GAME_WIDTH * 0.5 + (Math.random() - 0.5) * 200;
+    const startY = GAME_HEIGHT * 0.7 + Math.random() * 100;
+    const bird = {
+        type: type,
+        name: type.name,
+        x: startX,
+        y: startY,
+        size: type.size,
+        speed: 1.1 * (type.speedMultiplier || 1),
+        direction: Math.random() > 0.5 ? 1 : -1,
+        state: 'circling',
+        stateTime: 0,
+        circlingTime: 0,
+        circlingRadius: 150 + Math.random() * 50,
+        circlingAngle: Math.random() * Math.PI * 2,
+        circlingCenterX: GAME_WIDTH * 0.5,
+        circlingCenterY: GAME_HEIGHT * 0.7,
+        isOwl: true,
+        circleTime: 50000,
+        catchPreyChance: 0.5,
+        catchPreyType: "mouse",
+        caughtPrey: null,
+        hasGlided: false,
+        glidingStartY: 0,
+        faceDirection: -1,
+        faceChangeTimer: 0,
+        faceChangeInterval: 10000 + Math.random() * 10000,
+        wingsOpen: true,
+        isFleeing: false,
+        fleeStartTime: 0,
+        isEagleOwl: false,
+        wingOffset: -0.33,
+        noStats: !countStats,
+        isNight: true,
+        flyInLowerHalf: true
+    };
+    birds.push(bird);
+}
 function generatePipit(countStats = true) {
     const pipitType = BIRD_TYPES.PIPIT;
     
@@ -7692,11 +8781,7 @@ function generatePipit(countStats = true) {
     for (let i = 0; i < birdCount; i++) {
         const startX = fromLeft ? -50 : GAME_WIDTH + 50;
         const startY = Math.random() * (GAME_HEIGHT * 0.4) + GAME_HEIGHT * 0.1; // 从天空较高位置飞过
-           // 特殊处理：醋鸭应生成一对（公+母）
-    if (selectedBirdType.name === "醋鸭") {
-        generateVinegarDuck(true); // 传入 true 表示计入统计
-        return; // 直接返回，避免后续通用生成
-    } 
+
         const bird = createCommonBird(
             pipitType,
             startX,
@@ -8963,6 +10048,7 @@ function handleMouseClick() {
     let maxSize = 0;
     
     for (const bird of birds) {
+      if (bird.diving) continue;   // 跳过下潜中的鸟
         const baseSize = 20;
         const birdSize = baseSize * bird.size;
         let birdDisplayX = bird.x;
@@ -9665,24 +10751,30 @@ function generateBird() {
     }
 
     // ========== 白天鸟类生成 ==========
-    // 白尾鹞生成（清晨/黄昏概率调整）
-    if (isDaytime && !isNightMode) {
-        let harrierProb = isGoldenFilterActive ? 0.014 : 0.018; // 清晨/黄昏用黑翅鸢的概率
-        if (Math.random() < harrierProb) {
-            generateWhiteHarrier(true);
-            return;
-        }
+// 白尾鹞生成
+let harrierProb = isGoldenFilterActive ? 0.094 : 0.018;
+if (Math.random() < harrierProb) {
+    if (!birds.some(b => b.name === "胖虎")) {
+        generateWhiteHarrier(true);
     }
+    return;
+}
 
     // 游隼、黑翅鸢、翠鸟、蓝翡翠等稀有生成
-    if (Math.random() < 0.003) {
+// 游隼生成
+if (Math.random() < 0.003) {
+    if (!birds.some(b => b.name === "胖虎")) {
         generatePeregrine();
-        return;
     }
-    if (Math.random() < 0.01) {
+    return;
+}
+// 黑翅鸢生成
+if (Math.random() < 0.01) {
+    if (!birds.some(b => b.name === "胖虎")) {
         generateBlackWingedKite();
-        return;
     }
+    return;
+}
     if (gameMode !== 'night') {
         if (Math.random() < BIRD_TYPES.KINGFISHER.probability) {
             generateKingfisher(true);
@@ -9698,12 +10790,13 @@ function generateBird() {
     const rand = Math.random();
     let cumulativeProbability = 0;
     let selectedBirdType = null;
-    const availableBirds = {};
-    for (const key in BIRD_TYPES) {
-        if (key !== "PEREGRINE" && key !== "BLACKWINGEDKITE" && !BIRD_TYPES[key].isSpecial && !BIRD_TYPES[key].isOwl && !BIRD_TYPES[key].isBat && key !== "WHITE_HARRIER") {
-            availableBirds[key] = BIRD_TYPES[key];
-        }
+const availableBirds = {};
+for (const key in BIRD_TYPES) {
+    const bird = BIRD_TYPES[key];
+    if (key !== "PEREGRINE" && key !== "BLACKWINGEDKITE" && !bird.isSpecial && !bird.isOwl && !bird.isBat && key !== "WHITE_HARRIER" && !bird.isNocturnal) {
+        availableBirds[key] = bird;
     }
+}      
     for (const key in availableBirds) {
         cumulativeProbability += availableBirds[key].probability;
         if (rand <= cumulativeProbability) {
@@ -10028,7 +11121,70 @@ if (birdType.isKingfisher) {
 
     return bird;
 }
+function mergePanghuIntoMandarinGroup() {
+    // 1. 找到所有胖虎鸟
+    const panghuBirds = birds.filter(b => b.name === "胖虎");
+    if (panghuBirds.length === 0) return;
 
+    // 2. 找到所有包含鸳鸯的游禽组
+    const mandarinGroups = waterfowlPatrolGroups.filter(group =>
+        group.birds.some(b => b.name === "鸳鸯♂" || b.name === "鸳鸯♀")
+    );
+    if (mandarinGroups.length === 0) return;
+
+    // 3. 对每一只胖虎进行处理（通常只有一只）
+    for (let panghu of panghuBirds) {
+        // 检查胖虎是否已经属于某个鸳鸯组
+        let alreadyInMandarinGroup = mandarinGroups.some(group => group.birds.includes(panghu));
+        if (alreadyInMandarinGroup) continue;
+
+        // 随机选择一个鸳鸯组
+        const targetGroup = mandarinGroups[Math.floor(Math.random() * mandarinGroups.length)];
+        const oldGroupId = panghu.groupId;
+
+        // 从原组中移除胖虎
+        if (oldGroupId && birdGroupInfo[oldGroupId]) {
+            const oldBirdGroup = birdGroupInfo[oldGroupId];
+            const idx = oldBirdGroup.birds.indexOf(panghu);
+            if (idx !== -1) oldBirdGroup.birds.splice(idx, 1);
+            // 如果原组空了，可以考虑清理，但不是必须
+        }
+        // 从原 waterfowlPatrolGroups 中移除
+        for (let i = 0; i < waterfowlPatrolGroups.length; i++) {
+            const g = waterfowlPatrolGroups[i];
+            const idx = g.birds.indexOf(panghu);
+            if (idx !== -1) {
+                g.birds.splice(idx, 1);
+                // 如果该组空了，可选择删除（可选）
+                if (g.birds.length === 0) {
+                    waterfowlPatrolGroups.splice(i, 1);
+                    i--;
+                }
+                break;
+            }
+        }
+
+        // 将胖虎加入目标组
+        targetGroup.birds.push(panghu);
+        panghu.groupId = targetGroup.groupId;
+
+        // 更新 birdGroupInfo
+        if (!birdGroupInfo[targetGroup.groupId]) {
+            birdGroupInfo[targetGroup.groupId] = { birds: [] };
+        }
+        if (!birdGroupInfo[targetGroup.groupId].birds.includes(panghu)) {
+            birdGroupInfo[targetGroup.groupId].birds.push(panghu);
+        }
+
+        // 可选：同步胖虎的状态与组方向（避免方向错乱）
+        panghu.direction = targetGroup.direction;
+        panghu.state = 'patrolWalk';   // 确保进入游禽模式
+        panghu.speed = 0;              // 落地后速度为0，等待组移动
+
+        console.log(`胖虎已加入鸳鸯组 ${targetGroup.groupId}`);
+        showSpecialAlert("胖虎加入了鸳鸯的游禽组！");
+    }
+}
 function generateMagpie(countStats = false) {
     const magpieType = BIRD_TYPES.MAGPIE;
     if (countStats) {
@@ -10353,10 +11509,10 @@ function generateMyna(countStats = true) {
 }
 
 function generateWhiteHarrier(countStats = true) {
-  // 如果当前有胖虎，则不生成猛禽
-if (birds.some(b => b.name === "胖虎")) {
-    return;
-}
+    // 如果当前有胖虎，则不生成猛禽
+    if (birds.some(b => b.name === "胖虎")) {
+        return;
+    }
     const harrierType = BIRD_TYPES.WHITE_HARRIER;
     if (countStats) {
         appearedBirds[harrierType.name] = (appearedBirds[harrierType.name] || 0) + 1;
@@ -10400,10 +11556,10 @@ if (birds.some(b => b.name === "胖虎")) {
 }  
   
 function generateKestrel(countStats = false) {
-  // 如果当前有胖虎，则不生成猛禽
-if (birds.some(b => b.name === "胖虎")) {
-    return;
-}
+    // 如果当前有胖虎，则不生成猛禽
+    if (birds.some(b => b.name === "胖虎")) {
+        return;
+    }
     const kestrelType = BIRD_TYPES.KESTREL;
     if (countStats) {
         appearedBirds[kestrelType.name]++;
@@ -10475,9 +11631,9 @@ if (birds.some(b => b.name === "胖虎")) {
 
 function generatePeregrine(countStats = true) {
     // 如果当前有胖虎，则不生成猛禽
-if (birds.some(b => b.name === "胖虎")) {
-    return;
-}
+    if (birds.some(b => b.name === "胖虎")) {
+        return;
+    }
     const peregrineType = BIRD_TYPES.PEREGRINE;
     if (countStats) {
         appearedBirds[peregrineType.name]++;
@@ -10541,10 +11697,10 @@ if (birds.some(b => b.name === "胖虎")) {
 }
 
 function generateBlackWingedKite(countStats = true) {
-  // 如果当前有胖虎，则不生成猛禽
-if (birds.some(b => b.name === "胖虎")) {
-    return;
-}
+    // 如果当前有胖虎，则不生成猛禽
+    if (birds.some(b => b.name === "胖虎")) {
+        return;
+    }
     const kiteType = BIRD_TYPES.BLACKWINGEDKITE;
     if (countStats) {
         appearedBirds[kiteType.name]++;
@@ -12290,6 +13446,9 @@ function drawOwl(bird) {
 }
 
 function drawBird(bird) {
+    // 如果正在下潜，直接返回不绘制
+    if (bird.diving) return;
+
     ctx.save();
     if (bird.name === "八哥") { drawMyna(bird); ctx.restore(); return; }
 
@@ -12555,15 +13714,15 @@ if (bird.name === "蓝翡翠" || bird.isBlueKingfisher) {
         headSize/2, 0, Math.PI * 2
     );
     ctx.fill();
-    // 伯劳眼带（黑眼带，从头部前方到头后三分之一处）
+// 伯劳眼带（黑眼带，从头部前方到头后三分之一处）
 if (bird.isShrike) {
     const headX = bird.x + bodySize/2 - headSize/2;
     const headY = bird.y - bodySize/2 + headSize/2 + headOffsetY;
     const headRadius = headSize/2;
 
-    const forwardDir = bird.direction; // 1: 向右, -1: 向左
-    const startX = headX + forwardDir * headRadius * 0.8;
-    const endX = headX + forwardDir * (-headRadius * 0.3);
+    // 翻转后头部朝右，眼带从右前方延伸到左后方
+    const startX = headX + headRadius * 0.8;   // 头部前方（右侧）
+    const endX = headX - headRadius * 0.3;     // 头部后方（左侧）
     const midX = (startX + endX) / 2;
     const bandWidth = Math.abs(endX - startX);
     const bandHeight = 5;
@@ -12576,7 +13735,55 @@ if (bird.isShrike) {
     ctx.fillRect(midX - bandWidth/2, headY - bandHeight/2, bandWidth, bandHeight);
     ctx.restore();
 }
-    ctx.fillStyle = bird.type.color || '#000000';
+  // 在 drawBird 函数中，找到夜鹭鱼绘制的部分，替换为以下代码：
+if (bird.name === "夜鹭" && bird.hasCaughtFish && bird.caughtFish) {
+    ctx.save();
+
+    const baseSize = 20;
+    const birdSize = baseSize * bird.size;
+    const headSize = birdSize * 0.5;
+    const bodySize = birdSize;
+
+    // 头部圆心（未翻转的局部坐标，注意已经应用了全局翻转，所以这里的 bird.x, bird.y 是翻转后的位置）
+    const headCenterX = bird.x + bodySize / 2;
+    const headCenterY = bird.y - bodySize / 2 + headSize / 2;
+
+    const beakLength = 24;
+    let beakTipX, beakTipY;
+
+    if (bird.headAngle !== undefined && bird.headAngle !== 0) {
+        beakTipX = headCenterX + Math.cos(bird.headAngle) * beakLength;
+        beakTipY = headCenterY + Math.sin(bird.headAngle) * beakLength;
+    } else {
+        // 在翻转后的坐标系中，嘴尖始终指向右（正x方向），因为全局翻转已经确保鸟头朝右
+        beakTipX = headCenterX + beakLength;
+        beakTipY = headCenterY;
+    }
+
+    const fishOffset = bird.caughtFish.size / 2;
+    // 鱼始终在嘴尖右侧
+    const fishX = beakTipX + fishOffset;
+    const fishY = beakTipY;
+
+    // 绘制鱼身
+    ctx.fillStyle = bird.caughtFish.color;
+    ctx.beginPath();
+    ctx.ellipse(fishX, fishY, bird.caughtFish.size / 2, bird.caughtFish.size / 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 鱼尾：指向左（即向后）
+    ctx.beginPath();
+    const tailX = fishX - bird.caughtFish.size / 2;
+    const tailY = fishY;
+    ctx.moveTo(tailX, tailY);
+    ctx.lineTo(tailX - 3, tailY - 3);
+    ctx.lineTo(tailX - 3, tailY + 3);
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.restore();
+}
+    ctx.fillStyle = bird.type.beakColor || bird.type.color || '#000000';
     ctx.beginPath();
     
     const beakStartX = bird.x + bodySize/2 - headSize/2 + headSize/2;
@@ -12589,7 +13796,34 @@ if (bird.isShrike) {
         beakHeight = 6;
         beakLength = 9;
     }
-    
+    // 小pt 方形嘴
+else if (bird.name === "小pt") {
+    const beakLength = 8 * (2/3);       // ≈5.33
+    const beakHeight = 3;
+    const beakStartX = bird.x + bodySize/2 - headSize/2 + headSize/2;
+    const beakStartY = bird.y - bodySize/2 + headSize/2;
+    ctx.fillStyle = "#000000";
+    ctx.fillRect(beakStartX, beakStartY - beakHeight/2, beakLength, beakHeight);
+}
+// 鸳鸯♂ 方形嘴（红色）
+else if (bird.name === "鸳鸯♂") {
+    const beakLength = 8 * (2/3);       // ≈5.33
+    const beakHeight = 4;
+    const beakStartX = bird.x + bodySize/2 - headSize/2 + headSize/2;
+    const beakStartY = bird.y - bodySize/2 + headSize/2;
+    ctx.fillStyle = "#FF0000";
+    ctx.fillRect(beakStartX, beakStartY - beakHeight/2, beakLength, beakHeight);
+}
+// 鸳鸯♀ 方形嘴（棕色）
+else if (bird.name === "鸳鸯♀") {
+    const beakLength = 8 * (2/3);       // ≈5.33
+    const beakHeight = 3;
+    const beakStartX = bird.x + bodySize/2 - headSize/2 + headSize/2;
+    const beakStartY = bird.y - bodySize/2 + headSize/2;
+    ctx.fillStyle = "#8B4513";
+    ctx.fillRect(beakStartX, beakStartY - beakHeight/2, beakLength, beakHeight);
+}
+else 
 // 绘制嘴巴
 if (bird.name === "小北" && bird.fifthBeak) {
     // 小北的三角形嘴巴
@@ -12630,7 +13864,8 @@ else if (bird.name === "小红头" && bird.fifthBeak) {
         ctx.moveTo(beakStartX, beakStartY);
         ctx.lineTo(beakStartX + beakLength, beakStartY);
         ctx.lineTo(beakStartX, beakStartY + beakHeight);
-    } else if (bird.name === "啄木鸟" && bird.doubleBeak) {
+    } 
+  else if (bird.name === "啄木鸟" && bird.doubleBeak) {
         beakLength = 8;
         beakHeight = 5;
         ctx.moveTo(beakStartX, beakStartY);
@@ -12683,7 +13918,6 @@ else if (bird.name === "小红头" && bird.fifthBeak) {
         ctx.lineTo(beakStartX + beakLength, beakStartY);
         ctx.lineTo(beakStartX, beakStartY + beakHeight);
     }
-    
      
     // 在绘制鸟嘴的部分，添加对醋鸭的处理
 if (bird.type.name === "醋鸭") {
@@ -12982,43 +14216,52 @@ if (bird.name === "乌鹟" && bird.whiteEyeRing) {
         ctx.fill();
         ctx.restore();
     }
-    if (bird.isShrike && bird.hasInsect && bird.insect) {
+if (bird.isShrike && bird.hasInsect && bird.insect) {
     ctx.save();
     const baseSize = 20;
     const birdSize = baseSize * bird.size;
-    // 估算嘴尖位置
-    let tipX, tipY;
-    if (bird.direction === 1) {
-        tipX = bird.x + birdSize/2 + 8;
-        tipY = bird.y - birdSize/8;
-    } else {
-        tipX = bird.x - birdSize/2 - 8;
-        tipY = bird.y - birdSize/8;
-    }
+    
+    // 在翻转后的坐标系中，头部始终朝右，直接计算嘴尖位置
+    const tipX = bird.x + birdSize/2 + 8;
+    const tipY = bird.y - birdSize/8;
+    
     // 虫身
     ctx.fillStyle = "#8B4513";
     ctx.beginPath();
     ctx.arc(tipX, tipY, 4, 0, Math.PI*2);
     ctx.fill();
+    
     // 眼睛
     ctx.fillStyle = "#000000";
     ctx.beginPath();
-    ctx.arc(tipX+1, tipY-1, 1, 0, Math.PI*2);
+    ctx.arc(tipX + 1, tipY - 1, 1, 0, Math.PI*2);
     ctx.fill();
+    
     // 腿
     ctx.beginPath();
-    ctx.moveTo(tipX-2, tipY+2);
-    ctx.lineTo(tipX-5, tipY+5);
-    ctx.moveTo(tipX, tipY+2);
-    ctx.lineTo(tipX-3, tipY+6);
-    ctx.moveTo(tipX+2, tipY+2);
-    ctx.lineTo(tipX-1, tipY+7);
+    ctx.moveTo(tipX - 2, tipY + 2);
+    ctx.lineTo(tipX - 5, tipY + 5);
+    ctx.moveTo(tipX, tipY + 2);
+    ctx.lineTo(tipX - 3, tipY + 6);
+    ctx.moveTo(tipX + 2, tipY + 2);
+    ctx.lineTo(tipX - 1, tipY + 7);
     ctx.stroke();
+    
     ctx.restore();
 }
     ctx.restore();
 }
-
+function ensureReedZone() {
+    if (!reedZone) {
+        initReeds();
+        if (reedZone) {
+            console.log("芦苇区已重新初始化");
+        } else {
+            console.warn("芦苇区初始化失败");
+        }
+    }
+    return reedZone !== null;
+}
 function drawPerchingWoodpeckerOrHeron(bird) {
     const baseSize = 20;
     const birdSize = baseSize * bird.size;
@@ -15290,10 +16533,10 @@ if (whiteHarriers.length > 0 && reedZone) {
     
     if (qualifiedRaptors.length > 0) {
         birds.forEach(bird => {
-            const exemptBirds = [
-                "喜鹊", "乌鸦", "夜鹭", "绿头鸭", "赤麻鸭", "小北", "戴菊", "山雀", 
-                "棕头鸦雀", "金眶鸻", "12000鸻", "游隼", "红隼", "黑翅鸢", 
-                "长耳鸮", "雕鸮", "短耳鸮", "小鸮", "蝙蝠"
+const exemptBirds = [
+    "喜鹊", "乌鸦", "夜鹭", "绿头鸭", "赤麻鸭", "小北", "戴菊", "山雀", 
+    "棕头鸦雀", "金眶鸻", "12000鸻", "游隼", "红隼", "黑翅鸢", 
+    "长耳鸮", "雕鸮", "短耳鸮", "小鸮", "蝙蝠", "伯劳"  // ← 添加伯劳
             ];
             
             if (exemptBirds.includes(bird.name)) {
@@ -15745,8 +16988,10 @@ if (whiteHarriers.length > 0 && reedZone) {
             }
         }
         if (doveCount >= 2 && Math.random() < 0.18) {
-            generateKestrel(true);
-        }
+            if (!hasKestrel && !birds.some(b => b.name === "胖虎")) {
+    generateKestrel(true);
+}
+     }     
         lastDoveSummonCheck = gameTime;
     }
 
@@ -15869,9 +17114,48 @@ for (let i = birds.length - 1; i >= 0; i--) {
     // ========== 小组协调逻辑结束 ==========
     
     // 更新普通鸟类的行为
-    for (let i = birds.length - 1; i >= 0; i--) {
-        const bird = birds[i];
+for (let i = birds.length - 1; i >= 0; i--) {
+    const bird = birds[i];
+
+    // 优先处理夜鹭特殊行为
+    if (bird.name === "夜鹭" && bird.behaviorOverride) {
+        switch (bird.behaviorOverride) {
+            case 'reedStand':
+                updateHeronReedStand(bird, deltaTime);
+                continue;
+            case 'fishDive':
+                updateHeronFishDive(bird, deltaTime);
+                continue;
+            case 'stonePatrol':
+                // 石头区模式由 waterfowlPatrolGroups 处理，这里跳过通用更新
+                // 但需要确保如果状态不是 patrolWalk，继续通用更新（例如飞到石头区）
+                if (bird.state === 'patrolWalk' || waterfowlPatrolGroups.some(g => g.birds.includes(bird))) {
+                    continue;
+                }
+                // 否则让通用逻辑处理飞向石头区
+                break;
+            case 'standOnTree':
+                // 树上站立走通用逻辑，无需特殊处理
+                break;
+        }
+    }
+    // 在 updateBirds 的 for 循环最开始添加以下代码（在 if (bird.isWhiteHarrier) 之前）
+
+// 长耳鸮特殊处理：直接在树上出现，停留后直接消失
+if (bird.name === "长耳鸮") {
+    // 确保状态为 perching
+    if (bird.state !== 'perching') {
+        bird.state = 'perching';
+        bird.speed = 0;
+    }
     
+    bird.stateTime += deltaTime;
+    // 停留时间到，直接移除（不飞走）
+    if (bird.stateTime >= (bird.stayTime * 1000)) {
+        birds.splice(i, 1);
+    }
+    continue; // 跳过所有后续更新逻辑
+}
         // 处理波浪飞行（某种鹨、寿带等）
         if ((bird.name === "某种鹨" || bird.name === "寿带") && bird.state === 'flying') {
             bird.wavePhase += bird.waveFrequency * (deltaTime / 16);
@@ -15896,6 +17180,7 @@ for (let i = birds.length - 1; i >= 0; i--) {
             updateRedBreastedFlycatcher(bird, deltaTime);
             continue;
         }
+ 
      // ===== 宏伟水渠成对行为 =====
     if (bird.name === "宏伟水渠♂" || bird.name === "宏伟水渠♀") {
       const group = birdGroupInfo[bird.groupId];
@@ -15969,18 +17254,7 @@ for (let i = birds.length - 1; i >= 0; i--) {
       }
       continue;
     }
-      
-        // 长耳鸮的特殊消失逻辑
-        if (bird.name === "长耳鸮" && bird.state === 'perching') {
-            bird.stateTime += deltaTime;
-            
-            // 停留时间结束后直接消失（不是飞离）
-            if (bird.stateTime >= (bird.stayTime * 1000)) {
-                // 直接移除，不从树上飞离
-                birds.splice(i, 1);
-                continue;
-            }
-        }
+   
         // 红腹灰雀特殊行为
 if (bird.isBullfinch) {
     bird.stateTime += deltaTime;
@@ -18819,30 +20093,29 @@ function drawPanghu(bird) {
     );
     ctx.fill();
     
-    // 棕色嘴巴
+    // 棕色嘴巴（方形嘴）
     ctx.fillStyle = "#8B4513";
-    const beakLength = 8;
+    const beakLength = 8 * (2/3);           // ≈5.33
     const beakHeight = 5;
     const beakStartX = bird.x + bodySize/2 - headSize/2 + headSize/2;
     const beakStartY = bird.y - bodySize/2 + headSize/2;
-    ctx.beginPath();
-    ctx.moveTo(beakStartX, beakStartY);
-    ctx.lineTo(beakStartX + beakLength, beakStartY);
-    ctx.lineTo(beakStartX, beakStartY + beakHeight);
-    ctx.closePath();
-    ctx.fill();
+    ctx.fillRect(beakStartX, beakStartY - beakHeight/2, beakLength, beakHeight);
     
-    // 黄色眼圈 + 黑眼珠
+    // 眼睛位置
     const eyeX = bird.x + bodySize/2 - headSize/2 + headSize/4;
     const eyeY = bird.y - bodySize/2 + headSize/3;
-    ctx.fillStyle = "#FFFF00";
-    ctx.beginPath();
-    ctx.arc(eyeX, eyeY, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#000000";
-    ctx.beginPath();
-    ctx.arc(eyeX, eyeY, 2, 0, Math.PI * 2);
-    ctx.fill();
+    
+// 绘制黄色眼圈（尺寸与公鸳鸯一致）
+ctx.fillStyle = "#FFFF00";
+ctx.beginPath();
+ctx.arc(eyeX, eyeY, 6, 0, Math.PI * 2);
+ctx.fill();
+
+// 绘制黑眼珠（尺寸与公鸳鸯一致）
+ctx.fillStyle = "#000000";
+ctx.beginPath();
+ctx.arc(eyeX, eyeY, 2, 0, Math.PI * 2);
+ctx.fill();
     
     // 翅膀（棕色）
     ctx.fillStyle = "#8B4513";
@@ -18896,18 +20169,13 @@ function drawVinegarDuck(bird) {
     ctx.arc(headCenterX, headCenterY, headSize/2, 0, Math.PI * 2);
     ctx.fill();
 
-    // 嘴部
-    const beakLength = 8 * 0.65;
+    // 嘴部（方形嘴）
+    const beakLength = (8 * 0.65) * (2/3);
     const beakHeight = 4;
     const beakStartX = headCenterX + headSize/2;
     const beakStartY = headCenterY;
     ctx.fillStyle = "#000000";
-    ctx.beginPath();
-    ctx.moveTo(beakStartX, beakStartY);
-    ctx.lineTo(beakStartX + beakLength, beakStartY);
-    ctx.lineTo(beakStartX, beakStartY + beakHeight);
-    ctx.closePath();
-    ctx.fill();
+    ctx.fillRect(beakStartX, beakStartY - beakHeight/2, beakLength, beakHeight);
 
     // 眼睛位置（基于头部中心，不向上移动）
     const eyeX = headCenterX + headSize/4;
@@ -18983,18 +20251,13 @@ function drawVinegarDuckFemale(bird) {
     );
     ctx.fill();
 
-    // 嘴黑色
+    // 嘴黑色（方形嘴）
     ctx.fillStyle = "#000000";
-    const beakLength = 8 * 0.65;
+    const beakLength = (8 * 0.65) * (2/3);  // ≈3.467
     const beakHeight = 4;
     const beakStartX = bird.x + bodySize/2 - headSize/2 + headSize/2;
     const beakStartY = bird.y - bodySize/2 + headSize/2;
-    ctx.beginPath();
-    ctx.moveTo(beakStartX, beakStartY);
-    ctx.lineTo(beakStartX + beakLength, beakStartY);
-    ctx.lineTo(beakStartX, beakStartY + beakHeight);
-    ctx.closePath();
-    ctx.fill();
+    ctx.fillRect(beakStartX, beakStartY - beakHeight/2, beakLength, beakHeight);
 
     // 眼睛位置
     const eyeX = bird.x + bodySize/2 - headSize/2 + headSize/4;
@@ -20024,7 +21287,7 @@ function generatePanghu(countStats = true) {
     // 计算石头区位置
     const groundY = reedZone ? (reedZone.y + reedZone.height) : GAME_HEIGHT - 20;
     const startX = (stones.length ? stones.reduce((s, stone) => s + stone.x, 0) / stones.length : GAME_WIDTH/2);
-    const startY = groundY - 550;      // 起始高度（石头区上方）
+    const startY = groundY - 250;      // 起始高度（石头区上方）
     const targetY = groundY - 10;      // 石头顶部
 
     const bird = {
@@ -20049,7 +21312,8 @@ function generatePanghu(countStats = true) {
     birds.push(bird);
     birdGroupInfo[groupId].birds.push(bird);
 
-    // 加入游禽组（但标记为未移动，等降落完成后才启动移动）
+// 在 generatePanghu 末尾，确保胖虎被放入 waterfowlPatrolGroups
+if (!waterfowlPatrolGroups.some(g => g.birds.includes(bird))) {
     waterfowlPatrolGroups.push({
         groupId: groupId,
         birds: [bird],
@@ -20059,8 +21323,9 @@ function generatePanghu(countStats = true) {
         phase: 0,
         sideFrom: 'left',
         phaseCounter: 0,
-        isMoving: false   // 初始未移动
+        isMoving: false
     });
+}
 
     return bird;
 }
@@ -20144,184 +21409,5 @@ if (panghuCount === 0) {
 let chaseFrameCounter = 0;
 const CHASE_FRAME_INTERVAL = 15;
 
-function updatePanghuChaseMandarin() {
-    let panghuList = [];
-    let mandarinMaleList = [];
-    
-    // 收集当前所有胖虎和鸳鸯♂（仅限处于 patrolWalk 状态的）
-    for (let group of waterfowlPatrolGroups) {
-        for (let bird of group.birds) {
-            if (bird.name === "胖虎" && bird.state === 'patrolWalk') panghuList.push(bird);
-            if (bird.name === "鸳鸯♂") mandarinMaleList.push(bird);
-        }
-    }
-    
-    if (panghuList.length === 0 || mandarinMaleList.length === 0) return;
 
-    // 胖虎追逐最近的鸳鸯
-    for (let panghu of panghuList) {
-        let closestMale = null;
-        let minDist = Infinity;
-        for (let male of mandarinMaleList) {
-            const dx = male.x - panghu.x;
-            const dy = male.y - panghu.y;
-            const dist = Math.hypot(dx, dy);
-            if (dist < minDist) {
-                minDist = dist;
-                closestMale = male;
-            }
-        }
-        
-        if (closestMale && minDist < 500) {
-            panghu.chaseTarget = closestMale;
-            panghu.chaseSpeed = 0.8;           // 胖虎追逐速度（可调）
-            panghu.chaseDirX = (closestMale.x - panghu.x) / minDist;
-            panghu.chaseDirY = (closestMale.y - panghu.y) / minDist;
-            panghu.direction = panghu.chaseDirX > 0 ? 1 : -1;
-        } else {
-            if (panghu.chaseTarget) delete panghu.chaseTarget;
-            panghu.chaseSpeed = WATERFOWL_MOVE_SPEED; // 恢复普通移动速度
-        }
-    }
-
-    // 鸳鸯逃跑逻辑
-    for (let male of mandarinMaleList) {
-        // 检查是否有胖虎在附近（距离 < 500）
-        let nearestPanghu = null;
-        let minDist = Infinity;
-        for (let panghu of panghuList) {
-            const dx = panghu.x - male.x;
-            const dy = panghu.y - male.y;
-            const dist = Math.hypot(dx, dy);
-            if (dist < minDist) {
-                minDist = dist;
-                nearestPanghu = panghu;
-            }
-        }
-
-        // 如果附近有胖虎且尚未被追逐，则触发逃跑
-        if (nearestPanghu && minDist < 500 && !male.isFleeingFromPanghu) {
-            male.isFleeingFromPanghu = true;
-            male.fleeFrom = nearestPanghu;
-            // 【关键修改】提高逃跑速度，原来是 WATERFOWL_MOVE_SPEED * 2 = 0.4，现在改为 1.5
-            male.fleeSpeed = 1.5;               
-            male.fleeDirX = (male.x - nearestPanghu.x) / minDist;
-            male.fleeDirY = (male.y - nearestPanghu.y) / minDist;
-            male.fleeActive = true;
-            male.fleeTimer = 0;                 // 逃跑计时器（后续用于结束逃跑）
-            // 重置反向冷却（如果有）
-            if (male.reverseCooldown) male.reverseCooldown = 0;
-        }
-
-        // 如果已经处于逃跑状态，更新方向（可能胖虎位置变化）
-        if (male.isFleeingFromPanghu && male.fleeFrom) {
-            const dx = male.x - male.fleeFrom.x;
-            const dy = male.y - male.fleeFrom.y;
-            const dist = Math.hypot(dx, dy);
-            if (dist < 400) {
-                // 保持逃跑方向（始终背对胖虎）
-                const angle = Math.atan2(dy, dx);
-                male.fleeDirX = Math.cos(angle);
-                male.fleeDirY = Math.sin(angle);
-                male.fleeActive = true;
-            } else {
-                // 距离足够远，结束逃跑
-                male.isFleeingFromPanghu = false;
-                male.fleeActive = false;
-                delete male.fleeFrom;
-            }
-        } else {
-            male.fleeActive = false;
-        }
-    }
-}
-
-// 重写 updateWaterfowlPatrol 以支持追逐
-const originalUpdateWaterfowl = updateWaterfowlPatrol;
-window.updateWaterfowlPatrol = function(deltaTime) {
-    originalUpdateWaterfowl.call(this, deltaTime);
-    updatePanghuChaseMandarin();
-    for (let group of waterfowlPatrolGroups) {
-        for (let bird of group.birds) {
-            if (bird.name === "胖虎" && bird.chaseTarget && bird.chaseTarget.isFleeingFromPanghu) {
-                const step = (bird.chaseSpeed || WATERFOWL_MOVE_SPEED) * (deltaTime / 16);
-                if (bird.chaseDirX) bird.x += bird.chaseDirX * step;
-                if (bird.chaseDirY) bird.y += bird.chaseDirY * step;
-                bird.x = Math.max(50, Math.min(GAME_WIDTH - 50, bird.x));
-                bird.y = Math.max(reedZone.y + 10, Math.min(reedZone.y + reedZone.height - 10, bird.y));
-                bird.direction = bird.chaseDirX > 0 ? 1 : -1;
-                group.moveRemaining = 0;
-            }
-if (bird.name === "鸳鸯♂" && bird.fleeActive && bird.fleeFrom) {
-    const step = (bird.fleeSpeed || WATERFOWL_MOVE_SPEED * 2) * (deltaTime / 16);
-    if (bird.fleeDirX) bird.x += bird.fleeDirX * step;
-    if (bird.fleeDirY) bird.y += bird.fleeDirY * step;
-
-    // 严格限制在石头区内部（防止飞走）
-    if (stones.length) {
-        const minX = Math.min(...stones.map(s => s.x - s.width/2)) + 10;
-        const maxX = Math.max(...stones.map(s => s.x + s.width/2)) - 10;
-        const minY = (reedZone.y + reedZone.height) - VISIBLE_HEIGHT + 5;
-        const maxY = (reedZone.y + reedZone.height) - 5;
-        bird.x = Math.max(minX, Math.min(maxX, bird.x));
-        bird.y = Math.max(minY, Math.min(maxY, bird.y));
-    } else {
-        // 如果没有石头，则限制在芦苇区内
-        bird.x = Math.max(reedZone.x + 20, Math.min(reedZone.x + reedZone.width - 20, bird.x));
-        bird.y = Math.max(reedZone.y + 10, Math.min(reedZone.y + reedZone.height - 10, bird.y));
-    }
-
-    bird.direction = bird.fleeDirX > 0 ? 1 : -1;
-    group.moveRemaining = 0;
-
-    // === 距离检测：反向逻辑（带冷却）===
-    const distToPanghu = Math.hypot(bird.x - bird.fleeFrom.x, bird.y - bird.fleeFrom.y);
-    if (distToPanghu < 25) {  // 阈值稍大，避免频繁触发
-        // 检查是否在冷却期内
-        if (!bird.reverseCooldown) bird.reverseCooldown = 0;
-        if (gameTime - bird.reverseCooldown > 2300) {  // 冷却 2.3 秒
-            // 反向方向：当前逃跑方向的反向 + 随机偏移（-30° ~ +30°）
-            const currentAngle = Math.atan2(bird.fleeDirY, bird.fleeDirX);
-            const randomOffset = (Math.random() - 0.5) * Math.PI / 3;  // ±30°
-            const newAngle = currentAngle + Math.PI + randomOffset;
-            bird.fleeDirX = Math.cos(newAngle);
-            bird.fleeDirY = Math.sin(newAngle);
-            bird.reverseCooldown = gameTime;
-            // 可选：短暂减慢胖虎速度，防止立刻追上
-            if (bird.fleeFrom && bird.fleeFrom.chaseSpeed) {
-                bird.fleeFrom.chaseSpeed = Math.max(0.3, bird.fleeFrom.chaseSpeed * 0.9);
-            }
-        }
-    }
-
-    // 逃跑计时器（不再每次反向重置）
-    if (!bird.fleeTimer) bird.fleeTimer = 0;
-    bird.fleeTimer += deltaTime;
-    if (bird.fleeTimer > 25000) {  // 25 秒后结束逃跑
-        bird.isFleeingFromPanghu = false;
-        bird.fleeActive = false;
-        delete bird.fleeTimer;
-        delete bird.reverseCooldown;
-    }
-}
-        }
-    }
-};
-
-// 控制台调试函数：手动召唤胖虎
-window.debugSummon = function() {
-    let panghuCount = birds.filter(b => b.name === "胖虎").length;
-    if (panghuCount === 0) {
-        if (typeof generatePanghu === 'function') {
-            generatePanghu(false);
-            console.log("胖虎已通过 debugSummon 召唤");
-            showSpecialAlert("胖虎已出现！");
-        } else {
-            console.error("generatePanghu 未定义");
-        }
-    } else {
-        console.log("场上已有胖虎，无法召唤");
-        showSpecialAlert("已有胖虎在场上");
-    }
-};
 </script></body></html>
