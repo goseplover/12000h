@@ -1,8 +1,9 @@
 <!DOCTYPE html>
+
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0, viewport-fit=cover" name="viewport"/>
 <title>观鸟模拟器 - 一万两千鸻使用AI制作</title>
 <style>
 html, body {
@@ -1830,143 +1831,185 @@ body {
     width: 50% !important;
     height: 66.67% !important;
 }
+
+/* 陀螺仪放大画布 - 确保其 z-index 低于按钮 */
+#zoomCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2 !important;
+    display: none;
+    background: transparent;
+}
+
+/* 陀螺仪模式下镜头容器强制显示并置于顶层 */
+.gyro-active #lensToggleContainer {
+    display: flex !important;
+    position: fixed !important;
+    bottom: 20px !important;
+    left: 20px !important;
+    z-index: 1000 !important;
+    background-color: rgba(0, 0, 0, 0.8) !important;
+    border: 2px solid #FFD700 !important;
+    border-radius: 20px !important;
+    padding: 8px !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+    max-width: calc(100% - 40px) !important;
+    box-sizing: border-box !important;
+}
+
+/* 小屏横屏下减小按钮尺寸，确保不溢出 */
+@media (orientation: landscape) and (max-height: 500px) {
+    .gyro-active #lensToggleContainer {
+        padding: 4px !important;
+        gap: 4px !important;
+        bottom: 10px !important;
+        left: 10px !important;
+    }
+    .gyro-active #lensToggleContainer .lensToggleButton {
+        padding: 2px 6px !important;
+        font-size: 10px !important;
+        min-width: 40px !important;
+    }
+}
 </style>
 </head>
 <body>
 <div id="textBrowserOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.95); z-index: 10000; display: none; font-family: 'SimSun', monospace; pointer-events: none;">
-    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; pointer-events: none;">
-        <!-- 顶部控制栏 - 白色半透明 -->
-        <div style="background-color: rgba(255, 255, 255, 0.85); color: rgba(0, 0, 0, 0.85); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(0, 0, 0, 0.3); pointer-events: auto;">
-            <div style="font-size: 18px; font-weight: bold;">📄 文本浏览器</div>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <div style="font-size: 12px; color: rgba(0, 0, 0, 0.6);">按空格键显示/隐藏</div>
-                <button id="loadTextFile" style="background-color: rgba(76, 175, 80, 0.9); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 14px;">📂 加载文件</button>
-                <input type="file" id="textFileInput" accept=".txt,.md,.html,.js,.css,.json" style="display: none;">
-                <button id="closeTextBrowser" style="background-color: rgba(0, 0, 0, 0.1); color: rgba(0, 0, 0, 0.85); border: 1px solid rgba(0, 0, 0, 0.2); padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 14px;">✕ 关闭</button>
-            </div>
-        </div>
-        
-        <!-- 内容区域 - 80%不透明的白色 -->
-        <div id="textContentContainer" style="flex: 1; overflow-y: auto; padding: 20px; background-color: rgba(255, 255, 255, 0.8); pointer-events: auto;">
-            <!-- 文本区域 - 85%不透明的白色 -->
-            <div id="textBrowserContent" style="white-space: pre-wrap; font-size: 16px; line-height: 1.6; color: rgba(0, 0, 0, 0.85); max-width: 1200px; margin: 0 auto; font-family: 'Courier New', monospace; background-color: rgba(255, 255, 255, 0.85); padding: 20px; border-radius: 8px; border: 1px solid rgba(0, 0, 0, 0.1);">
-                <!-- 移除初始文本提示，保持空白 -->
-            </div>
-        </div>
-        
-        <!-- 底部状态栏 - 白色半透明 -->
-        <div style="background-color: rgba(255, 255, 255, 0.95); padding: 8px 20px; border-top: 1px solid rgba(0, 0, 0, 0.1); font-size: 12px; color: rgba(0, 0, 0, 0.6); display: flex; justify-content: space-between; pointer-events: auto;">
-            <div id="fileInfo">未加载文件</div>
-            <div id="characterCount">字符数: 0</div>
-        </div>
-    </div>
+<div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; pointer-events: none;">
+<!-- 顶部控制栏 - 白色半透明 -->
+<div style="background-color: rgba(255, 255, 255, 0.85); color: rgba(0, 0, 0, 0.85); padding: 10px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid rgba(0, 0, 0, 0.3); pointer-events: auto;">
+<div style="font-size: 18px; font-weight: bold;">📄 文本浏览器</div>
+<div style="display: flex; gap: 10px; align-items: center;">
+<div style="font-size: 12px; color: rgba(0, 0, 0, 0.6);">按空格键显示/隐藏</div>
+<button id="loadTextFile" style="background-color: rgba(76, 175, 80, 0.9); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 14px;">📂 加载文件</button>
+<input accept=".txt,.md,.html,.js,.css,.json" id="textFileInput" style="display: none;" type="file"/>
+<button id="closeTextBrowser" style="background-color: rgba(0, 0, 0, 0.1); color: rgba(0, 0, 0, 0.85); border: 1px solid rgba(0, 0, 0, 0.2); padding: 8px 15px; border-radius: 4px; cursor: pointer; font-size: 14px;">✕ 关闭</button>
+</div>
+</div>
+<!-- 内容区域 - 80%不透明的白色 -->
+<div id="textContentContainer" style="flex: 1; overflow-y: auto; padding: 20px; background-color: rgba(255, 255, 255, 0.8); pointer-events: auto;">
+<!-- 文本区域 - 85%不透明的白色 -->
+<div id="textBrowserContent" style="white-space: pre-wrap; font-size: 16px; line-height: 1.6; color: rgba(0, 0, 0, 0.85); max-width: 1200px; margin: 0 auto; font-family: 'Courier New', monospace; background-color: rgba(255, 255, 255, 0.85); padding: 20px; border-radius: 8px; border: 1px solid rgba(0, 0, 0, 0.1);">
+<!-- 移除初始文本提示，保持空白 -->
+</div>
+</div>
+<!-- 底部状态栏 - 白色半透明 -->
+<div style="background-color: rgba(255, 255, 255, 0.95); padding: 8px 20px; border-top: 1px solid rgba(0, 0, 0, 0.1); font-size: 12px; color: rgba(0, 0, 0, 0.6); display: flex; justify-content: space-between; pointer-events: auto;">
+<div id="fileInfo">未加载文件</div>
+<div id="characterCount">字符数: 0</div>
+</div>
+</div>
 </div>
 <div id="gameContainer">
-    <canvas id="gameCanvas"></canvas>
-    <canvas id="poopCanvas"></canvas>
-    <div id="goldenFilter"></div>
-    <div id="viewfinder"></div>
-    <div id="photoPreview" onclick="openAlbum()">
-        <div class="noPhoto">点击查看相册<br>暂无照片</div>
-    </div>
-    <canvas id="screenshotCanvas"></canvas>
-    <div id="screenshotPreviewModal">
-        <button id="screenshotPreviewClose" onclick="closeScreenshotPreview()">×</button>
-        <img id="screenshotPreviewImage" src="" alt="截图预览">
-        <div id="screenshotPreviewControls">
-            <button class="screenshotPreviewButton" onclick="saveScreenshot()">💾 保存图片</button>
-            <button class="screenshotPreviewButton" onclick="closeScreenshotPreview()">✕ 关闭</button>
-        </div>
-    </div>
-<div id="campsite" style="display: none; z-index: 25; cursor: pointer;" onclick="extinguishCampfire()">
-    <div style="position: relative; width: 100%; height: 100%;">
-        <!-- 帐篷结构 - 确保这部分存在 -->
-        <div style="position: absolute; bottom: 0; right: 16.67%; width: 30%; height: 40%;">
-            <div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15% solid transparent; border-right: 15% solid transparent; border-bottom: 40% solid #B22222;"></div>
-        </div>
-        <!-- 木柴结构 -->
-        <div style="position: absolute; bottom: 0; left: 23.33%; width: 20%; height: 30%;">
-            <div style="position: absolute; bottom: 0; left: 13.33%; width: 75%; height: 17.78%; background-color: #8B4513; transform: rotate(-15deg);"></div>
-            <div style="position: absolute; bottom: 8.89%; left: 20%; width: 63.33%; height: 17.78%; background-color: #A0522D; transform: rotate(10deg);"></div>
-            <!-- 火焰 -->
-            <div id="campfire-flame" style="position: absolute; bottom: 26.67%; left: 50%; transform: translateX(-50%); width: 50%; height: 66.67%; background: radial-gradient(circle, #FF4500 0%, #FF8C00 30%, #FFD700 70%); border-radius: 50% 50% 20% 20%; filter: blur(2px); animation: flame-flicker 0.5s infinite alternate;"></div>
-        </div>
-        <!-- 提示文字 -->
-        <div style="position: absolute; bottom: 1.5%; left: 50%; transform: translateX(-50%); color: #FFD700; font-size: 0.67vw; font-weight: bold; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); text-align: center; background-color: rgba(0,0,0,0.5); padding: 0.13vw 0.4vw; border-radius: 0.4vw; opacity: 0.8; white-space: nowrap;">
+<canvas id="gameCanvas"></canvas><canvas id="zoomCanvas"></canvas>
+<canvas id="poopCanvas"></canvas>
+<div id="goldenFilter"></div>
+<div id="viewfinder"></div>
+<div id="photoPreview" onclick="openAlbum()">
+<div class="noPhoto">点击查看相册<br/>暂无照片</div>
+</div>
+<canvas id="screenshotCanvas"></canvas>
+<div id="screenshotPreviewModal">
+<button id="screenshotPreviewClose" onclick="closeScreenshotPreview()">×</button>
+<img alt="截图预览" id="screenshotPreviewImage" src=""/>
+<div id="screenshotPreviewControls">
+<button class="screenshotPreviewButton" onclick="saveScreenshot()">💾 保存图片</button>
+<button class="screenshotPreviewButton" onclick="closeScreenshotPreview()">✕ 关闭</button>
+</div>
+</div>
+<div id="campsite" onclick="extinguishCampfire()" style="display: none; z-index: 25; cursor: pointer;">
+<div style="position: relative; width: 100%; height: 100%;">
+<!-- 帐篷结构 - 确保这部分存在 -->
+<div style="position: absolute; bottom: 0; right: 16.67%; width: 30%; height: 40%;">
+<div style="position: absolute; bottom: 0; left: 50%; transform: translateX(-50%); width: 0; height: 0; border-left: 15% solid transparent; border-right: 15% solid transparent; border-bottom: 40% solid #B22222;"></div>
+</div>
+<!-- 木柴结构 -->
+<div style="position: absolute; bottom: 0; left: 23.33%; width: 20%; height: 30%;">
+<div style="position: absolute; bottom: 0; left: 13.33%; width: 75%; height: 17.78%; background-color: #8B4513; transform: rotate(-15deg);"></div>
+<div style="position: absolute; bottom: 8.89%; left: 20%; width: 63.33%; height: 17.78%; background-color: #A0522D; transform: rotate(10deg);"></div>
+<!-- 火焰 -->
+<div id="campfire-flame" style="position: absolute; bottom: 26.67%; left: 50%; transform: translateX(-50%); width: 50%; height: 66.67%; background: radial-gradient(circle, #FF4500 0%, #FF8C00 30%, #FFD700 70%); border-radius: 50% 50% 20% 20%; filter: blur(2px); animation: flame-flicker 0.5s infinite alternate;"></div>
+</div>
+<!-- 提示文字 -->
+<div style="position: absolute; bottom: 1.5%; left: 50%; transform: translateX(-50%); color: #FFD700; font-size: 0.67vw; font-weight: bold; text-shadow: 1px 1px 3px rgba(0,0,0,0.8); text-align: center; background-color: rgba(0,0,0,0.5); padding: 0.13vw 0.4vw; border-radius: 0.4vw; opacity: 0.8; white-space: nowrap;">
             点击熄灭篝火
         </div>
-    </div>
 </div>
-        
-        <div id="gyroToggleContainer">
-            <div id="gyroSensitivityContainer">
-                <div id="gyroSensitivityLabel">灵敏度</div>
-                <input type="range" id="gyroSensitivitySlider" min="5" max="20" value="10">
-                <div id="gyroSensitivityValue">10</div>
-            </div>
-            <div id="gyroStatusIndicator">关闭</div>
-            <button id="gyroModeToggle">陀螺仪</button>
-            <button id="gyroCalibrateButton">校准</button>
-        </div>
-        <div id="cameraButton" onclick="handleCameraButtonClick()"></div>
+</div>
+<div id="gyroToggleContainer">
+<div id="gyroSensitivityContainer">
+<div id="gyroSensitivityLabel">灵敏度</div>
+<input id="gyroSensitivitySlider" max="20" min="5" type="range" value="10"/>
+<div id="gyroSensitivityValue">10</div>
+</div>
+<div id="gyroStatusIndicator">关闭</div>
+<button id="gyroModeToggle">陀螺仪</button>
+<button id="gyroCalibrateButton">校准</button>
+</div>
+<div id="cameraButton" onclick="handleCameraButtonClick()"></div>
 <div id="birdingToggleContainer">
-    <button id="birdingModeToggle">观鸟模式</button>
-    <div id="birdingStatusIndicator">未开始</div>
-    <div id="birdingRecordIcon" style="display: none;"></div>
+<button id="birdingModeToggle">观鸟模式</button>
+<div id="birdingStatusIndicator">未开始</div>
+<div id="birdingRecordIcon" style="display: none;"></div>
 </div>
-<button id="helpButton" class="help-button" title="查看帮助">?</button>
-        <div id="birdingRecordIconsContainer" style="position: absolute; top: 100px; right: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 70; max-height: 200px; overflow-y: auto; display: none;"></div>
-        <div id="textStats">
+<button class="help-button" id="helpButton" title="查看帮助">?</button>
+<div id="birdingRecordIconsContainer" style="position: absolute; top: 100px; right: 10px; display: flex; flex-direction: column; gap: 5px; z-index: 70; max-height: 200px; overflow-y: auto; display: none;"></div>
+<div id="textStats">
             已出现鸟类: <span id="appearedCount">0</span> | 已拍摄鸟类: <span id="capturedCount">0</span>
-        </div>
-        <div id="modeToggleContainer">
-            <button id="dayModeToggle" class="modeToggleButton">永久日间</button>
-            <button id="normalModeToggle" class="modeToggleButton active">普通模式</button>
-            <button id="nightModeToggle" class="modeToggleButton">永久夜间</button>
-        </div>
-        <div id="timeIndicator">白天 30:00 / 30:00 | 00:00</div>
-        <div id="lensToggleContainer">
-            <button id="lens600Toggle" class="lensToggleButton active">600镜头</button>
-            <button id="lens800Toggle" class="lensToggleButton">800镜头</button>
-            <button id="lens1200Toggle" class="lensToggleButton">1200镜头</button>
-        </div>
-        <div id="gameTitle">观鸟模拟器-一万两千鸻AI制作</div>
-        <div id="specialAlert"></div>
-        <div id="nightObjectAlert"></div>
-        <div id="captureAlert"></div>
-        <div id="creator">正在加载创作者信息...</div>
-        <div id="albumModal">
-    <h2 id="albumTitle" style="cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; gap: 10px;">
-        <span id="albumTitleText">我的相册 - 一万两千鸻制作</span>
-        <span id="editAlbumIdBtn" style="font-size: 14px; color: #87CEEB; cursor: pointer; text-decoration: underline; white-space: nowrap;">
+</div>
+<div id="modeToggleContainer">
+<button class="modeToggleButton" id="dayModeToggle">永久日间</button>
+<button class="modeToggleButton active" id="normalModeToggle">普通模式</button>
+<button class="modeToggleButton" id="nightModeToggle">永久夜间</button>
+</div>
+<div id="timeIndicator">白天 30:00 / 30:00 | 00:00</div>
+<div id="lensToggleContainer">
+<button class="lensToggleButton active" id="lens600Toggle">600镜头</button>
+<button class="lensToggleButton" id="lens800Toggle">800镜头</button>
+<button class="lensToggleButton" id="lens1200Toggle">1200镜头</button>
+</div>
+<div id="gameTitle">观鸟模拟器-一万两千鸻AI制作</div>
+<div id="specialAlert"></div>
+<div id="nightObjectAlert"></div>
+<div id="captureAlert"></div>
+<div id="creator">正在加载创作者信息...</div>
+<div id="albumModal">
+<h2 id="albumTitle" style="cursor: pointer; position: relative; display: flex; align-items: center; justify-content: center; gap: 10px;">
+<span id="albumTitleText">我的相册 - 一万两千鸻制作</span>
+<span id="editAlbumIdBtn" style="font-size: 14px; color: #87CEEB; cursor: pointer; text-decoration: underline; white-space: nowrap;">
             点击修改ID
         </span>
-    </h2>
-    <div id="albumPhotos"></div>
-    <div id="albumStats"></div>
-    <button id="closeAlbum" onclick="closeAlbum()">×</button>
+</h2>
+<div id="albumPhotos"></div>
+<div id="albumStats"></div>
+<button id="closeAlbum" onclick="closeAlbum()">×</button>
 </div>
-        <div id="birdingRecordModal" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.95); z-index: 400; display: none; color: white; font-family: 'SimSun', monospace; overflow-y: auto; white-space: pre-wrap;">
-            <div style="position: fixed; top: 0; left: 0; right: 0; background: rgba(0, 0, 0, 0.9); border-bottom: 2px solid #FFD700; padding: 12px 20px; z-index: 10; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);">
-                <div style="font-size: 20px; font-weight: bold; color: #FFD700;">📖 观鸟记录</div>
-                <div id="birdingRecordCounter" style="color: white; font-size: 14px; background: rgba(255, 215, 0, 0.2); padding: 4px 12px; border-radius: 12px; border: 1px solid #FFD700;">记录 1 / 1</div>
-                <div style="display: flex; gap: 10px;">
-                    <button id="screenshotButton" onclick="captureBirdingRecord()" style="background: rgba(255, 215, 0, 0.8); color: black; border: none; border-radius: 15px; padding: 8px 15px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.3s;">📸 截图</button>
-                    <button id="closeBirdingRecord" onclick="closeBirdingRecord()" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 18px; cursor: pointer; transition: all 0.3s;">×</button>
-                </div>
-            </div>
-            <div id="birdingRecordNav" style="position: fixed; top: 50%; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 15px; z-index: 5; pointer-events: none; opacity: 0; transition: opacity 0.3s;">
-                <button id="prevRecordButton" class="birdingRecordNavButton" onclick="switchBirdingRecord(-1)" style="pointer-events: auto; background-color: rgba(0, 0, 0, 0.7); color: white; border: 2px solid #FFD700; border-radius: 50%; width: 45px; height: 45px; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s;">←</button>
-                <button id="nextRecordButton" class="birdingRecordNavButton" onclick="switchBirdingRecord(1)" style="pointer-events: auto; background-color: rgba(0, 0, 0, 0.7); color: white; border: 2px solid #FFD700; border-radius: 50%; width: 45px; height: 45px; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s;">→</button>
-            </div>
-            <div id="birdingRecordContent" style="margin-top: 80px; font-size: 16px; line-height: 1.6; padding: 0 20px 30px 20px;"></div>
-            <div id="swipeHint" class="swipe-hint" style="display: none; position: fixed; bottom: 15px; left: 0; right: 0; text-align: center; color: #FFD700; font-size: 14px; z-index: 410; opacity: 0.7; animation: pulse 2s infinite;">使用滚轮或滑动切换记录</div>
-        </div>
-        <div id="helpModal" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); z-index: 450; display: none; color: white; font-family: 'SimSun', monospace; overflow-y: auto; padding: 20px; box-sizing: border-box;">
-            <div style="position: absolute; top: 20px; right: 20px; background-color: rgba(255, 255, 255, 0.2); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center;" onclick="closeHelpModal()">×</div>
-            <div id="helpContent" style="margin-top: 40px; font-size: 16px; line-height: 1.6; white-space: pre-wrap; max-width: 800px; margin-left: auto; margin-right: auto;"></div>
-        </div>
-    </div>
+<div id="birdingRecordModal" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.95); z-index: 400; display: none; color: white; font-family: 'SimSun', monospace; overflow-y: auto; white-space: pre-wrap;">
+<div style="position: fixed; top: 0; left: 0; right: 0; background: rgba(0, 0, 0, 0.9); border-bottom: 2px solid #FFD700; padding: 12px 20px; z-index: 10; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);">
+<div style="font-size: 20px; font-weight: bold; color: #FFD700;">📖 观鸟记录</div>
+<div id="birdingRecordCounter" style="color: white; font-size: 14px; background: rgba(255, 215, 0, 0.2); padding: 4px 12px; border-radius: 12px; border: 1px solid #FFD700;">记录 1 / 1</div>
+<div style="display: flex; gap: 10px;">
+<button id="screenshotButton" onclick="captureBirdingRecord()" style="background: rgba(255, 215, 0, 0.8); color: black; border: none; border-radius: 15px; padding: 8px 15px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.3s;">📸 截图</button>
+<button id="closeBirdingRecord" onclick="closeBirdingRecord()" style="background: rgba(255, 255, 255, 0.2); color: white; border: none; border-radius: 50%; width: 36px; height: 36px; font-size: 18px; cursor: pointer; transition: all 0.3s;">×</button>
+</div>
+</div>
+<div id="birdingRecordNav" style="position: fixed; top: 50%; left: 0; right: 0; display: flex; justify-content: space-between; padding: 0 15px; z-index: 5; pointer-events: none; opacity: 0; transition: opacity 0.3s;">
+<button class="birdingRecordNavButton" id="prevRecordButton" onclick="switchBirdingRecord(-1)" style="pointer-events: auto; background-color: rgba(0, 0, 0, 0.7); color: white; border: 2px solid #FFD700; border-radius: 50%; width: 45px; height: 45px; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s;">←</button>
+<button class="birdingRecordNavButton" id="nextRecordButton" onclick="switchBirdingRecord(1)" style="pointer-events: auto; background-color: rgba(0, 0, 0, 0.7); color: white; border: 2px solid #FFD700; border-radius: 50%; width: 45px; height: 45px; font-size: 22px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.3s;">→</button>
+</div>
+<div id="birdingRecordContent" style="margin-top: 80px; font-size: 16px; line-height: 1.6; padding: 0 20px 30px 20px;"></div>
+<div class="swipe-hint" id="swipeHint" style="display: none; position: fixed; bottom: 15px; left: 0; right: 0; text-align: center; color: #FFD700; font-size: 14px; z-index: 410; opacity: 0.7; animation: pulse 2s infinite;">使用滚轮或滑动切换记录</div>
+</div>
+<div id="helpModal" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.85); z-index: 450; display: none; color: white; font-family: 'SimSun', monospace; overflow-y: auto; padding: 20px; box-sizing: border-box;">
+<div onclick="closeHelpModal()" style="position: absolute; top: 20px; right: 20px; background-color: rgba(255, 255, 255, 0.2); color: white; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center;">×</div>
+<div id="helpContent" style="margin-top: 40px; font-size: 16px; line-height: 1.6; white-space: pre-wrap; max-width: 800px; margin-left: auto; margin-right: auto;"></div>
+</div>
+</div>
 <script>
 
 // ========== 石头系统与游禽模式 (优化版) ==========
@@ -2989,6 +3032,17 @@ function initSaveData() {
             try {
                 gameSave = JSON.parse(saved);
                 
+                // ===== 清除 2026-03-26 之前的旧存档 =====
+                const OLD_SAVE_THRESHOLD = new Date('2026-03-26T00:00:00').getTime();
+                const shouldClear = !gameSave.gameStartTime || gameSave.gameStartTime < OLD_SAVE_THRESHOLD;
+                if (shouldClear) {
+                    console.log('检测到旧存档（早于 2026-03-26），自动清除并初始化新存档');
+                    localStorage.removeItem('birding_simulator_save');
+                    createNewSave();          // 创建全新存档，内部会重新保存
+                    return;                  // 直接返回，避免继续使用旧数据
+                }
+                // ===== 清除逻辑结束 =====
+                
                 // 确保存档数据格式正确
                 if (!gameSave.appearedBirdSpecies) gameSave.appearedBirdSpecies = {};
                 if (!gameSave.capturedBirdSpecies) gameSave.capturedBirdSpecies = {};
@@ -3624,8 +3678,8 @@ const NIGHT_OBJECTS = {
   METEOR: {
     name: "流星",
     type: "meteor",
-    probability: 0.02,
-    duration: 2000,
+    probability: 0.05,
+    duration: 5000,
     size: 0.1,
     speed: 0.5,
     color: "#FFFFFF",
@@ -3719,7 +3773,7 @@ const BIRD_TYPES = {
     name: "红腹灰雀",
     color: "#000000",          // 黑嘴
     eyeColor: "#000000",       // 黑眼
-    bodyColor: "#FF69B4",      // 粉红色身体
+    bodyColor: "#CC6699",      // 粉红色身体
     headColor: "#000000",      // 黑色头部
     wingColor: "#808080",      // 灰色翅膀
     tailColor: "#000000",      // 黑色尾巴
@@ -4781,9 +4835,24 @@ let moonPhaseTimer = 0;
 let wall = null;
 let hole = null;
 let littleOwl = null;
+let lastLittleOwlCheckTime = 0;      // 上次检查小鸮生成的时间
 let lastLittleOwlTime = 0;
-const LITTLE_OWL_DAY_COOLDOWN = 300000;
-const LITTLE_OWL_NIGHT_COOLDOWN = 180000;
+let littleOwlTestMode = false;        // 小鸮测试模式开关（默认关闭）
+let defaultLittleOwlProbabilities = {}; // 用于保存原始概率（可选，也可直接在切换时重新计算）
+  let monitor = setInterval(() => {
+    let now = gameTime;
+    let elapsed = now - lastLittleOwlCheckTime;
+    let isGolden = (gameMode === 'normal' && isDaytime && isGoldenFilterActive);
+    let isDaytimeWithoutGolden = (gameMode === 'normal' && isDaytime && !isGoldenFilterActive);
+    let isNight = (gameMode === 'normal' && !isDaytime) || gameMode === 'night';
+    if (gameMode === 'day') isDaytimeWithoutGolden = true;
+    if (gameMode === 'night') isNight = true;
+    let interval = Infinity;
+    if (isGolden) interval = 5000;
+    else if (isDaytimeWithoutGolden) interval = 25000;
+    else if (isNight) interval = 15000;
+    console.log(`[监控] now=${now.toFixed(0)}, last=${lastLittleOwlCheckTime.toFixed(0)}, elapsed=${elapsed.toFixed(0)}, interval=${interval}, gameMode=${gameMode}, isDaytime=${isDaytime}, littleOwlTestMode=${littleOwlTestMode}`);
+}, 5000);
 const NIGHT_OWL_SPAWN_INTERVAL = 30000;
 let lastOwlSpawnTime = 0;
 const MAX_SHORT_EARED_OWL_COUNT = 3;
@@ -5052,7 +5121,7 @@ function displayDefaultHelp() {
             <p>• 观鸟模式下会记录您观察到的所有鸟种</p>
             <p>• 结束观鸟模式后自动生成记录，可按 <span class="help-key">9</span> 查看</p>
             <p>• 在记录界面按 <span class="help-key">7</span> 可截图保存当前记录</p>
-            <p>• 按 <span class="help-key">8</span> 可手动创建观鸟记录（不计时）</p>
+            <p>• 按 <span class="help-key">8</span> 可重置画布</p>
         </div>
         
         <div class="help-section">
@@ -5062,11 +5131,11 @@ function displayDefaultHelp() {
                 <li><span class="help-key">1</span> - 生成 12000鸻</li>
                 <li><span class="help-key">2</span> - 生成 UFO</li>
                 <li><span class="help-key">3</span> - 生成彗星</li>
-                <li><span class="help-key">4</span> - 调试坐标系</li>
-                <li><span class="help-key">5</span> - 调试蓝翡翠状态</li>
+                <li><span class="help-key">4</span> - 生成流星</li>
+                <li><span class="help-key">5</span> - 调试小鸮概率</li>
                 <li><span class="help-key">6</span> - 切换观鸟模式</li>
                 <li><span class="help-key">7</span> - 截图当前观鸟记录</li>
-                <li><span class="help-key">8</span> - 手动创建观鸟记录（不计时长）</li>
+                <li><span class="help-key">8</span> - 重置画布</li>
                 <li><span class="help-key">9</span> - 打开最近观鸟记录</li>
                 <li><span class="help-key">0</span> - 生成随机稀有鸟类</li>
             </ul>
@@ -5339,37 +5408,29 @@ function updateDayNight(deltaTime) {
     
     gameTime += deltaTime;
     
-    // 应用时间加速
+    // 应用时间加速（篝火熄灭时夜晚加速）
     let effectiveDeltaTime = deltaTime;
-    
     if (isNightAccelerated && gameMode === 'normal' && !isDaytime) {
         effectiveDeltaTime = deltaTime * nightAccelerationMultiplier;
     }
     
-    // 普通模式：日夜循环
+    // ========== 普通模式：日夜循环 ==========
     if (gameMode === 'normal') {
         dayNightTimer += effectiveDeltaTime;
         
-        // 检查日夜切换
         if (dayNightTimer >= DAY_NIGHT_CYCLE_DURATION) {
             isDaytime = !isDaytime;
             dayNightTimer = 0;
             
-            // 夜晚切换为白天时，重置篝火状态
             if (isDaytime) {
-                // 重置篝火状态（重新点燃）
+                isNightAccelerated = false;
+                showSpecialAlert("黎明到来");
+            } else {
                 isCampfireExtinguished = false;
                 isNightAccelerated = false;
-                
-                // 显示提示
-                showSpecialAlert("黎明到来，篝火重新点燃");
-            } else {
-                // 白天切换为夜晚时，确保篝火是点燃状态
-                isCampfireExtinguished = false;
                 moonPhaseTimer = Math.random() * MOON_PHASE_CYCLE;
-                
-                // 显示提示
-                showSpecialAlert("夜幕降临");
+                showSpecialAlert("夜幕降临，篝火重新点燃");
+                updateCampsiteVisibility();
             }
             
             updateModeToggleButtons();
@@ -5389,7 +5450,6 @@ function updateDayNight(deltaTime) {
                         birds.splice(i, 1);
                     }
                 }
-                
                 if (littleOwl) {
                     birds.splice(birds.indexOf(littleOwl), 1);
                     littleOwl = null;
@@ -5397,88 +5457,112 @@ function updateDayNight(deltaTime) {
                 nightObjects = [];
             }
         }
-            
-            // 更新太阳/月亮位置
-            sunMoonPosition = dayNightTimer / DAY_NIGHT_CYCLE_DURATION;
-        } 
-        // 永久日间模式
-        else if (gameMode === 'day') {
-            dayModeTimeState += deltaTime;
-            dayNightTimer = dayModeTimeState;
-            
-            // 确保营地状态被重置
-            resetCampsite();
-            
-            const goldenFilter = document.getElementById('goldenFilter');
-            goldenFilter.style.backgroundColor = 'rgba(255, 215, 0, 0.1)';
-            
-            // 更新营地可见性
-            updateCampsiteVisibility();
-        } 
-        // 永久夜间模式
-        else if (gameMode === 'night') {
-            nightModeTimeState += deltaTime;
-            nightModeMoonPhaseTimer += deltaTime;
-            dayNightTimer = nightModeTimeState;
-            moonPhaseTimer = nightModeMoonPhaseTimer;
-            
-            if (moonPhaseTimer >= MOON_PHASE_CYCLE) {
-                moonPhaseTimer = 0;
-                nightModeMoonPhaseTimer = 0;
-            }
-            
-            // 确保营地状态被重置
-            resetCampsite();
-            
-            const goldenFilter = document.getElementById('goldenFilter');
-            goldenFilter.style.backgroundColor = 'rgba(255, 215, 0, 0)';
-            
+        
+        moonPhaseTimer += deltaTime;
+        if (moonPhaseTimer >= MOON_PHASE_CYCLE) {
+            moonPhaseTimer = 0;
+        }
+        
+        updateGoldenFilter();
+        sunMoonPosition = dayNightTimer / DAY_NIGHT_CYCLE_DURATION;
+    } 
+    // ========== 永久日间模式 ==========
+    else if (gameMode === 'day') {
+        dayModeTimeState += deltaTime;
+        dayNightTimer = dayModeTimeState;
+        isCampfireExtinguished = false;
+        isNightAccelerated = false;
+        const goldenFilter = document.getElementById('goldenFilter');
+        goldenFilter.style.backgroundColor = 'rgba(255, 215, 0, 0.1)';
+        updateCampsiteVisibility();
+    } 
+    // ========== 永久夜间模式 ==========
+    else if (gameMode === 'night') {
+        nightModeTimeState += deltaTime;
+        nightModeMoonPhaseTimer += deltaTime;
+        dayNightTimer = nightModeTimeState;
+        moonPhaseTimer = nightModeMoonPhaseTimer;
+        if (moonPhaseTimer >= MOON_PHASE_CYCLE) {
+            moonPhaseTimer = 0;
+            nightModeMoonPhaseTimer = 0;
+        }
+        isCampfireExtinguished = false;
+        isNightAccelerated = false;
+        const goldenFilter = document.getElementById('goldenFilter');
+        goldenFilter.style.backgroundColor = 'rgba(255, 215, 0, 0)';
+        updateCampsiteVisibility();
+    }
+    
     updateTimeIndicator();
-    updateCampsiteVisibility(); // 确保营地可见性更新
-}
-        
-        // 稀有鸟类生成（使用实际时间，不受加速影响）
-        let rareBirdDelta = deltaTime;
-        lastRareBirdTime += rareBirdDelta;
-        
-        if (gameTime - lastRareBirdTime >= RARE_BIRD_INTERVAL && !birdingModeActive) {
-            generateRareBird();
-            lastRareBirdTime = gameTime;
+    
+    // ========== 稀有鸟类生成 ==========
+    let rareBirdDelta = deltaTime;
+    lastRareBirdTime += rareBirdDelta;
+    if (gameTime - lastRareBirdTime >= RARE_BIRD_INTERVAL && !birdingModeActive) {
+        generateRareBird();
+        lastRareBirdTime = gameTime;
+    }
+    
+    // ========== 夜间猫头鹰生成 ==========
+    if ((gameMode === 'night' || (gameMode === 'normal' && !isDaytime))) {
+        let actualTimePassed = deltaTime;
+        lastOwlSpawnTime += actualTimePassed;
+        if (gameTime - lastOwlSpawnTime > NIGHT_OWL_SPAWN_INTERVAL) {
+            spawnNightOwls();
+            lastOwlSpawnTime = gameTime;
         }
-        
-        // 小鸮生成逻辑（使用实际时间）
-        if (!littleOwl) {
-            let cooldown;
-            if (gameMode === 'day') {
-                cooldown = LITTLE_OWL_DAY_COOLDOWN;
-            } else if (gameMode === 'night') {
-                cooldown = LITTLE_OWL_NIGHT_COOLDOWN;
+    }
+    
+    // ========== 小鸮生成逻辑（基于时间段概率） ==========
+    if (!littleOwl) {
+        // 确定当前时间段
+        let isGolden = (gameMode === 'normal' && isDaytime && isGoldenFilterActive);
+        let isDaytimeWithoutGolden = (gameMode === 'normal' && isDaytime && !isGoldenFilterActive);
+        let isNight = (gameMode === 'normal' && !isDaytime) || gameMode === 'night';
+        if (gameMode === 'day') isDaytimeWithoutGolden = true;
+        if (gameMode === 'night') isNight = true;
+
+        const now = gameTime;
+        const elapsed = now - lastLittleOwlCheckTime;
+        let interval = Infinity;
+        let probability = 0;
+
+        if (isGolden) {
+            interval = 5000;
+            if (gameMode === 'normal' && isDaytime) {
+                const dayDuration = DAY_NIGHT_CYCLE_DURATION;
+                const oneMinute = 60000;
+                if (dayNightTimer < oneMinute) {
+                    probability = 0.01;      // 清晨 1%
+                } else if (dayNightTimer > dayDuration - oneMinute) {
+                    probability = 0.015;     // 黄昏 1.5%
+                } else {
+                    probability = 0.005;
+                }
             } else {
-                cooldown = isDaytime ? LITTLE_OWL_DAY_COOLDOWN : LITTLE_OWL_NIGHT_COOLDOWN;
+                probability = 0.01;
             }
-            
-            // 使用实际时间计算
-            let actualTimePassed = deltaTime;
-            lastLittleOwlTime += actualTimePassed;
-            
-            if (gameTime - lastLittleOwlTime > cooldown) {
-                generateLittleOwl(true);
-                lastLittleOwlTime = gameTime;
-            }
+        } else if (isDaytimeWithoutGolden) {
+            interval = 25000;
+            probability = 0.005;
+        } else if (isNight) {
+            interval = 15000;
+            probability = 0.005;
         }
-        
-        // 夜间猫头鹰生成（使用实际时间）
-        if ((gameMode === 'night' || (gameMode === 'normal' && !isDaytime))) {
-            let actualTimePassed = deltaTime;
-            lastOwlSpawnTime += actualTimePassed;
-            
-            if (gameTime - lastOwlSpawnTime > NIGHT_OWL_SPAWN_INTERVAL) {
-                spawnNightOwls();
-                lastOwlSpawnTime = gameTime;
+
+        if (littleOwlTestMode) {
+            probability = 0.5;
+        }
+
+        if (elapsed >= interval) {
+            lastLittleOwlCheckTime = now;
+            if (Math.random() < probability) {
+                generateLittleOwl(true);
             }
         }
     }
-
+}
+  
 function initGyro() {
     const gyroModeButton = document.getElementById('gyroModeToggle');
     const gyroStatusIndicator = document.getElementById('gyroStatusIndicator');
@@ -5706,36 +5790,36 @@ function calibrateGyro() {
 
 function handleDeviceOrientation(event) {
     if (!gyroModeActive || gamePaused) return;
-    
+
     const now = Date.now();
     if (now - lastGyroUpdate < 16) return;
     lastGyroUpdate = now;
-    
+
     const beta = event.beta;
     const gamma = event.gamma;
     if (beta === null || gamma === null) return;
-    
+
     if (!isGyroCalibrated) {
         calibrateGyro();
         return;
     }
-    
+
     if (requestCalibration) {
         gyroCenterBeta = beta;
         gyroCenterGamma = gamma;
         requestCalibration = false;
         return;
     }
-    
+
     const sensitivityFactor = gyroSensitivity / 10;
     let orientation = window.orientation || 0;
     if (screen.orientation && screen.orientation.angle) {
         orientation = screen.orientation.angle;
     }
-    
+
     let xAngle = 0;
     let yAngle = 0;
-    
+
     if (orientation === 90) {
         xAngle = beta - gyroCenterBeta;
         yAngle = -(gamma - gyroCenterGamma);
@@ -5749,26 +5833,32 @@ function handleDeviceOrientation(event) {
         xAngle = gamma - gyroCenterGamma;
         yAngle = beta - gyroCenterBeta;
     }
-    
+
     const maxTiltAngle = 30;
     const xMultiplier = (GAME_WIDTH / 2) / maxTiltAngle;
     const yMultiplier = (GAME_HEIGHT / 2) / maxTiltAngle;
-    
+
     const limitedXAngle = Math.max(-60, Math.min(60, xAngle));
     const limitedYAngle = Math.max(-60, Math.min(60, yAngle));
-    
+
     const targetX = GAME_WIDTH / 2 + (limitedXAngle * xMultiplier * sensitivityFactor);
     const targetY = GAME_HEIGHT / 2 + (limitedYAngle * yMultiplier * sensitivityFactor);
-    
-    gyroX = gyroX + (targetX - gyroX) * 0.2;
-    gyroY = gyroY + (targetY - gyroY) * 0.2;
-    
+
+    // 提高响应速度（原阻尼系数0.2→0.4）
+    gyroX = gyroX + (targetX - gyroX) * 0.4;
+    gyroY = gyroY + (targetY - gyroY) * 0.4;
+
     mouseX = Math.max(0, Math.min(GAME_WIDTH, gyroX));
     mouseY = Math.max(0, Math.min(GAME_HEIGHT, gyroY));
-    
-    updateViewfinderFromGyro();
-}
 
+    // 立即更新放大画布，避免帧延迟导致的拖影
+    applyGyroZoomToCanvas();
+
+    // 同时更新取景器（如果处于普通模式）
+    if (!gyroZoomAnimating) {
+        updateViewfinderFromGyro();
+    }
+}
 function updateViewfinderFromGyro() {
     if (!gyroModeActive || gamePaused) return;
     
@@ -5977,7 +6067,8 @@ setInterval(mergePanghuIntoMandarinGroup, 5000);
     initBirdingRecords();
     updateBirdingModeButton();
     updateBirdingRecordIcons();
-       
+console.log("[初始化] lastLittleOwlCheckTime 设为", gameTime);
+lastLittleOwlCheckTime = gameTime;  
     // 截图按钮事件
     const screenshotButton = document.getElementById('screenshotButton');
     if (screenshotButton) {
@@ -7248,9 +7339,9 @@ function captureBirdingRecord() {
                           achievementAreaHeight + bottomMargin + playerIdHeight;
         const dynamicHeight = baseHeight + speciesListHeight;
         
-        const MIN_SCREENSHOT_HEIGHT = 1000;
+        const MIN_SCREENSHOT_HEIGHT = 800;
         const MAX_SCREENSHOT_HEIGHT = 2000;
-        const SCREENSHOT_HEIGHT = Math.max(MIN_SCREENSHOT_HEIGHT, Math.min(MAX_SCREENSHOT_HEIGHT, dynamicHeight));
+        const SCREENSHOT_HEIGHT = Math.max(MIN_SCREENSHOT_HEIGHT, Math.min(MAX_SCREENSHOT_HEIGHT, dynamicHeight * 0.75));
         
         screenshotCanvas.width = SCREENSHOT_WIDTH;
         screenshotCanvas.height = SCREENSHOT_HEIGHT;
@@ -7757,11 +7848,16 @@ function handleKeyDown(e) {
         generateComet(false);
         return;
     } else if (e.key === '4') {
-        debugCoordinateSystem();
-        return;
+    generateMeteor(false, false, null, true); // 第四个参数 force = true，强制生成
+    return;
     } else if (e.key === '5') {
-        debugBlueKingfisherStatus();
-        return;
+    littleOwlTestMode = !littleOwlTestMode;
+    if (littleOwlTestMode) {
+        showSpecialAlert("小鸮测试模式开启：出现概率临时提升至 50%");
+    } else {
+        showSpecialAlert("小鸮测试模式关闭：恢复默认概率");
+    }
+    return;
     } else if (e.key === '6') {
         toggleBirdingMode();            // 原 M 键功能
         return;
@@ -7769,8 +7865,9 @@ function handleKeyDown(e) {
         if (currentBirdingRecord) captureBirdingRecord(); // 原 P 键功能
         return;
     } else if (e.key === '8') {
-        createBirdingRecord();           // 原 R 键功能
-        return;
+    resizeCanvas();
+    showSpecialAlert("画布已重置");
+    return;
     } else if (e.key === '9') {
         if (birdingRecords.length > 0) openBirdingRecord(birdingRecords.length - 1); // 原 V 键功能
         return;
@@ -9261,9 +9358,10 @@ function generateLittleGrebe(countStats = false) {
     }
 }
 
-function generateMeteor(countStats = false, summoned = false, intersectionPoint = null) {
+function generateMeteor(countStats = false, summoned = false, intersectionPoint = null, force = false) {
     const isNightMode = gameMode === 'night' || (gameMode === 'normal' && !isDaytime);
-    if (!isNightMode) {
+    if (!force && !isNightMode) {
+        // 非强制且不是夜间模式，不生成
         return;
     }
     
@@ -9272,15 +9370,23 @@ function generateMeteor(countStats = false, summoned = false, intersectionPoint 
     let startX, startY, angle;
     
     if (!summoned) {
-        const intersectionX = GAME_WIDTH * 0.5 + (Math.random() - 0.5) * GAME_WIDTH * 0.5;
-        const intersectionY = -500 - Math.random() * 500;
-        
-        startX = intersectionX;
-        startY = intersectionY;
-        
-        const targetX = -100 + Math.random() * (GAME_WIDTH + 200);
-        const targetY = -100 + Math.random() * (GAME_HEIGHT * 0.55 + 100);
-        angle = Math.atan2(targetY - startY, targetX - startX);
+        if (force) {
+            // 手动强制生成：确保流星从屏幕外飞入可见区域
+            startX = GAME_WIDTH + 50 + Math.random() * 100;
+            startY = Math.random() * GAME_HEIGHT * 0.3;
+            const targetX = -100 - Math.random() * 100;
+            const targetY = GAME_HEIGHT * 0.8 + Math.random() * 100;
+            angle = Math.atan2(targetY - startY, targetX - startX);
+        } else {
+            // 自然生成逻辑（保留原轨迹）
+            const intersectionX = GAME_WIDTH * 0.5 + (Math.random() - 0.5) * GAME_WIDTH * 0.5;
+            const intersectionY = -500 - Math.random() * 500;
+            startX = intersectionX;
+            startY = intersectionY;
+            const targetX = -100 + Math.random() * (GAME_WIDTH + 200);
+            const targetY = -100 + Math.random() * (GAME_HEIGHT * 0.55 + 100);
+            angle = Math.atan2(targetY - startY, targetX - startX);
+        }
         
         const meteor = {
             type: meteorType,
@@ -9300,24 +9406,21 @@ function generateMeteor(countStats = false, summoned = false, intersectionPoint 
             hasSummoned: false,
             summoned: summoned,
             isNightObject: true,
-            intersectionPoint: { x: intersectionX, y: intersectionY },
-            targetPoint: { x: targetX, y: targetY }
+            intersectionPoint: intersectionPoint ? { x: intersectionPoint.x, y: intersectionPoint.y } : null,
+            targetPoint: null
         };
-        
         nightObjects.push(meteor);
         return meteor;
     } else {
+        // 此为被召唤的次级流星（保留原逻辑）
         if (!intersectionPoint) {
             intersectionPoint = { x: -1800 + Math.random() * (GAME_WIDTH + 3600), y: -1800 + Math.random() * (GAME_HEIGHT * 0.55 + 1800) };
         }
-        
         startX = intersectionPoint.x;
         startY = intersectionPoint.y;
-        
         const targetX = -100 + Math.random() * (GAME_WIDTH + 200);
         const targetY = -100 + Math.random() * (GAME_HEIGHT * 0.55 + 100);
         angle = Math.atan2(targetY - startY, targetX - startX);
-        
         const meteor = {
             type: meteorType,
             name: meteorType.name,
@@ -9339,12 +9442,10 @@ function generateMeteor(countStats = false, summoned = false, intersectionPoint 
             intersectionPoint: intersectionPoint,
             targetPoint: { x: targetX, y: targetY }
         };
-        
         nightObjects.push(meteor);
         return meteor;
     }
 }
-
 function generateComet(countStats = false) {
     const isNightMode = gameMode === 'night' || (gameMode === 'normal' && !isDaytime);
     if (!isNightMode) {
@@ -9436,50 +9537,58 @@ function initTrees() {
 }
 
 function resizeCanvas() {
-  const container = document.getElementById('gameContainer');
-  const containerWidth = container.clientWidth;
-  const containerHeight = container.clientHeight;
-  
-  canvas.width = GAME_WIDTH;
-  canvas.height = GAME_HEIGHT;
-  poopCanvas.width = GAME_WIDTH;
-  poopCanvas.height = GAME_HEIGHT;
-  
-  const containerAspect = containerWidth / containerHeight;
-  const gameAspect = GAME_WIDTH / GAME_HEIGHT;
-  
-  let displayWidth, displayHeight;
-  if (containerAspect > gameAspect) {
-    displayHeight = containerHeight;
-    displayWidth = displayHeight * gameAspect;
-  } else {
-    displayWidth = containerWidth;
-    displayHeight = displayWidth / gameAspect;
-  }
-  
-  canvas.style.width = displayWidth + 'px';
-  canvas.style.height = displayHeight + 'px';
-  poopCanvas.style.width = displayWidth + 'px';
-  poopCanvas.style.height = displayHeight + 'px';
-  
-  canvas.style.position = 'absolute';
-  canvas.style.left = (containerWidth - displayWidth) / 2 + 'px';
-  canvas.style.top = (containerHeight - displayHeight) / 2 + 'px';
-  
-  poopCanvas.style.position = 'absolute';
-  poopCanvas.style.left = canvas.style.left;
-  poopCanvas.style.top = canvas.style.top;
-  
-  console.log("画布重置，枯树状态:", deadTree ? "已存在" : "不存在");
-  
-  // 注意：这里不重置枯树，只重置芦苇区域（如果需要）
-  if (!reedZone) {
-    initReeds();
-  }
-  
-  if (gameMode === 'normal' && !isDaytime) {
-    setTimeout(updateCampfirePosition, 100);
-  }
+    const container = document.getElementById('gameContainer');
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
+    
+    canvas.width = GAME_WIDTH;
+    canvas.height = GAME_HEIGHT;
+    poopCanvas.width = GAME_WIDTH;
+    poopCanvas.height = GAME_HEIGHT;
+    
+    const containerAspect = containerWidth / containerHeight;
+    const gameAspect = GAME_WIDTH / GAME_HEIGHT;
+    
+    let displayWidth, displayHeight;
+    if (containerAspect > gameAspect) {
+        displayHeight = containerHeight;
+        displayWidth = displayHeight * gameAspect;
+    } else {
+        displayWidth = containerWidth;
+        displayHeight = displayWidth / gameAspect;
+    }
+    
+    canvas.style.width = displayWidth + 'px';
+    canvas.style.height = displayHeight + 'px';
+    poopCanvas.style.width = displayWidth + 'px';
+    poopCanvas.style.height = displayHeight + 'px';
+    
+    const left = (containerWidth - displayWidth) / 2;
+    const top = (containerHeight - displayHeight) / 2;
+    canvas.style.left = left + 'px';
+    canvas.style.top = top + 'px';
+    poopCanvas.style.left = left + 'px';
+    poopCanvas.style.top = top + 'px';
+    
+    // ========== 新增：同步 zoomCanvas 的位置 ==========
+    const zoomCanvas = document.getElementById('zoomCanvas');
+    if (zoomCanvas) {
+        zoomCanvas.style.width = displayWidth + 'px';
+        zoomCanvas.style.height = displayHeight + 'px';
+        zoomCanvas.style.left = left + 'px';
+        zoomCanvas.style.top = top + 'px';
+    }
+    // ========== 同步结束 ==========
+    
+    console.log("画布重置，枯树状态:", deadTree ? "已存在" : "不存在");
+    
+    if (!reedZone) {
+        initReeds();
+    }
+    
+    if (gameMode === 'normal' && !isDaytime) {
+        setTimeout(updateCampfirePosition, 100);
+    }
 }
 
 function debugCoordinateSystem() {
@@ -10546,7 +10655,7 @@ function resumeGame() {
     lastFrameTime = performance.now() - pauseDuration;
     
     updateTimeIndicator();
-    requestAnimationFrame(gameLoop);
+    requestAnimationFrame(drawGame);
 }
 
 function getRandomGroupSize(birdType) {
@@ -10792,6 +10901,8 @@ if (Math.random() < 0.01) {
     let selectedBirdType = null;
 const availableBirds = {};
 for (const key in BIRD_TYPES) {
+    const specialKeys = ["KINGFISHER", "BLUEFISHER", "SHRIKE", "BULLFINCH", "SILKY_STARLING", "FLYCATCHER", "WHITE_CROWNED_PENDULINE_TIT", "RED_BREASTED_FLYCATCHER", "PARADISE_FLYCATCHER", "YELLOW_BREASTED_BUNTING", "DAURIAN_REDSTART", "BLUETHROAT", "PIPIT", "WOODCOCK", "MANDARIN_DUCK_MALE", "MANDARIN_DUCK_FEMALE", "PANGHU", "LITTLE_PT", "MYNA", "MAGNIFICENT_STREAM_MALE", "MAGNIFICENT_STREAM_FEMALE"];
+    if (specialKeys.includes(key)) continue;
     const bird = BIRD_TYPES[key];
     if (key !== "PEREGRINE" && key !== "BLACKWINGEDKITE" && !bird.isSpecial && !bird.isOwl && !bird.isBat && key !== "WHITE_HARRIER" && !bird.isNocturnal) {
         availableBirds[key] = bird;
@@ -11863,35 +11974,31 @@ function generateKentishPlover(countStats = false) {
     }
 }
 
-
 function generateLittleOwl(countStats = true) {
-    if (littleOwl) return;
-    
-    let cooldown;
-    if (gameMode === 'day') {
-        cooldown = LITTLE_OWL_DAY_COOLDOWN;
-    } else if (gameMode === 'night') {
-        cooldown = LITTLE_OWL_NIGHT_COOLDOWN;
-    } else {
-        cooldown = isDaytime ? LITTLE_OWL_DAY_COOLDOWN : LITTLE_OWL_NIGHT_COOLDOWN;
-    }
-    
-    if (gameTime - lastLittleOwlTime < cooldown) {
+    if (littleOwl) {
+        console.log("[小鸮] 已有小鸮，无法生成");
         return;
     }
-    
+
+    // ✅ 添加这一行，获取小鸮类型定义
     const littleOwlType = BIRD_TYPES.LITTLE_OWL;
-    if (countStats) {
-        appearedBirds[littleOwlType.name]++;
-        updateTextStats();
+
+    // 检查墙洞是否有效
+    if (!hole) {
+        console.error("[小鸮] hole 未初始化");
+        return;
     }
-    
+    console.log("[小鸮] hole:", hole);
+
+    // 计算小鸮的位置（在洞的底部）
     const baseSize = 20;
     const birdSize = baseSize * littleOwlType.size;
     const birdRadius = birdSize / 2;
     const holeBottomY = hole.y + hole.diameter / 2;
     const owlY = holeBottomY - birdRadius;
-    
+    console.log("[小鸮] 计算出的 owlY:", owlY);
+
+    // 创建小鸮对象
     const owl = {
         type: littleOwlType,
         name: littleOwlType.name,
@@ -11906,10 +12013,20 @@ function generateLittleOwl(countStats = true) {
         noStats: !countStats,
         isNight: !isDaytime
     };
-    
+
+    // 记录到全局变量和数组
     littleOwl = owl;
     birds.push(owl);
     lastLittleOwlTime = gameTime;
+
+    // 更新统计（如果需要）
+    if (countStats) {
+        appearedBirds[littleOwlType.name]++;
+        updateTextStats();
+        updateAppearedBird(littleOwlType.name);
+    }
+
+    console.log("[小鸮] 生成成功，当前 birds 数量:", birds.length);
 }
 
 function generateGroundMouseForPredator(predatorName) {
@@ -12139,7 +12256,7 @@ function drawNightObject(obj) {
             gradient.addColorStop(1, 'rgba(255, 255, 200, 0)');
             
             ctx.strokeStyle = gradient;
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 1;
             ctx.lineCap = 'round';
             ctx.beginPath();
             ctx.moveTo(trailX, trailY);
@@ -12981,6 +13098,7 @@ function drawStars() {
 }
 
 function drawLittleOwl(bird) {
+    console.log("[绘制] 正在绘制小鸮，坐标：", bird.x, bird.y);
     const baseSize = 20;
     const birdSize = baseSize * bird.size;
     
@@ -15552,162 +15670,6 @@ function drawMouseInClaws(bird) {
     ctx.restore();
 }
 
-function updateDayNight(deltaTime) {
-    if (gamePaused) return;
-    
-    gameTime += deltaTime;
-    
-    // 应用时间加速
-    let effectiveDeltaTime = deltaTime;
-    
-    if (isNightAccelerated && gameMode === 'normal' && !isDaytime) {
-        effectiveDeltaTime = deltaTime * nightAccelerationMultiplier;
-    }
-    
-    // 普通模式：日夜循环
-    if (gameMode === 'normal') {
-        dayNightTimer += effectiveDeltaTime;
-        
-        // 检查日夜切换
-        if (dayNightTimer >= DAY_NIGHT_CYCLE_DURATION) {
-            isDaytime = !isDaytime;
-            dayNightTimer = 0;
-            
-            // 夜晚切换为白天时，重置加速状态
-            if (isDaytime) {
-                isNightAccelerated = false;
-                // 注意：这里不要重置isCampfireExtinguished，让它保持状态
-                showSpecialAlert("黎明到来");
-            } else {
-                // 白天切换为夜晚时，必须重置篝火状态！
-                isCampfireExtinguished = false; // 重要：重置篝火状态
-                isNightAccelerated = false; // 重置加速状态
-                moonPhaseTimer = Math.random() * MOON_PHASE_CYCLE;
-                showSpecialAlert("夜幕降临，篝火重新点燃");
-                
-                // 更新营地显示，确保篝火是点燃状态
-                updateCampsiteVisibility();
-            }
-            
-            updateModeToggleButtons();
-            // 更新营地可见性
-            updateCampsiteVisibility();
-            
-            // 切换时清理不符合当前时间的生物
-            if (!isDaytime) {
-                for (let i = birds.length - 1; i >= 0; i--) {
-                    if (!birds[i].isOwl && !birds[i].isBat && birds[i].name !== "小鸮" && birds[i].name !== "夜鹭") {
-                        birds.splice(i, 1);
-                    }
-                }
-                nightObjects = [];
-            } else {
-                for (let i = birds.length - 1; i >= 0; i--) {
-                    if (birds[i].isOwl || birds[i].isBat) {
-                        birds.splice(i, 1);
-                    }
-                }
-                
-                if (littleOwl) {
-                    birds.splice(birds.indexOf(littleOwl), 1);
-                    littleOwl = null;
-                }
-                nightObjects = [];
-            }
-        }
-        
-        moonPhaseTimer += deltaTime;
-        if (moonPhaseTimer >= MOON_PHASE_CYCLE) {
-            moonPhaseTimer = 0;
-        }
-        
-        updateGoldenFilter();
-        
-        // 更新太阳/月亮位置
-        sunMoonPosition = dayNightTimer / DAY_NIGHT_CYCLE_DURATION;
-    } 
-    // 永久日间模式
-    else if (gameMode === 'day') {
-        dayModeTimeState += deltaTime;
-        dayNightTimer = dayModeTimeState;
-        
-        // 确保营地状态被重置
-        isCampfireExtinguished = false;
-        isNightAccelerated = false;
-        
-        const goldenFilter = document.getElementById('goldenFilter');
-        goldenFilter.style.backgroundColor = 'rgba(255, 215, 0, 0.1)';
-        
-        // 更新营地可见性
-        updateCampsiteVisibility();
-    } 
-    // 永久夜间模式
-    else if (gameMode === 'night') {
-        nightModeTimeState += deltaTime;
-        nightModeMoonPhaseTimer += deltaTime;
-        dayNightTimer = nightModeTimeState;
-        moonPhaseTimer = nightModeMoonPhaseTimer;
-        
-        if (moonPhaseTimer >= MOON_PHASE_CYCLE) {
-            moonPhaseTimer = 0;
-            nightModeMoonPhaseTimer = 0;
-        }
-        
-        // 确保营地状态被重置
-        isCampfireExtinguished = false;
-        isNightAccelerated = false;
-        
-        const goldenFilter = document.getElementById('goldenFilter');
-        goldenFilter.style.backgroundColor = 'rgba(255, 215, 0, 0)';
-        
-        // 更新营地可见性
-        updateCampsiteVisibility();
-    }
-    
-    updateTimeIndicator();
-    
-    // 稀有鸟类生成（使用实际时间，不受加速影响）
-    let rareBirdDelta = deltaTime;
-    lastRareBirdTime += rareBirdDelta;
-    
-    if (gameTime - lastRareBirdTime >= RARE_BIRD_INTERVAL && !birdingModeActive) {
-        generateRareBird();
-        lastRareBirdTime = gameTime;
-    }
-    
-    // 小鸮生成逻辑（使用实际时间）
-    if (!littleOwl) {
-        let cooldown;
-        if (gameMode === 'day') {
-            cooldown = LITTLE_OWL_DAY_COOLDOWN;
-        } else if (gameMode === 'night') {
-            cooldown = LITTLE_OWL_NIGHT_COOLDOWN;
-        } else {
-            cooldown = isDaytime ? LITTLE_OWL_DAY_COOLDOWN : LITTLE_OWL_NIGHT_COOLDOWN;
-        }
-        
-        // 使用实际时间计算
-        let actualTimePassed = deltaTime;
-        lastLittleOwlTime += actualTimePassed;
-        
-        if (gameTime - lastLittleOwlTime > cooldown) {
-            generateLittleOwl(true);
-            lastLittleOwlTime = gameTime;
-        }
-    }
-    
-    // 夜间猫头鹰生成（使用实际时间）
-    if ((gameMode === 'night' || (gameMode === 'normal' && !isDaytime))) {
-        let actualTimePassed = deltaTime;
-        lastOwlSpawnTime += actualTimePassed;
-        
-        if (gameTime - lastOwlSpawnTime > NIGHT_OWL_SPAWN_INTERVAL) {
-            spawnNightOwls();
-            lastOwlSpawnTime = gameTime;
-        }
-    }
-}
-
 function generateRareBird() {
   const isNightMode = gameMode === 'night' || (gameMode === 'normal' && !isDaytime);
   let availableRareBirds = RARE_BIRDS.filter(birdKey => {
@@ -17555,6 +17517,7 @@ if (bird.isSilkyStarling) {
         }
         
         // 处理被猛禽惊吓的鸟
+        if (bird.isEating) continue;  // 正在吃水果，忽略逃跑
         if (bird.isFleeingFromRaptor && !(bird.name === "金眶鸻" || bird.name === "12000鸻")) {
             const fleeAngle = (10 + Math.random() * 10) * Math.PI / 180;
             bird.x += bird.speed * bird.direction * Math.cos(fleeAngle);
@@ -17843,7 +17806,8 @@ case 'fleeingFromRaptor':
     continue; // 跳过其他处理逻辑
 }
   
-        if (bird.name === "小鸮") {
+if (bird.name === "小鸮") {
+    console.log("[更新] 小鸮状态：", bird.state, "停留时间：", bird.stateTime, "/", bird.stayTime * 1000);
             if (bird.state === 'appearing') {
                 bird.state = 'perching';
             }
@@ -21410,4 +21374,389 @@ let chaseFrameCounter = 0;
 const CHASE_FRAME_INTERVAL = 15;
 
 
+
+
+// ========== 综合增强脚本 ==========
+// 1. 光学模式定义（望远镜视野为600mm三倍宽）
+const OPTICAL_MODES = {
+    '600': { name: '600mm', multiplier: 2.0, viewfinderScale: 1.0 },
+    '800': { name: '800mm', multiplier: 1.42, viewfinderScale: 1.0 },
+    '1200': { name: '1200mm', multiplier: 1.0, viewfinderScale: 1.0 },
+    'scope': { name: '望远镜', multiplier: 6.0, viewfinderScale: 1.0 }
+};
+
+let currentOpticalMode = '600';
+let gyroZoomAnimating = false;
+let gyroZoomStartTime = 0;
+let gyroZoomDirection = 1;
+let gyroZoomCallback = null;
+const GYRO_ZOOM_DURATION = 1000;
+let zoomCanvasCtx = null;
+
+// 触发放大/缩小过渡动画
+function startZoomTransition(direction, callback) {
+    if (!gyroModeActive) return;
+    gyroZoomAnimating = true;
+    gyroZoomStartTime = performance.now();
+    gyroZoomDirection = direction;
+    gyroZoomCallback = callback;
+    const zoomCanvas = document.getElementById('zoomCanvas');
+    if (zoomCanvas) zoomCanvas.style.display = 'block';
+    const viewfinder = document.getElementById('viewfinder');
+    if (viewfinder && gyroModeActive) viewfinder.style.display = 'none';
+}
+
+function applyGyroZoomToCanvas() {
+    if (!gyroModeActive) {
+        const zoomCanvas = document.getElementById('zoomCanvas');
+        if (zoomCanvas) zoomCanvas.style.display = 'none';
+        return;
+    }
+    const mainCanvas = document.getElementById('gameCanvas');
+    const zoomCanvas = document.getElementById('zoomCanvas');
+    if (!mainCanvas || !zoomCanvas) return;
+    if (!zoomCanvasCtx) zoomCanvasCtx = zoomCanvas.getContext('2d');
+
+    // 同步 zoomCanvas 的尺寸与主画布显示尺寸
+    if (zoomCanvas.width !== mainCanvas.width || zoomCanvas.height !== mainCanvas.height) {
+        zoomCanvas.width = mainCanvas.width;
+        zoomCanvas.height = mainCanvas.height;
+        zoomCanvas.style.width = mainCanvas.style.width;
+        zoomCanvas.style.height = mainCanvas.style.height;
+    }
+
+    const viewfinderSize = getViewfinderSize(); // 取景器尺寸（逻辑坐标）
+    const srcX = mouseX - viewfinderSize.width / 2;
+    const srcY = mouseY - viewfinderSize.height / 2;
+    const srcW = viewfinderSize.width;
+    const srcH = viewfinderSize.height;
+
+    // 源矩形（可能超出画布）
+    const srcRect = { x: srcX, y: srcY, w: srcW, h: srcH };
+    // 画布边界
+    const bounds = { x: 0, y: 0, w: GAME_WIDTH, h: GAME_HEIGHT };
+
+    // 计算源矩形与画布的交集
+    const intersect = {
+        x: Math.max(srcRect.x, bounds.x),
+        y: Math.max(srcRect.y, bounds.y),
+        w: Math.min(srcRect.x + srcRect.w, bounds.x + bounds.w) - Math.max(srcRect.x, bounds.x),
+        h: Math.min(srcRect.y + srcRect.h, bounds.y + bounds.h) - Math.max(srcRect.y, bounds.y)
+    };
+
+    // 如果交集有效
+    const hasVisiblePart = intersect.w > 0 && intersect.h > 0;
+
+    // 目标画布全屏尺寸（像素）
+    const canvasW = zoomCanvas.width;
+    const canvasH = zoomCanvas.height;
+
+    // 动画相关
+    let progress = 1;
+    if (gyroZoomAnimating) {
+        const elapsed = performance.now() - gyroZoomStartTime;
+        progress = Math.min(1, elapsed / GYRO_ZOOM_DURATION);
+        if (progress >= 1) {
+            gyroZoomAnimating = false;
+            if (gyroZoomCallback) {
+                gyroZoomCallback();
+                gyroZoomCallback = null;
+            }
+        }
+        progress = 1 - Math.pow(1 - progress, 3);
+        if (gyroZoomDirection === -1) progress = 1 - progress;
+    }
+
+    // 清除并填充黑色背景
+    zoomCanvasCtx.clearRect(0, 0, canvasW, canvasH);
+    zoomCanvasCtx.fillStyle = '#000000';
+    zoomCanvasCtx.fillRect(0, 0, canvasW, canvasH);
+
+    if (!hasVisiblePart) {
+        zoomCanvas.style.display = 'block';
+        // 无可绘制内容，仅显示黑色背景
+        if (!gyroZoomAnimating) {
+            const viewfinder = document.getElementById('viewfinder');
+            if (viewfinder) viewfinder.style.display = 'none';
+        }
+        return;
+    }
+
+    // 动画期间：使用原有的裁剪后全屏绘制（简单且避免黑边跳动）
+    if (gyroZoomAnimating) {
+        // 原有动画逻辑（裁剪后缩放至全屏）
+        const finalSrcX = Math.max(0, Math.min(srcX, GAME_WIDTH));
+        const finalSrcY = Math.max(0, Math.min(srcY, GAME_HEIGHT));
+        const finalSrcW = Math.min(srcW, GAME_WIDTH - finalSrcX);
+        const finalSrcH = Math.min(srcH, GAME_HEIGHT - finalSrcY);
+        if (finalSrcW <= 0 || finalSrcH <= 0) return;
+
+        const startW = finalSrcW;
+        const startH = finalSrcH;
+        const startX = (canvasW - startW) / 2;
+        const startY = (canvasH - startH) / 2;
+        const endW = canvasW;
+        const endH = canvasH;
+        const endX = 0;
+        const endY = 0;
+
+        const drawW = startW + (endW - startW) * progress;
+        const drawH = startH + (endH - startH) * progress;
+        const drawX = startX + (endX - startX) * progress;
+        const drawY = startY + (endY - startY) * progress;
+
+        zoomCanvasCtx.drawImage(mainCanvas, finalSrcX, finalSrcY, finalSrcW, finalSrcH, drawX, drawY, drawW, drawH);
+        zoomCanvas.style.display = 'block';
+        return;
+    }
+
+    // 非动画状态：使用边缘黑色逻辑（不拉伸）
+    // 计算源矩形中交集相对于源矩形左上角的偏移（比例）
+    const srcOffsetX = intersect.x - srcRect.x;
+    const srcOffsetY = intersect.y - srcRect.y;
+
+    // 目标画布中，整个源矩形对应的区域是 (0,0,canvasW,canvasH)
+    // 所以交集的绘制区域为：
+    const drawX = (srcOffsetX / srcRect.w) * canvasW;
+    const drawY = (srcOffsetY / srcRect.h) * canvasH;
+    const drawW = (intersect.w / srcRect.w) * canvasW;
+    const drawH = (intersect.h / srcRect.h) * canvasH;
+
+    // 绘制交集部分
+    zoomCanvasCtx.drawImage(
+        mainCanvas,
+        intersect.x, intersect.y, intersect.w, intersect.h,
+        drawX, drawY, drawW, drawH
+    );
+
+    zoomCanvas.style.display = 'block';
+
+    // 当处于陀螺仪放大模式且非动画时，隐藏原取景器
+    const viewfinder = document.getElementById('viewfinder');
+    if (viewfinder) viewfinder.style.display = 'none';
+}
+
+// 更新快门按钮可见性
+function updateCameraButtonVisibility() {
+    const cameraButton = document.getElementById('cameraButton');
+    if (!cameraButton) return;
+    if (gyroModeActive && currentOpticalMode !== 'scope') {
+        cameraButton.style.display = 'flex';
+    } else {
+        cameraButton.style.display = 'none';
+    }
+}
+
+// 设置光学模式
+function setOpticalMode(mode) {
+    if (currentOpticalMode === mode) return;
+    currentOpticalMode = mode;
+    updateOpticalModeButtons();
+    updateCameraButtonVisibility();
+    if (!gyroModeActive) {
+        showSpecialAlert(`切换到${OPTICAL_MODES[mode].name}`);
+        return;
+    }
+    startZoomTransition(-1, function() {
+        showSpecialAlert(`切换到${OPTICAL_MODES[mode].name}`);
+        startZoomTransition(1, null);
+    });
+}
+
+// 更新按钮样式
+function updateOpticalModeButtons() {
+    const lens600 = document.getElementById('lens600Toggle');
+    const lens800 = document.getElementById('lens800Toggle');
+    const lens1200 = document.getElementById('lens1200Toggle');
+    const scopeBtn = document.getElementById('scopeToggle');
+    if (lens600) lens600.classList.toggle('active', currentOpticalMode === '600');
+    if (lens800) lens800.classList.toggle('active', currentOpticalMode === '800');
+    if (lens1200) lens1200.classList.toggle('active', currentOpticalMode === '1200');
+    if (scopeBtn) scopeBtn.classList.toggle('active', currentOpticalMode === 'scope');
+}
+
+// 重写取景器尺寸计算
+const originalGetViewfinderSize = window.getViewfinderSize;
+window.getViewfinderSize = function() {
+    const lensMultiplier = OPTICAL_MODES[currentOpticalMode].multiplier;
+    return {
+        width: viewfinderBaseWidth * lensMultiplier,
+        height: viewfinderBaseHeight * lensMultiplier
+    };
+};
+
+// 重写镜头切换
+const originalSetLens = window.setLens;
+window.setLens = function(lens) {
+    setOpticalMode(lens);
+};
+
+// 望远镜切换函数
+function setScope() {
+    setOpticalMode('scope');
+}
+
+// 望远镜模式下禁止拍照
+const originalHandleMouseClick = window.handleMouseClick;
+if (originalHandleMouseClick) {
+    window.handleMouseClick = function() {
+        if (currentOpticalMode === 'scope') {
+            showSpecialAlert("望远镜模式下无法拍照");
+            return;
+        }
+        originalHandleMouseClick();
+    };
+}
+
+// ========== 红腹灰雀增强：找不到水果时随机移动重试 ==========
+const originalUpdateBirds = window.updateBirds;
+window.updateBirds = function(deltaTime) {
+    // 记录红腹灰雀的状态快照
+    const bullfinchSnapshots = [];
+    for (let i = 0; i < birds.length; i++) {
+        const bird = birds[i];
+        if (bird.isBullfinch) {
+            bullfinchSnapshots.push({
+                bird: bird,
+                state: bird.state,
+                stateTime: bird.stateTime,
+                noFruitRetryCount: bird.noFruitRetryCount || 0
+            });
+        }
+    }
+    
+    // 调用原始更新
+    originalUpdateBirds(deltaTime);
+    
+    // 后处理：处理从 waitingToEat 变成 flyingAway 的情况（无水果）
+    for (let i = 0; i < bullfinchSnapshots.length; i++) {
+        const snapshot = bullfinchSnapshots[i];
+        const bird = snapshot.bird;
+        if (!bird.isBullfinch) continue;
+        
+        // 如果之前是 waitingToEat 且等待时间超过 3 秒，现在变成了 flyingAway，说明因无水果而飞走
+        if (snapshot.state === 'waitingToEat' && snapshot.stateTime >= 3000 && bird.state === 'flyingAway') {
+            const retryCount = (bird.noFruitRetryCount || 0);
+            if (retryCount < 3) {
+                // 改为移动到新位置
+                bird.noFruitRetryCount = retryCount + 1;
+                bird.state = 'movingToNewSpot';
+                bird.stateTime = 0;
+                // 选择树冠上的随机新位置
+                const tree = bird.targetTree;
+                if (tree) {
+                    const crownX = tree.x + tree.width * 0.2;
+                    const crownY = tree.y + tree.height * 0.1;
+                    const crownWidth = tree.width * 0.6;
+                    const crownHeight = tree.height * 0.25;
+                    bird.newSpotX = crownX + Math.random() * crownWidth;
+                    bird.newSpotY = crownY + Math.random() * crownHeight;
+                } else {
+                    bird.newSpotX = bird.x + (Math.random() - 0.5) * 100;
+                    bird.newSpotY = bird.y + (Math.random() - 0.5) * 50;
+                }
+            } else {
+                // 超过重试次数，允许飞走，重置计数
+                bird.noFruitRetryCount = 0;
+            }
+        }
+        
+        // 处理移动状态
+        if (bird.state === 'movingToNewSpot') {
+            const dx = bird.newSpotX - bird.x;
+            const dy = bird.newSpotY - bird.y;
+            const dist = Math.sqrt(dx*dx + dy*dy);
+            if (dist < 2) {
+                bird.x = bird.newSpotX;
+                bird.y = bird.newSpotY;
+                bird.state = 'waitingToEat';
+                bird.stateTime = 0;
+            } else {
+                const step = Math.min(2, dist);
+                bird.x += (dx / dist) * step;
+                bird.y += (dy / dist) * step;
+            }
+        }
+        
+        // 清理标志：如果不是 waitingToEat 且不是 movingToNewSpot，重置重试计数
+        if (bird.state !== 'waitingToEat' && bird.state !== 'movingToNewSpot') {
+            bird.noFruitRetryCount = 0;
+        }
+    }
+};
+
+// ========== 陀螺仪启动/停止增强 ==========
+const originalStartGyroMode = window.startGyroMode;
+const originalStopGyroMode = window.stopGyroMode;
+const originalDrawGame = window.drawGame;
+
+window.startGyroMode = function() {
+    if (originalStartGyroMode) originalStartGyroMode();
+    if (currentOpticalMode !== 'scope') {
+        currentOpticalMode = 'scope';
+        updateOpticalModeButtons();
+        updateCameraButtonVisibility();
+    }
+    const container = document.getElementById('lensToggleContainer');
+    if (container) {
+        if (container.classList.contains('hidden-by-gyro')) {
+            container.classList.remove('hidden-by-gyro');
+        }
+        container.style.display = '';
+    }
+    updateOpticalModeButtons();
+    updateCameraButtonVisibility();
+    startZoomTransition(1, null);
+};
+
+window.stopGyroMode = function() {
+    if (originalStopGyroMode) originalStopGyroMode();
+    gyroZoomAnimating = false;
+    const zoomCanvas = document.getElementById('zoomCanvas');
+    if (zoomCanvas) zoomCanvas.style.display = 'none';
+    const viewfinder = document.getElementById('viewfinder');
+    if (viewfinder) viewfinder.style.display = 'block';
+    const container = document.getElementById('lensToggleContainer');
+    if (container) {
+        container.style.display = '';
+        container.style.position = '';
+        container.style.bottom = '';
+        container.style.left = '';
+        container.style.zIndex = '';
+        container.style.backgroundColor = '';
+        container.style.border = '';
+        container.style.borderRadius = '';
+        container.style.padding = '';
+        if (!container.classList.contains('hidden-by-gyro')) {
+            container.classList.add('hidden-by-gyro');
+        }
+    }
+    updateCameraButtonVisibility();
+};
+
+window.drawGame = function() {
+    if (originalDrawGame) originalDrawGame();
+    applyGyroZoomToCanvas();
+};
+
+// 添加望远镜按钮
+function addScopeButton() {
+    const container = document.getElementById('lensToggleContainer');
+    if (!container) return;
+    if (document.getElementById('scopeToggle')) return;
+    const scopeBtn = document.createElement('button');
+    scopeBtn.id = 'scopeToggle';
+    scopeBtn.className = 'lensToggleButton';
+    scopeBtn.textContent = '望远镜';
+    scopeBtn.addEventListener('click', setScope);
+    container.appendChild(scopeBtn);
+    updateOpticalModeButtons();
+    updateCameraButtonVisibility();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', addScopeButton);
+} else {
+    addScopeButton();
+}
 </script></body></html>
