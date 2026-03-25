@@ -4815,6 +4815,10 @@ let groundObjects = [];
 let fruits = [];
 let lastDoveSummonCheck = 0;
 const DOVE_SUMMON_INTERVAL = 5000;
+let clouds = [];
+const CLOUD_COUNT = 8;           // 云的数量
+const CLOUD_BASE_SPEED = 0.2;    // 基础移动速度（像素/帧）
+const CLOUD_SPEED_VARIATION = 0.15; // 速度随机变化范围  
 let stars = [];
 const STARS_COUNT = 50;
 let hasShownAllBirdsAlert = false;
@@ -5993,6 +5997,7 @@ function init() {
     initTrees();
     initReeds();
     initStones();
+    initClouds(); 
     initFixedLeaves();
     initFruits();
     initWallAndHole();
@@ -6365,9 +6370,26 @@ function updateGame(deltaTime) {
     updatePoops(deltaTime);
     updateGroundObjects(deltaTime);
     updateFruits(deltaTime);
+    updateClouds(deltaTime);  
     // 如有其他每帧更新函数，请在此添加
 }
-
+function updateClouds(deltaTime) {
+    if (gamePaused) return;
+    // 只在白天更新位置（夜间云彩不可见，但位置仍可更新，以免重置时跳变）
+    for (let cloud of clouds) {
+        cloud.x += cloud.speed * (deltaTime / 16); // 保持速度与帧率无关
+        // 超出左边界则重置到右边界
+        if (cloud.x + cloud.size < 0) {
+            cloud.x = GAME_WIDTH + cloud.size;
+            cloud.y = Math.random() * (GAME_HEIGHT * 0.3);
+        }
+        // 超出右边界则重置到左边界
+        if (cloud.x - cloud.size > GAME_WIDTH) {
+            cloud.x = -cloud.size;
+            cloud.y = Math.random() * (GAME_HEIGHT * 0.3);
+        }
+    }
+}
 // 绘制函数（所有绘制相关代码）
 function drawGame() {
     // 重新获取画布元素（防止元素被意外移除）
@@ -13033,27 +13055,62 @@ function drawMountains() {
 function drawClouds() {
     const isNightMode = gameMode === 'night' || (gameMode === 'normal' && !isDaytime);
     if (isNightMode) return;
-    
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.beginPath();
-    ctx.arc(200, 100, 30, 0, Math.PI * 2);
-    ctx.arc(240, 90, 40, 0, Math.PI * 2);
-    ctx.arc(280, 100, 30, 0, Math.PI * 2);
-    ctx.fill();
-    
-    ctx.beginPath();
-    ctx.arc(600, 150, 25, 0, Math.PI * 2);
-    ctx.arc(640, 140, 35, 0, Math.PI * 2);
-    ctx.arc(680, 150, 25, 0, Math.PI * 2);
-    ctx.fill();
-    
-    ctx.beginPath();
-    ctx.arc(1000, 80, 30, 0, Math.PI * 2);
-    ctx.arc(1040, 70, 40, 0, Math.PI * 2);
-    ctx.arc(1080, 80, 30, 0, Math.PI * 2);
-    ctx.fill();
+
+    for (let cloud of clouds) {
+        ctx.save();
+        // 主云层：半透明白色
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.shadowBlur = 0;   // 取消阴影，提高性能
+        for (let ell of cloud.ellipses) {
+            ctx.beginPath();
+            ctx.ellipse(cloud.x + ell.x, cloud.y + ell.y, ell.rx, ell.ry, ell.rot, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        // 可选：增加浅色阴影层，使云朵更立体
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+        for (let ell of cloud.ellipses) {
+            ctx.beginPath();
+            ctx.ellipse(cloud.x + ell.x + 2, cloud.y + ell.y + 1, ell.rx * 0.9, ell.ry * 0.9, ell.rot, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
 }
 
+function initClouds() {
+    clouds = [];
+    for (let i = 0; i < CLOUD_COUNT; i++) {
+        const size = 40 + Math.random() * 60;          // 云朵整体大小参考
+        const x = Math.random() * GAME_WIDTH;
+        const y = Math.random() * (GAME_HEIGHT * 0.3);
+        const speedX = (Math.random() - 0.5) * CLOUD_SPEED_VARIATION * 2 + CLOUD_BASE_SPEED;
+        clouds.push({
+            x: x,
+            y: y,
+            size: size,
+            speed: speedX,
+            ellipses: generateCloudEllipses(size)      // 椭圆数组
+        });
+    }
+}
+
+function generateCloudEllipses(baseSize) {
+    const count = 2 + Math.floor(Math.random() * 2); // 2 或 3 个椭圆
+    const ellipses = [];
+    for (let i = 0; i < count; i++) {
+        // 相对云朵中心的偏移
+        const offsetX = (Math.random() - 0.5) * baseSize * 0.6;
+        const offsetY = (Math.random() - 0.5) * baseSize * 0.4;
+        // 椭圆半径：长轴约为短轴的 1.2~1.8 倍
+        const radiusX = baseSize * (0.5 + Math.random() * 0.3);
+        const radiusY = baseSize * (0.3 + Math.random() * 0.25);
+        // 随机旋转角度 -30° 到 30°
+        const rotation = (Math.random() - 0.5) * Math.PI / 3;
+        ellipses.push({ x: offsetX, y: offsetY, rx: radiusX, ry: radiusY, rot: rotation });
+    }
+    return ellipses;
+}
+  
 // 初始化固定星星
 function initStars() {
     stars = [];
