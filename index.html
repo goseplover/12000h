@@ -16574,6 +16574,9 @@ if (whiteHarriers.length > 0 && reedZone) {
                 bird.originalSpeed = bird.speed;
                 bird.fleeFromRaptorStartTime = gameTime;
                 bird.speed = bird.originalSpeed * 1.5;
+            // 强制设定一个合理速度（避免原速度为 0）
+            bird.speed = Math.max(1.5, bird.originalSpeed * 1.5);
+            if (bird.speed < 1.5) bird.speed = 1.5; // 兜底
                 // 根据最近的白尾鹞位置决定逃跑方向
                 bird.direction = bird.x < nearestHarrier.x ? -1 : 1;
                 bird.state = 'flying';
@@ -16617,6 +16620,9 @@ const exemptBirds = [
                 bird.originalSpeed = bird.speed;
                 bird.fleeFromRaptorStartTime = gameTime;
                 bird.speed = bird.originalSpeed * 1.5;
+            // 强制设定一个合理速度（避免原速度为 0）
+            bird.speed = Math.max(1.5, bird.originalSpeed * 1.5);
+            if (bird.speed < 1.5) bird.speed = 1.5; // 兜底
                 
                 let nearestRaptor = null;
                 let minDistance = Infinity;
@@ -16645,6 +16651,8 @@ const exemptBirds = [
                         bird.originalState = bird.state;
                         bird.originalSpeed = bird.speed;
                         bird.speed = bird.originalSpeed * 3;
+            bird.speed = Math.max(2.0, bird.originalSpeed * 3);
+            if (bird.speed < 2.0) bird.speed = 2.0; // 兜底
                         bird.state = 'flying';
                         bird.direction = Math.random() > 0.5 ? 1 : -1;
                     }
@@ -17678,6 +17686,8 @@ if (bird.isSilkyStarling) {
             const fleeAngle = (10 + Math.random() * 10) * Math.PI / 180;
             bird.x += bird.speed * bird.direction * Math.cos(fleeAngle);
             bird.y -= bird.speed * Math.sin(fleeAngle);
+            // 确保速度不为零
+            if (bird.speed <= 0) bird.speed = 1.5;
             
             if (bird.x < -500 || bird.x > GAME_WIDTH + 500 || bird.y < -500 || bird.y > GAME_HEIGHT + 500) {
                 birds.splice(i, 1);
