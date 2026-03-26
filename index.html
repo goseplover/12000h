@@ -9008,8 +9008,8 @@ function generatePipit(countStats = true) {
         bird.noStats = !countStats;
         bird.whiteEyeRing = true;
         bird.beakLengthMultiplier = 0.8;
-        bird.waveAmplitude = 30 + Math.random() * 5; // 波浪飞行幅度
-        bird.waveFrequency = 0.02 + Math.random() * 0.003; // 波浪飞行频率
+bird.waveAmplitude = (30 + Math.random() * 20) / 4;   // 原 30-50 → 7.5-12.5
+bird.waveFrequency = 0.01 + Math.random() * 0.005;    // 频率降低
         bird.wavePhase = Math.random() * Math.PI * 2; // 初始相位
         
         birds.push(bird);
