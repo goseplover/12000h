@@ -2640,15 +2640,22 @@ function tryEnterWaterfowlPatrolForGroup(groupId, fromLeft, customChance = null)
     if (customChance !== null) {
         prob = customChance;
     } else {
-        // 兼容原有逻辑（以防其他地方直接调用）
-        const birdName = sampleBird.name;
-        if (sampleBird.name === "胖虎") prob = 0.9;
-        else if (birdName === "赤麻鸭") prob = 0.8;
-        else if (birdName === "绿头鸭") prob = 0.6;
-        else if (birdName === "醋鸭" || birdName === "醋鸭♀") prob = 0.3;
-        else return false;
+        // 优先使用鸟的类型属性
+        const birdType = sampleBird.type;
+        if (birdType.isWaterfowlCandidate) {
+            prob = birdType.waterfowlChance || 0.5; // 默认50%
+        } else {
+            // 兼容旧逻辑（如果没有属性，则按名字判断）
+            const birdName = sampleBird.name;
+            if (birdName === "胖虎") prob = 0.9;
+            else if (birdName === "赤麻鸭") prob = 0.8;
+            else if (birdName === "绿头鸭") prob = 0.6;
+            else if (birdName === "醋鸭" || birdName === "醋鸭♀") prob = 0.3;
+            else return false;
+        }
     }
 
+    // 概率判断
     if (Math.random() > prob) return false;
     if (!stones.length) return false;
     
@@ -4130,22 +4137,26 @@ const BIRD_TYPES = {
     speedMultiplier: 1.5
   },
   DUCK: {
-    name: "绿头鸭",
-    color: "#FFFF00",
-    eyeColor: "#000000",
-    bodyColor: "#FFFFFF",
-    headColor: "#00AA00",
-    wingColor: "#FF0000",
-    tailColor: "#8B4513",
-    groupSize: [5, 7],
-    probability: 0.023,
-    size: 2.0,
-    behavior: "flyThrough",
-    variant: true,
-    whiteEyeRing: true,
-    doubleBeak: true,
-    beakOnePointFive: true
-  },
+  name: "绿头鸭",
+  color: "#FFFF00",
+  eyeColor: "#000000",
+  bodyColor: "#FFFFFF",
+  headColor: "#00AA00",
+  wingColor: "#FF0000",
+  tailColor: "#8B4513",
+  groupSize: [5, 7],
+  probability: 0.023,
+  size: 2.0,
+  behavior: "flyThrough",
+  variant: true,
+  whiteEyeRing: true,
+  doubleBeak: true,
+  beakOnePointFive: true,
+  // ========== 新增 ==========
+  isWaterfowlCandidate: true,
+  waterfowlChance: 0.6      // 60%概率触发游禽模式（与赤麻鸭相同）
+  // ==========================
+},
   WAGTAIL: {
     name: "白鹡鸰",
     color: "#000000",
@@ -4399,7 +4410,9 @@ const BIRD_TYPES = {
     iconColor: "#FF8C00",
     whiteEyeRing: true,
     beakOnePointThree: true,
-    speedMultiplier: 2.0
+    speedMultiplier: 2.0,
+  isWaterfowlCandidate: true,
+  waterfowlChance: 0.8   // 与原有概率保持一致
   },
 VINEGAR_DUCK: {
   name: "醋鸭",
@@ -4420,7 +4433,9 @@ VINEGAR_DUCK: {
   beakLengthMultiplier: 0.65,
   speedMultiplier: 1.8,
   originalSize: 2.5,
-  isVulnerableToRaptors: true
+  isVulnerableToRaptors: true,
+    isWaterfowlCandidate: true,
+  waterfowlChance: 0.3
 },
   VINEGAR_DUCK_FEMALE: {
   name: "醋鸭♀",
@@ -4441,7 +4456,9 @@ VINEGAR_DUCK: {
   speedMultiplier: 1.8,
   originalSize: 2.5,
   isVulnerableToRaptors: true,
-  isFemale: true
+  isFemale: true,
+    isWaterfowlCandidate: true,
+  waterfowlChance: 0.3
 },
   MINIVET: {
     name: "山椒鸟",
