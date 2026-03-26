@@ -10433,10 +10433,9 @@ function showAllBirdsAlert() {
 }
 
 function createPhoto(x, y, width, height, capturedBird, capturedNightObject) {
-    // 照片放大倍数（建议 2 倍）
-    const SCALE = 2;
-    const finalWidth = viewfinderBaseWidth * SCALE;
-    const finalHeight = viewfinderBaseHeight * SCALE;
+// 最终照片的固定尺寸（放大2倍）
+    const finalWidth = viewfinderBaseWidth * 2;
+    const finalHeight = viewfinderBaseHeight * 2;
 
     // 从主画布截取取景框区域（与原代码相同）
     const tempCanvas = document.createElement('canvas');
@@ -10448,10 +10447,20 @@ function createPhoto(x, y, width, height, capturedBird, capturedNightObject) {
     let sourceY = Math.max(0, Math.min(y, GAME_HEIGHT));
     let drawX = 0, drawY = 0, drawWidth = width, drawHeight = height;
 
-    if (x < 0) { drawX = -x; drawWidth = width + x; }
-    if (y < 0) { drawY = -y; drawHeight = height + y; }
-    if (x + width > GAME_WIDTH) drawWidth = GAME_WIDTH - x;
-    if (y + height > GAME_HEIGHT) drawHeight = GAME_HEIGHT - y;
+    if (x < 0) {
+        drawX = -x;
+        drawWidth = width + x;
+    }
+    if (y < 0) {
+        drawY = -y;
+        drawHeight = height + y;
+    }
+    if (x + width > GAME_WIDTH) {
+        drawWidth = GAME_WIDTH - x;
+    }
+    if (y + height > GAME_HEIGHT) {
+        drawHeight = GAME_HEIGHT - y;
+    }
 
     sourceX = Math.max(0, sourceX);
     sourceY = Math.max(0, sourceY);
@@ -10459,7 +10468,11 @@ function createPhoto(x, y, width, height, capturedBird, capturedNightObject) {
     drawHeight = Math.max(0, drawHeight);
 
     if (drawWidth > 0 && drawHeight > 0) {
-        tempCtx.drawImage(canvas, sourceX, sourceY, drawWidth, drawHeight, drawX, drawY, drawWidth, drawHeight);
+        tempCtx.drawImage(
+            canvas,
+            sourceX, sourceY, drawWidth, drawHeight,
+            drawX, drawY, drawWidth, drawHeight
+        );
     }
 
     // 应用金色滤镜（与原代码相同）
@@ -10471,16 +10484,80 @@ function createPhoto(x, y, width, height, capturedBird, capturedNightObject) {
         tempCtx.fillRect(0, 0, drawWidth, drawHeight);
     }
 
-    // 创建最终照片画布并放大
-    const finalCanvas = document.createElement('canvas');
-    finalCanvas.width = finalWidth;
-    finalCanvas.height = finalHeight;
-    const finalCtx = finalCanvas.getContext('2d');
-    finalCtx.imageSmoothingEnabled = true;          // 启用平滑插值
-    finalCtx.imageSmoothingQuality = 'high';        // 高质量缩放
-    finalCtx.drawImage(tempCanvas, 0, 0, width, height, 0, 0, finalWidth, finalHeight);
+    // 创建最终照片画布并放大（使用高质量插值）
+    
+    // 高质量插值：对 800mm 和 1200mm 镜头应用超采样
+    const isHighQuality = (currentLens === '800' || currentLens === '1200');
+    let finalCanvas, finalCtx;
+    if (isHighQuality) {
+        // 超采样倍数：800mm 用 2 倍，1200mm 用 3 倍
+        const oversample = currentLens === '1200' ? 3 : 2;
+        const interimWidth = finalWidth * oversample;
+        const interimHeight = finalHeight * oversample;
+        const interimCanvas = document.createElement('canvas');
+        interimCanvas.width = interimWidth;
+        interimCanvas.height = interimHeight;
+        const interimCtx = interimCanvas.getContext('2d');
+        interimCtx.imageSmoothingEnabled = true;
+        interimCtx.imageSmoothingQuality = 'high';
+        interimCtx.drawImage(tempCanvas, 0, 0, width, height, 0, 0, interimWidth, interimHeight);
+        
+        finalCanvas = document.createElement('canvas');
+        finalCanvas.width = finalWidth;
+        finalCanvas.height = finalHeight;
+        finalCtx = finalCanvas.getContext('2d');
+        finalCtx.imageSmoothingEnabled = true;
+        finalCtx.imageSmoothingQuality = 'high';
+        finalCtx.drawImage(interimCanvas, 0, 0, interimWidth, interimHeight, 0, 0, finalWidth, finalHeight);
+    } else {
+        finalCanvas = document.createElement('canvas');
+        finalCanvas.width = finalWidth;
+        finalCanvas.height = finalHeight;
+        finalCtx = finalCanvas.getContext('2d');
+        finalCtx.imageSmoothingEnabled = true;
+        finalCtx.imageSmoothingQuality = 'high';
+        finalCtx.drawImage(tempCanvas, 0, 0, width, height, 0, 0, finalWidth, finalHeight);
+    }
 
-    // 添加边框和文字（与原代码相同）
+    // 对800mm和1200mm镜头照片进行轻微锐化
+    if (isHighQuality) {
+        const imageData = finalCtx.getImageData(0, 0, finalWidth, finalHeight);
+        const data = imageData.data;
+        const imgWidth = finalWidth;
+        const imgHeight = finalHeight;
+        // 简单锐化核 (拉普拉斯增强)
+        const kernel = [
+            -1, -1, -1,
+            -1,  9, -1,
+            -1, -1, -1
+        ];
+        const kernelDiv = 1; // 权重和为1，无需额外除法
+        const offset = 0;
+        // 为了不破坏原数据，先拷贝一份
+        const originalData = new Uint8ClampedArray(data);
+        for (let y = 1; y < imgHeight - 1; y++) {
+            for (let x = 1; x < imgWidth - 1; x++) {
+                let r = 0, g = 0, b = 0;
+                for (let ky = -1; ky <= 1; ky++) {
+                    for (let kx = -1; kx <= 1; kx++) {
+                        const idx = ((y + ky) * imgWidth + (x + kx)) * 4;
+                        const k = kernel[(ky + 1) * 3 + (kx + 1)];
+                        r += originalData[idx] * k;
+                        g += originalData[idx + 1] * k;
+                        b += originalData[idx + 2] * k;
+                    }
+                }
+                const idx = (y * imgWidth + x) * 4;
+                data[idx] = Math.min(255, Math.max(0, r / kernelDiv + offset));
+                data[idx + 1] = Math.min(255, Math.max(0, g / kernelDiv + offset));
+                data[idx + 2] = Math.min(255, Math.max(0, b / kernelDiv + offset));
+                // alpha 不变
+            }
+        }
+        finalCtx.putImageData(imageData, 0, 0);
+    }
+    
+// 添加边框和文字（文字大小固定，与原版一致）
     finalCtx.strokeStyle = 'rgba(255,255,255,0.8)';
     finalCtx.lineWidth = 2;
     finalCtx.strokeRect(0, 0, finalWidth, finalHeight);
@@ -10490,20 +10567,29 @@ function createPhoto(x, y, width, height, capturedBird, capturedNightObject) {
         finalCtx.fillText(capturedBird.name, 5, finalHeight - 5);
     } else if (capturedNightObject) {
         finalCtx.fillStyle = '#87CEEB';
+        finalCtx.font = '12px Arial';
         finalCtx.fillText(capturedNightObject.name, 5, finalHeight - 5);
     }
 
-    // 保存照片
+    // 创建照片对象
     const photo = {
         id: photos.length,
-        x: x, y: y, width: width, height: height,
+        x: x,
+        y: y,
+        width: width,
+        height: height,
         lens: currentLens,
         time: gameTime,
         bird: capturedBird ? capturedBird.name : null,
+        birdType: capturedBird ? capturedBird.type : null,
         nightObject: capturedNightObject ? capturedNightObject.name : null,
+        nightObjectType: capturedNightObject ? capturedNightObject.type : null,
         imageData: finalCanvas.toDataURL('image/png'),
+        isBeast: capturedBird ? capturedBird.isBat : false,
+        isAstro: capturedNightObject ? true : false,
         timestamp: Date.now()
     };
+
     photos.push(photo);
     updatePhotoPreview();
     updateAlbumStats();
@@ -10518,7 +10604,9 @@ function createPhoto(x, y, width, height, capturedBird, capturedNightObject) {
             if (capturedCountElement) capturedCountElement.textContent = birdingModeCapturedSpecies.size;
         }
     }
-    if (capturedNightObject) updateAstroPhoto(capturedNightObject.name);
+    if (capturedNightObject) {
+        updateAstroPhoto(capturedNightObject.name);
+    }
 
     setTimeout(() => saveGameData(), 100);
 }
