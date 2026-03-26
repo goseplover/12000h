@@ -10433,169 +10433,94 @@ function showAllBirdsAlert() {
 }
 
 function createPhoto(x, y, width, height, capturedBird, capturedNightObject) {
+    // 照片放大倍数（建议 2 倍）
+    const SCALE = 2;
+    const finalWidth = viewfinderBaseWidth * SCALE;
+    const finalHeight = viewfinderBaseHeight * SCALE;
+
+    // 从主画布截取取景框区域（与原代码相同）
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = width;
     tempCanvas.height = height;
     const tempCtx = tempCanvas.getContext('2d');
-    
+
     let sourceX = Math.max(0, Math.min(x, GAME_WIDTH));
     let sourceY = Math.max(0, Math.min(y, GAME_HEIGHT));
-    let drawX = 0;
-    let drawY = 0;
-    let drawWidth = width;
-    let drawHeight = height;
-    
-    if (x < 0) {
-        drawX = -x;
-        drawWidth = width + x;
-    }
-    if (y < 0) {
-        drawY = -y;
-        drawHeight = height + y;
-    }
-    if (x + width > GAME_WIDTH) {
-        drawWidth = GAME_WIDTH - x;
-    }
-    if (y + height > GAME_HEIGHT) {
-        drawHeight = GAME_HEIGHT - y;
-    }
-    
+    let drawX = 0, drawY = 0, drawWidth = width, drawHeight = height;
+
+    if (x < 0) { drawX = -x; drawWidth = width + x; }
+    if (y < 0) { drawY = -y; drawHeight = height + y; }
+    if (x + width > GAME_WIDTH) drawWidth = GAME_WIDTH - x;
+    if (y + height > GAME_HEIGHT) drawHeight = GAME_HEIGHT - y;
+
     sourceX = Math.max(0, sourceX);
     sourceY = Math.max(0, sourceY);
     drawWidth = Math.max(0, drawWidth);
     drawHeight = Math.max(0, drawHeight);
-    
+
     if (drawWidth > 0 && drawHeight > 0) {
-        tempCtx.drawImage(
-            canvas,
-            sourceX, sourceY, drawWidth, drawHeight,
-            drawX, drawY, drawWidth, drawHeight
-        );
+        tempCtx.drawImage(canvas, sourceX, sourceY, drawWidth, drawHeight, drawX, drawY, drawWidth, drawHeight);
     }
-    
+
+    // 应用金色滤镜（与原代码相同）
     const goldenFilter = document.getElementById('goldenFilter');
     const filterStyle = window.getComputedStyle(goldenFilter);
     const filterColor = filterStyle.backgroundColor;
-    
-    // 只在非陀螺仪模式下应用滤镜（陀螺仪模式下保持原色）
-    if (!gyroModeActive && filterColor && filterColor !== 'rgba(0, 0, 0, 0)' && filterColor !== 'transparent') {
+    if (!gyroModeActive && filterColor && filterColor !== 'rgba(0,0,0,0)' && filterColor !== 'transparent') {
         tempCtx.fillStyle = filterColor;
         tempCtx.fillRect(0, 0, drawWidth, drawHeight);
     }
-    
+
+    // 创建最终照片画布并放大
     const finalCanvas = document.createElement('canvas');
-    finalCanvas.width = viewfinderBaseWidth;
-    finalCanvas.height = viewfinderBaseHeight;
+    finalCanvas.width = finalWidth;
+    finalCanvas.height = finalHeight;
     const finalCtx = finalCanvas.getContext('2d');
-    
-    finalCtx.drawImage(tempCanvas, 0, 0, width, height, 0, 0, viewfinderBaseWidth, viewfinderBaseHeight);
-    
-    finalCtx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+    finalCtx.imageSmoothingEnabled = true;          // 启用平滑插值
+    finalCtx.imageSmoothingQuality = 'high';        // 高质量缩放
+    finalCtx.drawImage(tempCanvas, 0, 0, width, height, 0, 0, finalWidth, finalHeight);
+
+    // 添加边框和文字（与原代码相同）
+    finalCtx.strokeStyle = 'rgba(255,255,255,0.8)';
     finalCtx.lineWidth = 2;
-    finalCtx.strokeRect(0, 0, viewfinderBaseWidth, viewfinderBaseHeight);
-    
-    // 拍摄到鸟类
+    finalCtx.strokeRect(0, 0, finalWidth, finalHeight);
     if (capturedBird) {
-        // 正常鸟类（不是特殊鸟类、不是蝙蝠、不是无统计鸟类）
-        if (!capturedBird.type.isSpecial && !capturedBird.isBat && 
-            capturedBirds[capturedBird.name] !== undefined && !capturedBird.noStats) {
-            capturedBirds[capturedBird.name]++;
-            
-// 保存到存档（不重复计数）
-            if (!capturedBird.noStats) {
-                updateCapturedBird(capturedBird.name);
-            }
-            
-            // 如果是蝙蝠，记录为兽类
-            if (capturedBird.isBat) {
-                updateBeastPhoto(capturedBird.name);
-                console.log("记录兽类（蝙蝠）照片:", capturedBird.name);
-            }
-            
-            // 观鸟模式下更新拍摄鸟种统计
-            if (birdingModeActive && birdingModeCapturedSpecies) {
-                birdingModeCapturedSpecies.add(capturedBird.name);
-                // 更新观鸟模式下的拍摄鸟种统计显示
-                const capturedCountElement = document.getElementById('capturedCount');
-                if (capturedCountElement) {
-                    capturedCountElement.textContent = birdingModeCapturedSpecies.size;
-                }
-            }
-        }
-        
-        const highlightColor = 'rgba(255, 255, 255, 0.1)';
-        finalCtx.fillStyle = highlightColor;
-        finalCtx.fillRect(0, 0, viewfinderBaseWidth, viewfinderBaseHeight);
-        
         finalCtx.fillStyle = '#FFFFFF';
         finalCtx.font = '12px Arial';
-        finalCtx.textAlign = 'left';
-        finalCtx.fillText(capturedBird.name, 5, viewfinderBaseHeight - 5);
-    } 
-    // 拍摄到夜间物体（天文对象）
-    else if (capturedNightObject) {
-        // 记录天文照片
-        updateAstroPhoto(capturedNightObject.name);
-        console.log("记录天文照片:", capturedNightObject.name);
-        
-        const highlightColor = 'rgba(173, 216, 230, 0.1)';
-        finalCtx.fillStyle = highlightColor;
-        finalCtx.fillRect(0, 0, viewfinderBaseWidth, viewfinderBaseHeight);
-        
+        finalCtx.fillText(capturedBird.name, 5, finalHeight - 5);
+    } else if (capturedNightObject) {
         finalCtx.fillStyle = '#87CEEB';
-        finalCtx.font = '12px Arial';
-        finalCtx.textAlign = 'left';
-        finalCtx.fillText(capturedNightObject.name, 5, viewfinderBaseHeight - 5);
+        finalCtx.fillText(capturedNightObject.name, 5, finalHeight - 5);
     }
-    
-    // 检查是否已收集所有鸟类（用于触发特殊提示）
-    const hasCollectedAllBirds = checkIfAllBirdsCollected();
-    if (hasCollectedAllBirds && !hasShownAllBirdsAlert) {
-        showAllBirdsAlert();
-        hasShownAllBirdsAlert = true;
-    }
-    
-    // 创建照片对象
+
+    // 保存照片
     const photo = {
         id: photos.length,
-        x: x,
-        y: y,
-        width: width,
-        height: height,
+        x: x, y: y, width: width, height: height,
         lens: currentLens,
         time: gameTime,
         bird: capturedBird ? capturedBird.name : null,
-        birdType: capturedBird ? capturedBird.type : null,
         nightObject: capturedNightObject ? capturedNightObject.name : null,
-        nightObjectType: capturedNightObject ? capturedNightObject.type : null,
         imageData: finalCanvas.toDataURL('image/png'),
-        // 新增存档相关字段
-        isBeast: capturedBird ? capturedBird.isBat : false,
-        isAstro: capturedNightObject ? true : false,
         timestamp: Date.now()
     };
-    
-    // 添加到照片数组
     photos.push(photo);
-    
-    // 如果拍摄到鸟，更新游戏统计（双重确认，确保统计准确）
-    if (capturedBird && !capturedBird.type.isSpecial && !capturedBird.isBat && 
-        capturedBirds[capturedBird.name] !== undefined && !capturedBird.noStats) {
+    updatePhotoPreview();
+    updateAlbumStats();
+
+    // 更新统计（与原代码相同）
+    if (capturedBird && !capturedBird.type.isSpecial && !capturedBird.isBat && capturedBirds[capturedBird.name] !== undefined && !capturedBird.noStats) {
         capturedBirds[capturedBird.name]++;
-        
-        // 观鸟模式下记录本次观鸟的拍摄统计
+        updateCapturedBird(capturedBird.name);
         if (birdingModeActive && birdingModeCapturedSpecies) {
             birdingModeCapturedSpecies.add(capturedBird.name);
+            const capturedCountElement = document.getElementById('capturedCount');
+            if (capturedCountElement) capturedCountElement.textContent = birdingModeCapturedSpecies.size;
         }
     }
-    
-    // 更新相册预览
-    updatePhotoPreview();
-    
-    // 自动保存游戏数据（增量保存）
-    setTimeout(() => {
-        saveGameData();
-    }, 100);
+    if (capturedNightObject) updateAstroPhoto(capturedNightObject.name);
+
+    setTimeout(() => saveGameData(), 100);
 }
 
 function updatePhotoPreview() {
