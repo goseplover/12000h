@@ -8193,7 +8193,6 @@ function generateVinegarDuck(countStats = true) {
         isNight: !isDaytime,
         groupId: groupId,
         targetX: fromLeft ? GAME_WIDTH + 100 : -100,
-        // 性别标记用于绘制
         isMale: true
     };
     
@@ -8252,6 +8251,16 @@ function generateVinegarDuck(countStats = true) {
         const appearedCountElement = document.getElementById('appearedCount');
         if (appearedCountElement) appearedCountElement.textContent = birdingObservedSpecies.size;
     }
+    
+    // ===== 新增：尝试进入游禽模式 =====
+    // 使用公鸟类型的游禽候选属性（如果有），否则使用默认概率 0.3
+    if (maleType.isWaterfowlCandidate) {
+        tryEnterWaterfowlPatrolForGroup(groupId, fromLeft, maleType.waterfowlChance);
+    } else {
+        // 兼容旧逻辑（若未设置属性，则使用默认概率 0.3）
+        tryEnterWaterfowlPatrolForGroup(groupId, fromLeft, 0.3);
+    }
+    // =================================
 }
 
 function generateFlycatcher(countStats = true) {
@@ -8675,6 +8684,10 @@ function generateRuddyShelduck(countStats = true) {
         birds.push(bird);
         birdGroupInfo[groupId].birds.push(bird);
     }
+    // ===== 新增：尝试进入游禽模式 =====
+    if (type.isWaterfowlCandidate) {
+        tryEnterWaterfowlPatrolForGroup(groupId, fromLeft, type.waterfowlChance);
+    }
 }
 
 // 金翅雀（群组飞过）
@@ -8860,6 +8873,11 @@ function generateDuck(countStats = true) {
         birds.push(bird);
         birdGroupInfo[groupId].birds.push(bird);
     }
+    
+    // ========== 新增：尝试进入游禽模式 ==========
+    if (countStats) { // 只有统计模式才触发，避免手动生成时干扰
+        tryEnterWaterfowlPatrolForGroup(groupId, fromLeft);
+    }
 }
 
 // 戴胜（波浪飞行）
@@ -8990,8 +9008,8 @@ function generatePipit(countStats = true) {
         bird.noStats = !countStats;
         bird.whiteEyeRing = true;
         bird.beakLengthMultiplier = 0.8;
-        bird.waveAmplitude = 30 + Math.random() * 20; // 波浪飞行幅度
-        bird.waveFrequency = 0.02 + Math.random() * 0.01; // 波浪飞行频率
+        bird.waveAmplitude = 30 + Math.random() * 5; // 波浪飞行幅度
+        bird.waveFrequency = 0.02 + Math.random() * 0.003; // 波浪飞行频率
         bird.wavePhase = Math.random() * Math.PI * 2; // 初始相位
         
         birds.push(bird);
@@ -13753,11 +13771,11 @@ function drawBird(bird) {
     ctx.restore();
     return;
 }
-    if (bird.name === "寿带") {
-        drawParadiseFlycatcher(bird);
-        ctx.restore();
-        return;
-    }
+if (bird.name === "寿带") {
+    drawParadiseFlycatcher(bird);
+    ctx.restore();
+    return;
+}
 
     // ✅ 统一处理向左飞行的镜像
     if (bird.direction === -1 && bird.state !== 'perching') {
@@ -13844,10 +13862,6 @@ function drawBird(bird) {
     return;
       } else if (bird.name === "白冠攀雀") {
     drawWhiteCrownedPendulineTit(bird);
-    ctx.restore();
-    return;
-          } else if (bird.name === "寿带") {
-    drawParadiseFlycatcher(bird);
     ctx.restore();
     return;
               } else if (bird.name === "黄胸鹀") {
@@ -15306,124 +15320,167 @@ function drawRobin(bird) {
 }
 
 function drawParadiseFlycatcher(bird) {
-  const baseSize = 20;
-  let birdSize = baseSize * bird.size;
-  const bodyRadius = birdSize / 2;
-  const headRadius = bodyRadius * 0.5; // 头部半径
-  const bodyX = bird.x;
-  const bodyY = bird.y;
+    const baseSize = 20;
+    let birdSize = baseSize * bird.size;
+    const bodyRadius = birdSize / 2;
+    const headRadius = bodyRadius * 0.5; // 头部半径
+    const bodyX = bird.x;
+    const bodyY = bird.y;
 
-  ctx.save();
+    ctx.save();
 
-  // 身体 - 白色
-  ctx.fillStyle = bird.type.bodyColor;
-  ctx.beginPath();
-  ctx.arc(bodyX, bodyY, bodyRadius, 0, Math.PI * 2);
-  ctx.fill();
+    // 身体 - 白色
+    ctx.fillStyle = bird.type.bodyColor;
+    ctx.beginPath();
+    ctx.arc(bodyX, bodyY, bodyRadius, 0, Math.PI * 2);
+    ctx.fill();
 
-  // 头部位置：根据方向位于身体一侧
-  let headX, headY;
-  if (bird.direction > 0) { // 向右飞，头部在身体右侧
-    headX = bodyX + bodyRadius * 0.7;
-    headY = bodyY - bodyRadius * 0.3;
-  } else { // 向左飞，头部在身体左侧
-    headX = bodyX - bodyRadius * 0.7;
-    headY = bodyY - bodyRadius * 0.3;
-  }
+    // 头部位置：根据方向位于身体一侧
+    let headX, headY;
+    if (bird.direction > 0) { // 向右飞，头部在身体右侧
+        headX = bodyX + bodyRadius * 0.7;
+        headY = bodyY - bodyRadius * 0.3;
+    } else { // 向左飞，头部在身体左侧
+        headX = bodyX - bodyRadius * 0.7;
+        headY = bodyY - bodyRadius * 0.3;
+    }
 
-  // 头部 - 黑色
-  ctx.fillStyle = bird.type.headColor;
-  ctx.beginPath();
-  ctx.arc(headX, headY, headRadius, 0, Math.PI * 2);
-  ctx.fill();
+    // 头部 - 黑色
+    ctx.fillStyle = bird.type.headColor;
+    ctx.beginPath();
+    ctx.arc(headX, headY, headRadius, 0, Math.PI * 2);
+    ctx.fill();
 
-  // 嘴 - 绿色
-  ctx.fillStyle = bird.type.beakColor || "#00FF00";
-  const beakLength = 8;
-  const beakHeight = 4;
-  const beakBaseX = headX + (bird.direction > 0 ? headRadius * 0.5 : -headRadius * 0.5);
-  const beakBaseY = headY;
+    // 嘴 - 绿色
+    ctx.fillStyle = bird.type.beakColor || "#00FF00";
+    const beakLength = 8;
+    const beakHeight = 4;
+    const beakBaseX = headX + (bird.direction > 0 ? headRadius * 0.5 : -headRadius * 0.5);
+    const beakBaseY = headY;
 
-  ctx.beginPath();
-  if (bird.direction > 0) {
-    ctx.moveTo(beakBaseX, beakBaseY);
-    ctx.lineTo(beakBaseX + beakLength, beakBaseY);
-    ctx.lineTo(beakBaseX, beakBaseY + beakHeight);
-  } else {
-    ctx.moveTo(beakBaseX, beakBaseY);
-    ctx.lineTo(beakBaseX - beakLength, beakBaseY);
-    ctx.lineTo(beakBaseX, beakBaseY + beakHeight);
-  }
-  ctx.closePath();
-  ctx.fill();
+    ctx.beginPath();
+    if (bird.direction > 0) {
+        ctx.moveTo(beakBaseX, beakBaseY);
+        ctx.lineTo(beakBaseX + beakLength, beakBaseY);
+        ctx.lineTo(beakBaseX, beakBaseY + beakHeight);
+    } else {
+        ctx.moveTo(beakBaseX, beakBaseY);
+        ctx.lineTo(beakBaseX - beakLength, beakBaseY);
+        ctx.lineTo(beakBaseX, beakBaseY + beakHeight);
+    }
+    ctx.closePath();
+    ctx.fill();
 
-  // 眼睛 - 白眼圈 + 黑眼珠
-  const eyeOffsetX = bird.direction > 0 ? headRadius * 0.3 : -headRadius * 0.3;
-  const eyeX = headX + eyeOffsetX;
-  const eyeY = headY - headRadius * 0.1;
+    // 眼睛 - 白眼圈 + 黑眼珠
+    const eyeOffsetX = bird.direction > 0 ? headRadius * 0.3 : -headRadius * 0.3;
+    const eyeX = headX + eyeOffsetX;
+    const eyeY = headY - headRadius * 0.1;
 
-  ctx.fillStyle = '#FFFFFF';
-  ctx.beginPath();
-  ctx.arc(eyeX, eyeY, 3, 0, Math.PI * 2);
-  ctx.fill();
+    ctx.fillStyle = '#FFFFFF';
+    ctx.beginPath();
+    ctx.arc(eyeX, eyeY, 3, 0, Math.PI * 2);
+    ctx.fill();
 
-  ctx.fillStyle = '#000000';
-  ctx.beginPath();
-  ctx.arc(eyeX, eyeY, 2, 0, Math.PI * 2);
-  ctx.fill();
+    ctx.fillStyle = '#000000';
+    ctx.beginPath();
+    ctx.arc(eyeX, eyeY, 2, 0, Math.PI * 2);
+    ctx.fill();
 
-  // ===== 翅膀调整：大小翻倍、向后移半个头、下移半个头直径 =====
-  const wingWidth = bodyRadius * 1.6;      // 原为 0.8，翻倍
-  const wingHeight = bodyRadius * 1.0;     // 原为 0.5，翻倍
-  // 翅膀基础水平位置（居中于身体）
-  let wingX = bodyX - wingWidth / 2;
-  // 根据飞行方向向后移半个头直径（向尾巴方向移动）
-  const tailDir = bird.direction > 0 ? -1 : 1;
-  wingX += tailDir * headRadius;            // 向后移半个头
-  // 翅膀垂直位置：先上移一个头直径，再下移半个头直径（最终上移半个头直径）
-  const wingY = bodyY - bodyRadius * 1.6 + headRadius;
+    // 翅膀（大小翻倍、向后移半个头、下移半个头直径）
+    const wingWidth = bodyRadius * 1.6;      // 原 0.8 翻倍
+    const wingHeight = bodyRadius * 1.0;     // 原 0.5 翻倍
+    // 翅膀基础水平位置（居中于身体）
+    let wingX = bodyX - wingWidth / 2;
+    // 根据飞行方向向后移半个头直径（向尾巴方向移动）
+    const tailDir = bird.direction > 0 ? -1 : 1;
+    wingX += tailDir * headRadius;
+    // 翅膀垂直位置：先上移一个头直径，再下移半个头直径（最终上移半个头直径）
+    const wingY = bodyY - bodyRadius * 1.6 + headRadius;
 
-  ctx.fillStyle = '#F0F0F0';
-  ctx.fillRect(wingX, wingY, wingWidth, wingHeight);
+    ctx.fillStyle = '#F0F0F0';
+    ctx.fillRect(wingX, wingY, wingWidth, wingHeight);
 
-  // ===== 尾巴调整：上移半个头直径 =====
-  const tailStartX = bodyX + (bird.direction > 0 ? -bodyRadius : bodyRadius);
-  const tailStartY = bodyY - headRadius;    // 尾巴上移半个头直径
+// ========== 尾巴绘制（基于翅膀末端轨迹）==========
+if (bird.tailHistory && bird.tailHistory.length > 1) {
+    const points = bird.tailHistory;
+    const spacing = 4;          // 两条尾巴之间的垂直间距
+    const lineWidth = 2;
 
-  // 更新摆动相位
-  bird.tailPhase = (bird.tailPhase + bird.tailSpeed) % (Math.PI * 2);
+    // 直接使用原始点（不再镜像）
+    const upperPoints = [];
+    const lowerPoints = [];
+    for (let i = 0; i < points.length; i++) {
+        const p = points[i];
+        // 计算切线方向
+        let dx = 0, dy = 0;
+        if (i === 0 && points.length > 1) {
+            dx = points[1].x - p.x;
+            dy = points[1].y - p.y;
+        } else if (i === points.length - 1 && i > 0) {
+            dx = p.x - points[i-1].x;
+            dy = p.y - points[i-1].y;
+        } else if (i > 0 && i < points.length - 1) {
+            dx = points[i+1].x - points[i-1].x;
+            dy = points[i+1].y - points[i-1].y;
+        }
+        const len = Math.hypot(dx, dy);
+        if (len > 0.01) {
+            const perpX = -dy / len;
+            const perpY = dx / len;
+            upperPoints.push({ x: p.x + perpX * spacing, y: p.y + perpY * spacing });
+            lowerPoints.push({ x: p.x - perpX * spacing, y: p.y - perpY * spacing });
+        } else {
+            upperPoints.push(p);
+            lowerPoints.push(p);
+        }
+    }
 
-  const segments = bird.tailSegments || 20;
-  const length = bird.tailLength || 60;
-  const amplitude = bird.tailAmplitude || 3.33;
-  const freq = (bird.tailFreq || 3) / 2;     // 频率降低一半
-  const spacing = 2;                         // 两条尾巴垂直间距
+    // 绘制上尾巴曲线
+    ctx.beginPath();
+    ctx.moveTo(upperPoints[0].x, upperPoints[0].y);
+    for (let i = 1; i < upperPoints.length; i++) {
+        ctx.lineTo(upperPoints[i].x, upperPoints[i].y);
+    }
+    ctx.strokeStyle = '#FFFFFF';
+    ctx.lineWidth = lineWidth;
+    ctx.stroke();
 
-  // 绘制上尾巴（根部固定，波动逐渐增强）
-  ctx.beginPath();
-  ctx.moveTo(tailStartX, tailStartY - spacing);
-  for (let i = 1; i <= segments; i++) {
-    const t = i / segments;
-    const baseX = tailStartX + tailDir * length * t;
-    const offsetY = amplitude * t * Math.sin(freq * t * Math.PI + bird.tailPhase);
-    ctx.lineTo(baseX, tailStartY - spacing + offsetY);
-  }
-  ctx.strokeStyle = '#FFFFFF';
-  ctx.lineWidth = 2;
-  ctx.stroke();
+    // 绘制下尾巴曲线
+    ctx.beginPath();
+    ctx.moveTo(lowerPoints[0].x, lowerPoints[0].y);
+    for (let i = 1; i < lowerPoints.length; i++) {
+        ctx.lineTo(lowerPoints[i].x, lowerPoints[i].y);
+    }
+    ctx.stroke();
 
-  // 绘制下尾巴
-  ctx.beginPath();
-  ctx.moveTo(tailStartX, tailStartY + spacing);
-  for (let i = 1; i <= segments; i++) {
-    const t = i / segments;
-    const baseX = tailStartX + tailDir * length * t;
-    const offsetY = amplitude * t * Math.sin(freq * t * Math.PI + bird.tailPhase);
-    ctx.lineTo(baseX, tailStartY + spacing + offsetY);
-  }
-  ctx.stroke();
+    // 填充两条曲线之间的区域（形成飘带状）
+    ctx.beginPath();
+    for (let i = 0; i < upperPoints.length; i++) {
+        ctx.lineTo(upperPoints[i].x, upperPoints[i].y);
+    }
+    for (let i = lowerPoints.length - 1; i >= 0; i--) {
+        ctx.lineTo(lowerPoints[i].x, lowerPoints[i].y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.fill();
+} else {
+    // 后备尾巴：简单绘制两条直线
+    const tailStartX = bodyX + (bird.direction > 0 ? -bodyRadius : bodyRadius);
+    const tailStartY = bodyY - headRadius;
+    const tailLength = 30;
+    const tailSpacing = 4;
 
-  ctx.restore();
+    ctx.beginPath();
+    ctx.moveTo(tailStartX, tailStartY - tailSpacing);
+    ctx.lineTo(tailStartX + (bird.direction > 0 ? -tailLength : tailLength), tailStartY - tailSpacing);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(tailStartX, tailStartY + tailSpacing);
+    ctx.lineTo(tailStartX + (bird.direction > 0 ? -tailLength : tailLength), tailStartY + tailSpacing);
+    ctx.stroke();
+}
+    ctx.restore();
 }
   
 function drawYellowBreastedBunting(bird) {
@@ -17823,7 +17880,41 @@ if (bird.isSilkyStarling) {
         if (bird.isChasingRaptor || bird.isFleeingFromChasers || bird.isChasedPatrolling) {
             continue;
         }
+// ========== 寿带历史轨迹记录（记录翅膀末端）==========
+if (bird.name === "寿带" && bird.state === 'flying') {
+    if (bird.frameCounter === undefined) bird.frameCounter = 0;
+    if (bird.historyInterval === undefined) bird.historyInterval = 2;
+    bird.frameCounter++;
+    if (bird.frameCounter >= bird.historyInterval) {
+        bird.frameCounter = 0;
         
+        // 计算翅膀末端坐标（与绘制函数中的翅膀末端一致）
+        const baseSize = 20;
+        const birdSize = baseSize * bird.size;
+        const bodyRadius = birdSize / 2;
+        const headRadius = bodyRadius * 0.5;
+        const bodyX = bird.x;
+        const bodyY = bird.y;
+        
+        // 翅膀尺寸（与绘制函数相同）
+        const wingWidth = bodyRadius * 1.6;
+        const wingHeight = bodyRadius * 1.0;
+        let wingX = bodyX - wingWidth / 2;
+        const tailDir = bird.direction > 0 ? -1 : 1;
+        wingX += tailDir * headRadius;
+        const wingY = bodyY - bodyRadius * 1.6 + headRadius;
+        
+        // 翅膀末端：根据飞行方向，取翅膀后缘的中点
+const wingEndX = bird.direction > 0 ? wingX : wingX + wingWidth;
+const wingEndY = wingY + wingHeight / 2 + 2;  // 下移2像素
+        
+        if (!bird.tailHistory) bird.tailHistory = [];
+        bird.tailHistory.unshift({ x: wingEndX, y: wingEndY });
+        const maxLen = bird.maxHistoryLength || 30;
+        if (bird.tailHistory.length > maxLen) bird.tailHistory.pop();
+    }
+}
+// ========== 记录结束 ==========
         // 处理被猛禽惊吓的鸟
         if (bird.isEating) continue;  // 正在吃水果，忽略逃跑
         if (bird.isFleeingFromRaptor && !(bird.name === "金眶鸻" || bird.name === "12000鸻")) {
