@@ -14078,10 +14078,16 @@ const beakStartY = bird.y - bodySize/2 + headSize/2 + headOffsetY;
 
 let beakLength = 8;
 let beakHeight = 5;
+  
+// 新增：红腹灰雀的嘴部缩短一半
+if (bird.name === "红腹灰雀") {
+    beakLength = 4;
+    beakHeight = 2.5;
+}
 
-// 吃水果时只加长嘴部，不改变颜色
+// 吃水果时只加大嘴部，不改变颜色
 if (bird.isEating) {
-    beakLength = 12;
+    beakLength = 8;
     beakHeight = 6;
     // 颜色保持原有逻辑，不覆盖
 } else {
