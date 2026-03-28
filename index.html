@@ -10450,35 +10450,30 @@ function showAllBirdsAlert() {
 }
 
 function createPhoto(x, y, width, height, capturedBird, capturedNightObject) {
-// 最终照片的固定尺寸（放大2倍）
     const finalWidth = viewfinderBaseWidth * 2;
     const finalHeight = viewfinderBaseHeight * 2;
 
-    // 从主画布截取取景框区域（与原代码相同）
+    // 确定截图源（陀螺仪模式下优先使用 zoomCanvas）
+    let sourceCanvas = canvas;
+    if (gyroModeActive && document.getElementById('zoomCanvas') && 
+        document.getElementById('zoomCanvas').style.display === 'block') {
+        sourceCanvas = document.getElementById('zoomCanvas');
+    }
+
+    // 临时画布，用于截取取景框区域
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = width;
     tempCanvas.height = height;
     const tempCtx = tempCanvas.getContext('2d');
 
+    // 计算源画布上的截取区域（与原有逻辑相同）
     let sourceX = Math.max(0, Math.min(x, GAME_WIDTH));
     let sourceY = Math.max(0, Math.min(y, GAME_HEIGHT));
     let drawX = 0, drawY = 0, drawWidth = width, drawHeight = height;
-
-    if (x < 0) {
-        drawX = -x;
-        drawWidth = width + x;
-    }
-    if (y < 0) {
-        drawY = -y;
-        drawHeight = height + y;
-    }
-    if (x + width > GAME_WIDTH) {
-        drawWidth = GAME_WIDTH - x;
-    }
-    if (y + height > GAME_HEIGHT) {
-        drawHeight = GAME_HEIGHT - y;
-    }
-
+    if (x < 0) { drawX = -x; drawWidth = width + x; }
+    if (y < 0) { drawY = -y; drawHeight = height + y; }
+    if (x + width > GAME_WIDTH) { drawWidth = GAME_WIDTH - x; }
+    if (y + height > GAME_HEIGHT) { drawHeight = GAME_HEIGHT - y; }
     sourceX = Math.max(0, sourceX);
     sourceY = Math.max(0, sourceY);
     drawWidth = Math.max(0, drawWidth);
@@ -10486,13 +10481,32 @@ function createPhoto(x, y, width, height, capturedBird, capturedNightObject) {
 
     if (drawWidth > 0 && drawHeight > 0) {
         tempCtx.drawImage(
-            canvas,
+            sourceCanvas,
             sourceX, sourceY, drawWidth, drawHeight,
             drawX, drawY, drawWidth, drawHeight
         );
     }
 
-    // 应用金色滤镜（与原代码相同）
+    // 非陀螺仪模式：额外叠加 poopCanvas 内容
+    if (!gyroModeActive || sourceCanvas === canvas) {
+        // 获取 poopCanvas 上对应区域的图像
+        const poopCanvasElem = document.getElementById('poopCanvas');
+        if (poopCanvasElem) {
+            const poopTempCanvas = document.createElement('canvas');
+            poopTempCanvas.width = width;
+            poopTempCanvas.height = height;
+            const poopTempCtx = poopTempCanvas.getContext('2d');
+            poopTempCtx.drawImage(
+                poopCanvasElem,
+                sourceX, sourceY, drawWidth, drawHeight,
+                drawX, drawY, drawWidth, drawHeight
+            );
+            // 将 poopCanvas 内容叠加到主图上（使用 source-over 合成）
+            tempCtx.drawImage(poopTempCanvas, 0, 0);
+        }
+    }
+
+    // 应用金色滤镜（与原来相同）
     const goldenFilter = document.getElementById('goldenFilter');
     const filterStyle = window.getComputedStyle(goldenFilter);
     const filterColor = filterStyle.backgroundColor;
@@ -10500,43 +10514,41 @@ function createPhoto(x, y, width, height, capturedBird, capturedNightObject) {
         tempCtx.fillStyle = filterColor;
         tempCtx.fillRect(0, 0, drawWidth, drawHeight);
     }
-    
-  // 高质量插值：对 800mm 和 1200mm 镜头应用超采样
-const isHighQuality = (currentLens === '800' || currentLens === '1200');
-let finalCanvas, finalCtx;
-if (isHighQuality) {
-    // 降低超采样倍数，800mm 用 1.5 倍，1200mm 用 2 倍
-    let oversample = 1;
-    if (currentLens === '800') oversample = 1.5;
-    if (currentLens === '1200') oversample = 2;
-    const interimWidth = finalWidth * oversample;
-    const interimHeight = finalHeight * oversample;
-    const interimCanvas = document.createElement('canvas');
-    interimCanvas.width = interimWidth;
-    interimCanvas.height = interimHeight;
-    const interimCtx = interimCanvas.getContext('2d');
-    interimCtx.imageSmoothingEnabled = true;
-    interimCtx.imageSmoothingQuality = 'high';
-    interimCtx.drawImage(tempCanvas, 0, 0, width, height, 0, 0, interimWidth, interimHeight);
-    
-    finalCanvas = document.createElement('canvas');
-    finalCanvas.width = finalWidth;
-    finalCanvas.height = finalHeight;
-    finalCtx = finalCanvas.getContext('2d');
-    finalCtx.imageSmoothingEnabled = true;
-    finalCtx.imageSmoothingQuality = 'high';
-    finalCtx.drawImage(interimCanvas, 0, 0, interimWidth, interimHeight, 0, 0, finalWidth, finalHeight);
-} else {
-    finalCanvas = document.createElement('canvas');
-    finalCanvas.width = finalWidth;
-    finalCanvas.height = finalHeight;
-    finalCtx = finalCanvas.getContext('2d');
-    finalCtx.imageSmoothingEnabled = true;
-    finalCtx.imageSmoothingQuality = 'high';
-    finalCtx.drawImage(tempCanvas, 0, 0, width, height, 0, 0, finalWidth, finalHeight);
-}
-   
-// 添加边框和文字（文字大小固定，与原版一致）
+
+    // 镜头插值（与原来相同）
+    const isHighQuality = (currentLens === '800' || currentLens === '1200');
+    let finalCanvas, finalCtx;
+    if (isHighQuality) {
+        let oversample = 1;
+        if (currentLens === '800') oversample = 1.5;
+        if (currentLens === '1200') oversample = 2;
+        const interimWidth = finalWidth * oversample;
+        const interimHeight = finalHeight * oversample;
+        const interimCanvas = document.createElement('canvas');
+        interimCanvas.width = interimWidth;
+        interimCanvas.height = interimHeight;
+        const interimCtx = interimCanvas.getContext('2d');
+        interimCtx.imageSmoothingEnabled = true;
+        interimCtx.imageSmoothingQuality = 'high';
+        interimCtx.drawImage(tempCanvas, 0, 0, width, height, 0, 0, interimWidth, interimHeight);
+        finalCanvas = document.createElement('canvas');
+        finalCanvas.width = finalWidth;
+        finalCanvas.height = finalHeight;
+        finalCtx = finalCanvas.getContext('2d');
+        finalCtx.imageSmoothingEnabled = true;
+        finalCtx.imageSmoothingQuality = 'high';
+        finalCtx.drawImage(interimCanvas, 0, 0, interimWidth, interimHeight, 0, 0, finalWidth, finalHeight);
+    } else {
+        finalCanvas = document.createElement('canvas');
+        finalCanvas.width = finalWidth;
+        finalCanvas.height = finalHeight;
+        finalCtx = finalCanvas.getContext('2d');
+        finalCtx.imageSmoothingEnabled = true;
+        finalCtx.imageSmoothingQuality = 'high';
+        finalCtx.drawImage(tempCanvas, 0, 0, width, height, 0, 0, finalWidth, finalHeight);
+    }
+
+    // 添加边框和文字（与原来相同）
     finalCtx.strokeStyle = 'rgba(255,255,255,0.8)';
     finalCtx.lineWidth = 2;
     finalCtx.strokeRect(0, 0, finalWidth, finalHeight);
@@ -10550,7 +10562,7 @@ if (isHighQuality) {
         finalCtx.fillText(capturedNightObject.name, 5, finalHeight - 5);
     }
 
-    // 创建照片对象
+    // 保存照片（与原来相同）
     const photo = {
         id: photos.length,
         x: x,
@@ -10568,12 +10580,11 @@ if (isHighQuality) {
         isAstro: capturedNightObject ? true : false,
         timestamp: Date.now()
     };
-
     photos.push(photo);
     updatePhotoPreview();
     updateAlbumStats();
 
-    // 更新统计（与原代码相同）
+    // 统计处理（原有逻辑不变）
     if (capturedBird && !capturedBird.type.isSpecial && !capturedBird.isBat && capturedBirds[capturedBird.name] !== undefined && !capturedBird.noStats) {
         capturedBirds[capturedBird.name]++;
         updateCapturedBird(capturedBird.name);
@@ -10582,6 +10593,10 @@ if (isHighQuality) {
             const capturedCountElement = document.getElementById('capturedCount');
             if (capturedCountElement) capturedCountElement.textContent = birdingModeCapturedSpecies.size;
         }
+    }
+    // 蝙蝠成就处理
+    if (capturedBird && capturedBird.isBat && !capturedBird.noStats) {
+        updateBeastPhoto(capturedBird.name);
     }
     if (capturedNightObject) {
         updateAstroPhoto(capturedNightObject.name);
