@@ -10375,8 +10375,21 @@ function handleMouseClick() {
     playCameraSound();
     
     if (capturedBird) {
-        showCaptureAlert(`拍摄到${capturedBird.name}！`);
-    } else if (capturedNightObject) {
+    // 普通鸟类统计（排除特殊鸟和蝙蝠）
+    if (!capturedBird.type.isSpecial && !capturedBird.isBat && capturedBirds[capturedBird.name] !== undefined && !capturedBird.noStats) {
+        capturedBirds[capturedBird.name]++;
+        updateCapturedBird(capturedBird.name);
+        if (birdingModeActive && birdingModeCapturedSpecies) {
+            birdingModeCapturedSpecies.add(capturedBird.name);
+            const capturedCountElement = document.getElementById('capturedCount');
+            if (capturedCountElement) capturedCountElement.textContent = birdingModeCapturedSpecies.size;
+        }
+    }
+    // 蝙蝠成就（新增）
+    if (capturedBird.isBat && !capturedBird.noStats) {
+        updateBeastPhoto(capturedBird.name);
+    }
+} else if (capturedNightObject) {
         showCaptureAlert(`拍摄到${capturedNightObject.name}！`);
     }
     
