@@ -16169,8 +16169,9 @@ function generateParadiseFlycatcher(countStats = true) {
     wavePhase: Math.random() * Math.PI * 2,
     noStats: !countStats,
     isNight: !isDaytime,
-    isVulnerableToRaptors: true
-  };
+    isVulnerableToRaptors: true,
+    maxHistoryLength: 20   // 新增：将尾巴长度减少三分之一（原默认30）
+};
   
   birds.push(bird);
   
