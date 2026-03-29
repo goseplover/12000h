@@ -4038,12 +4038,14 @@ const BIRD_TYPES = {
     tailColor: "#000000",
     groupSize: [1, 3],
     probability: 0.034,
-    size: 1.8,
-    behavior: "landOnTree",
-    stayTime: 50,
+    size: 0.9,                    // 缩小一半
+    behavior: "flyThrough",       // 改为穿越飞行，不降落
+    stayTime: 0,
     whiteEyeRing: true,
-    speedMultiplier: 1.5
-  },
+    speedMultiplier: 1.5,
+    isNocturnal: true,            // 夜间出现
+    canAppearAtNight: true        // 夜间允许
+},
     PIPIT: {
         name: "某种鹨",
         color: "#000000",
@@ -8534,7 +8536,6 @@ function generateBulbul(countStats = true) {
     }
 }
 
-// 乌鸦（群组停在树上）
 function generateCrow(countStats = true) {
     const type = BIRD_TYPES.CROW;
     if (countStats) {
@@ -8542,19 +8543,72 @@ function generateCrow(countStats = true) {
         updateTextStats();
         updateAppearedBird(type.name);
     }
-    const fromLeft = Math.random() > 0.5;
-    const birdCount = getRandomGroupSize(type);
-    const groupId = nextGroupId++;
-    birdGroupInfo[groupId] = { direction: fromLeft ? 1 : -1, birds: [] };
-    for (let i = 0; i < birdCount; i++) {
+    
+    // 获取月亮位置
+    const moonX = sunMoonX;
+    const moonY = sunMoonY;
+    if (isNaN(moonX) || isNaN(moonY)) {
+        // 降级：如果没有月亮，随机生成水平飞过
+        const fromLeft = Math.random() > 0.5;
         const startX = fromLeft ? -50 : GAME_WIDTH + 50;
         const startY = Math.random() * (GAME_HEIGHT * 0.6) + GAME_HEIGHT * 0.2;
-        const bird = createCommonBird(type, startX, startY, fromLeft, "landOnTree", type.stayTime, (1.6 + Math.random() * 0.8) * (type.speedMultiplier || 1), groupId);
-        bird.whiteEyeRing = true;
+        const bird = createCommonBird(type, startX, startY, fromLeft, "flyThrough", 0, (1.6 + Math.random() * 0.8) * (type.speedMultiplier || 1), null);
         bird.noStats = !countStats;
         bird.isNight = !isDaytime;
         birds.push(bird);
-        birdGroupInfo[groupId].birds.push(bird);
+        return;
+    }
+    
+    // 确定起点和终点：从月亮左侧飞向右侧（或反向），高度与月亮接近
+    const offsetX = 300 + Math.random() * 200;   // 水平偏移 300~500 像素
+    const offsetY = (Math.random() - 0.5) * 80;  // 垂直偏移 ±40 像素
+    const fromLeft = Math.random() > 0.5;
+    let startX, startY, targetX, targetY;
+    
+    if (fromLeft) {
+        startX = moonX - offsetX;
+        targetX = moonX + offsetX;
+    } else {
+        startX = moonX + offsetX;
+        targetX = moonX - offsetX;
+    }
+    startY = moonY + offsetY;
+    targetY = moonY + offsetY;
+    
+    // 确保起点和终点在屏幕范围内（防止生成在屏幕外太远）
+    startX = Math.max(-200, Math.min(GAME_WIDTH + 200, startX));
+    targetX = Math.max(-200, Math.min(GAME_WIDTH + 200, targetX));
+    startY = Math.max(50, Math.min(GAME_HEIGHT - 50, startY));
+    targetY = Math.max(50, Math.min(GAME_HEIGHT - 50, targetY));
+    
+    // 创建乌鸦对象（自定义路径）
+    const bird = {
+        type: type,
+        name: type.name,
+        x: startX,
+        y: startY,
+        size: type.size,
+        speed: (1.6 + Math.random() * 0.8) * (type.speedMultiplier || 1),
+        direction: startX < targetX ? 1 : -1,  // 根据目标确定方向
+        state: 'flying',
+        stateTime: 0,
+        targetX: targetX,   // 自定义目标点
+        targetY: targetY,
+        whiteEyeRing: true,
+        noStats: !countStats,
+        isNight: !isDaytime
+    };
+    
+    birds.push(bird);
+    
+    if (birdingModeActive && !bird.noStats) {
+        const birdId = `${bird.name}_${bird.x}_${bird.y}_${Date.now()}`;
+        if (!birdingModeRecordedBirds.has(birdId)) {
+            birdingModeRecordedBirds.add(birdId);
+            birdingObservedSpecies.add(getMergedBirdName(bird.name));
+            const appearedCountElement = document.getElementById('appearedCount');
+            if (appearedCountElement) appearedCountElement.textContent = birdingObservedSpecies.size;
+        }
     }
 }
 
@@ -19503,70 +19557,85 @@ case 'huntingBird':
                 break;
                 
             case 'flying':
-                let speedFactor = 1;
-                if (bird.direction === -1 && !bird.isChasing && !bird.isBeingChased) {
-                    speedFactor = 0.3;
-                }
+    let speedFactor = 1;
+    if (bird.direction === -1 && !bird.isChasing && !bird.isBeingChased) {
+        speedFactor = 0.3;
+    }
+    
+    // ========== 新增：如果鸟有自定义目标点，优先向目标点移动 ==========
+    if (bird.targetX !== undefined && bird.targetY !== undefined) {
+        const dx = bird.targetX - bird.x;
+        const dy = bird.targetY - bird.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist < 2) {
+            // 到达目标点后，删除目标，继续水平移动飞出（或直接移除）
+            delete bird.targetX;
+            delete bird.targetY;
+            bird.x += bird.speed * bird.direction;  // 保持原有方向飞出
+        } else {
+            const step = Math.min(bird.speed, dist);
+            bird.x += (dx / dist) * step;
+            bird.y += (dy / dist) * step;
+            bird.direction = dx > 0 ? 1 : -1;  // 更新方向，保持头部朝向运动方向
+        }
+    } else {
+        // ========== 原有逻辑（保留） ==========
+        if (bird.name === "麻雀") {
+            bird.x += bird.speed * bird.direction * speedFactor;
+            if ((bird.direction === 1 && bird.x > GAME_WIDTH + 200) || (bird.direction === -1 && bird.x < -200)) {
+                birds.splice(i, 1);
+                continue;
+            }
+        } else if (bird.hunting) {
+            bird.x += bird.speed * bird.direction * speedFactor;
+            bird.y += bird.speed * 0.7 * speedFactor;
+        } else {
+            bird.x += bird.speed * bird.direction * speedFactor;
+            if (behavior === 'waveFlight') {
+                bird.y += Math.sin(bird.stateTime * 0.01) * 2 * speedFactor;
+            }
+        }
+    }
+    
+    // ========== 原有着陆检测（landOnTree / appearOnTree） ==========
+    if ((behavior === 'landOnTree' || behavior === 'appearOnTree') && bird.targetTree) {
+        const treeCenterX = bird.targetTree.x + bird.targetTree.width / 2;
+        const distanceToTree = Math.abs(bird.x - treeCenterX);
+        
+        if (distanceToTree < 50) {
+            bird.state = 'landing';
+            const tree = bird.targetTree;
+            const crownTopArea = {
+                x: tree.x + tree.width * 0.2,
+                y: tree.y + tree.height * 0.1,
+                width: tree.width * 0.6,
+                height: tree.height * 0.25
+            };
+            
+            if (bird.name === "喜鹊" || bird.name === "乌鸦") {
+                const targetX = crownTopArea.x + Math.random() * crownTopArea.width;
+                const targetY = crownTopArea.y + Math.random() * crownTopArea.height;
+                bird.targetX = targetX;
+                bird.targetY = targetY;
+            } else {
+                const treeCenterY = tree.y + tree.height * 0.35;
+                const angle = Math.atan2(treeCenterY - bird.y, treeCenterX - bird.x);
+                const distance = 30 + Math.random() * 20;
+                bird.targetX = bird.x + Math.cos(angle) * distance;
+                bird.targetY = bird.y + Math.sin(angle) * distance;
                 
-                if (bird.name === "麻雀") {
-                    // 麻雀的原有行为：直接飞过屏幕
-                  if (isNaN(bird.x) || isNaN(bird.y) || !isFinite(bird.x) || !isFinite(bird.y)) {
-    const index = birds.indexOf(bird);
-    if (index !== -1) birds.splice(index, 1);
-    return;
-}
-                    bird.x += bird.speed * bird.direction * speedFactor;
-                    if ((bird.direction === 1 && bird.x > GAME_WIDTH + 200) || (bird.direction === -1 && bird.x < -200)) {
-                        birds.splice(i, 1);
-                        continue;
-                    }
-                } else if (bird.hunting) {
-                    bird.x += bird.speed * bird.direction * speedFactor;
-                    bird.y += bird.speed * 0.7 * speedFactor;
-                } else {
-                    bird.x += bird.speed * bird.direction * speedFactor;
-                    if (behavior === 'waveFlight') {
-                        bird.y += Math.sin(bird.stateTime * 0.01) * 2 * speedFactor;
-                    }
-                }
-                
-                if ((behavior === 'landOnTree' || behavior === 'appearOnTree') && bird.targetTree) {
-                    const treeCenterX = bird.targetTree.x + bird.targetTree.width / 2;
-                    const distanceToTree = Math.abs(bird.x - treeCenterX);
-                    
-                    if (distanceToTree < 50) {
-                        bird.state = 'landing';
-                        const tree = bird.targetTree;
-                        const crownTopArea = {
-                            x: tree.x + tree.width * 0.2,
-                            y: tree.y + tree.height * 0.1,
-                            width: tree.width * 0.6,
-                            height: tree.height * 0.25
-                        };
-                        
-                        if (bird.name === "喜鹊" || bird.name === "乌鸦") {
-                            const targetX = crownTopArea.x + Math.random() * crownTopArea.width;
-                            const targetY = crownTopArea.y + Math.random() * crownTopArea.height;
-                            bird.targetX = targetX;
-                            bird.targetY = targetY;
-                        } else {
-                            const treeCenterY = tree.y + tree.height * 0.35;
-                            const angle = Math.atan2(treeCenterY - bird.y, treeCenterX - bird.x);
-                            const distance = 30 + Math.random() * 20;
-                            bird.targetX = bird.x + Math.cos(angle) * distance;
-                            bird.targetY = bird.y + Math.sin(angle) * distance;
-                            
-                            bird.targetX = Math.max(tree.x, Math.min(tree.x + tree.width, bird.targetX));
-                            bird.targetY = Math.max(tree.y, Math.min(tree.y + tree.height * 0.7, bird.targetY));
-                        }
-                    }
-                }
-                
-                if ((bird.direction === 1 && bird.x > GAME_WIDTH + 200) || (bird.direction === -1 && bird.x < -200) || bird.y > GAME_HEIGHT + 200) {
-                    birds.splice(i, 1);
-                    continue;
-                }
-                break;
+                bird.targetX = Math.max(tree.x, Math.min(tree.x + tree.width, bird.targetX));
+                bird.targetY = Math.max(tree.y, Math.min(tree.y + tree.height * 0.7, bird.targetY));
+            }
+        }
+    }
+    
+    // ========== 飞出屏幕移除 ==========
+    if ((bird.direction === 1 && bird.x > GAME_WIDTH + 200) || (bird.direction === -1 && bird.x < -200) || bird.y > GAME_HEIGHT + 200) {
+        birds.splice(i, 1);
+        continue;
+    }
+    break;
                 
             case 'landing':
                 const dx = bird.targetX - bird.x;
