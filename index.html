@@ -3738,9 +3738,9 @@ const NIGHT_OBJECTS = {
   METEOR: {
     name: "流星",
     type: "meteor",
-    probability: 0.05,
+    probability: 0.15,
     duration: 5000,
-    size: 0.1,
+    size: 0.05,           // 原为 0.1，改为 0.05 直径减半
     speed: 0.5,
     color: "#FFFFFF",
     trailLength: 100,
@@ -9481,36 +9481,29 @@ function generateLittleGrebe(countStats = false) {
     }
 }
 
-function generateMeteor(countStats = false, summoned = false, intersectionPoint = null, force = false) {
+function generateMeteor(countStats = false, summoned = false, intersectionPoint = null, force = false, parentAngle = null) {
     const isNightMode = gameMode === 'night' || (gameMode === 'normal' && !isDaytime);
-    if (!force && !isNightMode) {
-        // 非强制且不是夜间模式，不生成
-        return;
-    }
-    
+    if (!force && !isNightMode) return;  // 非夜间且非强制，不生成
+
     const meteorType = NIGHT_OBJECTS.METEOR;
-    
     let startX, startY, angle;
-    
+
     if (!summoned) {
-        if (force) {
-            // 手动强制生成：确保流星从屏幕外飞入可见区域
-            startX = GAME_WIDTH + 50 + Math.random() * 100;
-            startY = Math.random() * GAME_HEIGHT * 0.3;
-            const targetX = -100 - Math.random() * 100;
-            const targetY = GAME_HEIGHT * 0.8 + Math.random() * 100;
-            angle = Math.atan2(targetY - startY, targetX - startX);
-        } else {
-            // 自然生成逻辑（保留原轨迹）
-            const intersectionX = GAME_WIDTH * 0.5 + (Math.random() - 0.5) * GAME_WIDTH * 0.5;
-            const intersectionY = -500 - Math.random() * 500;
-            startX = intersectionX;
-            startY = intersectionY;
-            const targetX = -100 + Math.random() * (GAME_WIDTH + 200);
-            const targetY = -100 + Math.random() * (GAME_HEIGHT * 0.55 + 100);
-            angle = Math.atan2(targetY - startY, targetX - startX);
-        }
-        
+        // ========== 主流星 ==========
+        // 生成点：y 300~400，x 全屏随机
+        startX = Math.random() * GAME_WIDTH;
+        startY = 300 + Math.random() * 100;
+
+        // 目标点：生成点另一侧 400 像素，y 取画面中点
+        const targetX = (startX < GAME_WIDTH / 2) ? startX + 400 : startX - 400;
+        const targetY = GAME_HEIGHT / 2;
+
+        // 基准方向
+        const baseAngle = Math.atan2(targetY - startY, targetX - startX);
+        // 随机偏移 ±20°
+        const randomOffset = (Math.random() - 0.5) * (40 * Math.PI / 180);
+        angle = baseAngle + randomOffset;
+
         const meteor = {
             type: meteorType,
             name: meteorType.name,
@@ -9519,8 +9512,9 @@ function generateMeteor(countStats = false, summoned = false, intersectionPoint 
             size: meteorType.size,
             speed: meteorType.speed,
             angle: angle,
-            state: 'flying',
+            state: 'delayed',
             createdAt: gameTime,
+            appearDelay: 1000 + Math.random() * 500,  // 1~1.5秒延迟
             duration: meteorType.duration,
             color: meteorType.color,
             trailLength: meteorType.trailLength,
@@ -9535,15 +9529,41 @@ function generateMeteor(countStats = false, summoned = false, intersectionPoint 
         nightObjects.push(meteor);
         return meteor;
     } else {
-        // 此为被召唤的次级流星（保留原逻辑）
+        // ========== 链式流星 ==========
         if (!intersectionPoint) {
-            intersectionPoint = { x: -1800 + Math.random() * (GAME_WIDTH + 3600), y: -1800 + Math.random() * (GAME_HEIGHT * 0.55 + 1800) };
+            intersectionPoint = {
+                x: -1800 + Math.random() * (GAME_WIDTH + 3600),
+                y: -1800 + Math.random() * (GAME_HEIGHT * 0.55 + 1800)
+            };
         }
         startX = intersectionPoint.x;
         startY = intersectionPoint.y;
-        const targetX = -100 + Math.random() * (GAME_WIDTH + 200);
-        const targetY = -100 + Math.random() * (GAME_HEIGHT * 0.55 + 100);
-        angle = Math.atan2(targetY - startY, targetX - startX);
+
+        // 方向：基于父角度随机偏移 ±10°，并强制斜向下
+        let newAngle;
+        if (parentAngle !== null) {
+            let baseAngle = parentAngle;
+            let attempts = 0;
+            do {
+                const delta = (Math.random() - 0.5) * (20 * Math.PI / 180);
+                newAngle = baseAngle + delta;
+                attempts++;
+                // 如果尝试5次仍不向下，则强制设为45度向下
+                if (attempts >= 5 && Math.sin(newAngle) <= 0) {
+                    newAngle = Math.PI / 4;  // 45° 向下
+                    break;
+                }
+            } while (Math.sin(newAngle) <= 0);  // 确保斜向下（sin>0）
+        } else {
+            // 降级：使用随机目标点并确保向下
+            const targetX = startX + 400 * (Math.random() > 0.5 ? 1 : -1);
+            const targetY = GAME_HEIGHT / 2 + (Math.random() - 0.5) * 100;
+            newAngle = Math.atan2(targetY - startY, targetX - startX);
+            if (Math.sin(newAngle) <= 0) {
+                newAngle = Math.PI / 4;  // 向下45度
+            }
+        }
+
         const meteor = {
             type: meteorType,
             name: meteorType.name,
@@ -9551,9 +9571,10 @@ function generateMeteor(countStats = false, summoned = false, intersectionPoint 
             y: startY,
             size: meteorType.size,
             speed: meteorType.speed,
-            angle: angle,
-            state: 'flying',
+            angle: newAngle,
+            state: 'delayed',
             createdAt: gameTime,
+            appearDelay: 1000 + Math.random() * 500,
             duration: meteorType.duration,
             color: meteorType.color,
             trailLength: meteorType.trailLength,
@@ -9563,12 +9584,13 @@ function generateMeteor(countStats = false, summoned = false, intersectionPoint 
             summoned: summoned,
             isNightObject: true,
             intersectionPoint: intersectionPoint,
-            targetPoint: { x: targetX, y: targetY }
+            targetPoint: null
         };
         nightObjects.push(meteor);
         return meteor;
     }
 }
+  
 function generateComet(countStats = false) {
     const isNightMode = gameMode === 'night' || (gameMode === 'normal' && !isDaytime);
     if (!isNightMode) {
@@ -12402,6 +12424,8 @@ function finishEatingFruit(bird) {
     bird.size = bird.originalSize;
 }
 function drawNightObject(obj) {
+    // 延迟期间不绘制（隐身）
+    if (obj.state === 'delayed') return;
     const baseSize = 20;
     const objSize = baseSize * obj.size;
     
@@ -12508,51 +12532,51 @@ function updateNightObjects(deltaTime) {
     for (let i = nightObjects.length - 1; i >= 0; i--) {
         const obj = nightObjects[i];
         
+        // 处理延迟状态
+        if (obj.state === 'delayed') {
+            if (gameTime - obj.createdAt >= obj.appearDelay) {
+                obj.state = 'flying';
+            } else {
+                continue; // 未到出现时间，不移动
+            }
+        }
+        
+        // 原生命期检查
         if (gameTime - obj.createdAt > obj.duration) {
             nightObjects.splice(i, 1);
             continue;
         }
         
-        if (obj.type.type === 'meteor' && !obj.hasSummoned) {
-            if (gameTime - obj.createdAt > 500) {
-                if (Math.random() < obj.summonProbability) {
-                    generateMeteor(false, true, obj.intersectionPoint);
-                }
-                obj.hasSummoned = true;
-            }
+        // 链式流星触发（仅限主流星或特定逻辑）
+        if (obj.type.type === 'meteor' && !obj.hasSummoned && obj.state === 'flying') {
+    if (gameTime - obj.createdAt > 500) {
+        if (Math.random() < obj.summonProbability) {
+            generateMeteor(false, true, obj.intersectionPoint, false, obj.angle);
         }
+        obj.hasSummoned = true;
+    }
+}
         
+        // 原有移动逻辑
         switch (obj.type.type) {
             case 'meteor':
                 obj.x += Math.cos(obj.angle) * obj.speed;
                 obj.y += Math.sin(obj.angle) * obj.speed;
                 
-                const dx = obj.x - (obj.targetPoint?.x || 0);
-                const dy = obj.y - (obj.targetPoint?.y || 0);
-                const distanceToTarget = Math.sqrt(dx * dx + dy * dy);
-                
-                const isOutOfBounds = obj.x < -2000 || obj.x > GAME_WIDTH + 2000 || obj.y < -2000 || obj.y > GAME_HEIGHT + 2000;
-                const isBelowMountain = obj.y >= GAME_HEIGHT * 0.55;
-                const isNearTarget = distanceToTarget < 50;
-                
-                if (isOutOfBounds || isBelowMountain || isNearTarget) {
+                // 飞出边界移除
+                if (obj.x < -2000 || obj.x > GAME_WIDTH + 2000 || obj.y < -2000 || obj.y > GAME_HEIGHT + 2000) {
                     nightObjects.splice(i, 1);
                 }
                 break;
-                
+            // 彗星、UFO 等其他天体保持原有处理
             case 'comet':
                 obj.x += Math.cos(obj.angle) * obj.speed;
                 obj.y += Math.sin(obj.angle) * obj.speed;
-                
-                if (obj.y > GAME_HEIGHT + 100) {
-                    nightObjects.splice(i, 1);
-                }
+                if (obj.y > GAME_HEIGHT + 100) nightObjects.splice(i, 1);
                 break;
-                
             case 'ufo':
                 obj.x += obj.speed * obj.direction * (deltaTime / 1000);
                 obj.y += Math.sin(gameTime * 0.001) * 0.5;
-                
                 if ((obj.direction === -1 && obj.x < -100) || (obj.direction === 1 && obj.x > GAME_WIDTH + 100)) {
                     nightObjects.splice(i, 1);
                 }
